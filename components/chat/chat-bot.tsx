@@ -5,6 +5,7 @@ import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useCases } from '@/context/case-context';
+import { useUsers } from '@/context/user-context';
 import { CreateCaseInput, UpdateCaseInput } from '@/types/case';
 
 interface Message {
@@ -24,19 +25,20 @@ export function ChatBot() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I\'m your GCMP assistant. I can help you summarize cases, create new cases, or edit existing ones. How can I help you today?',
+      content: 'Hello! I\'m your GCMP assistant. I can help you summarize cases, create new cases, edit existing ones, assign cases to team members, and more. How can I help you today?',
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<{
-    type: 'create' | 'edit';
+    type: 'create' | 'edit' | 'add_note' | 'assign' | 'unassign' | 'delete' | 'change_status';
     data: Record<string, unknown>;
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { cases, createCase, updateCase, getCaseById } = useCases();
+  const { cases, createCase, updateCase, getCaseById, addNote, assignCase, unassignCase, deleteCase, updateStatus, caseStats } = useCases();
+  const { users, getUserFullName } = useUsers();
 
   const findCase = (identifier: string) => {
     // Search by ID first, then by case number or title
@@ -103,6 +105,88 @@ export function ChatBot() {
               content: `Case ${editedCase?.caseNumber || case_id} has been updated successfully!`,
             },
           ]);
+        } else if (pendingAction.type === 'add_note') {
+          const { case_id, content, is_private } = pendingAction.data;
+          const targetCase = findCase(case_id as string);
+          if (targetCase) {
+            addNote(targetCase.id, content as string, is_private as boolean || false);
+          }
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: `Note added successfully to case ${targetCase?.caseNumber || case_id}!`,
+            },
+          ]);
+        } else if (pendingAction.type === 'assign') {
+          const { case_id, assignee_name } = pendingAction.data;
+          const targetCase = findCase(case_id as string);
+          const targetUser = users.find(u =>
+            getUserFullName(u).toLowerCase() === (assignee_name as string).toLowerCase() ||
+            getUserFullName(u).toLowerCase().includes((assignee_name as string).toLowerCase())
+          );
+          if (targetCase && targetUser) {
+            assignCase(targetCase.id, targetUser.id, getUserFullName(targetUser));
+          }
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: targetCase && targetUser
+                ? `Case ${targetCase.caseNumber} has been assigned to ${getUserFullName(targetUser)}!`
+                : `Could not complete assignment. ${!targetCase ? 'Case not found.' : 'User not found.'}`,
+            },
+          ]);
+        } else if (pendingAction.type === 'unassign') {
+          const { case_id } = pendingAction.data;
+          const targetCase = findCase(case_id as string);
+          if (targetCase) {
+            unassignCase(targetCase.id);
+          }
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: targetCase
+                ? `Case ${targetCase.caseNumber} has been unassigned!`
+                : `Could not unassign case. Case not found.`,
+            },
+          ]);
+        } else if (pendingAction.type === 'delete') {
+          const { case_id } = pendingAction.data;
+          const targetCase = findCase(case_id as string);
+          if (targetCase) {
+            deleteCase(targetCase.id);
+          }
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: targetCase
+                ? `Case ${targetCase.caseNumber} has been deleted!`
+                : `Could not delete case. Case not found.`,
+            },
+          ]);
+        } else if (pendingAction.type === 'change_status') {
+          const { case_id, new_status } = pendingAction.data;
+          const targetCase = findCase(case_id as string);
+          if (targetCase) {
+            updateStatus(targetCase.id, new_status as 'open' | 'in-progress' | 'closed');
+          }
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: targetCase
+                ? `Case ${targetCase.caseNumber} status changed to ${new_status}!`
+                : `Could not change status. Case not found.`,
+            },
+          ]);
         }
         setPendingAction(null);
         setIsLoading(false);
@@ -135,6 +219,20 @@ export function ChatBot() {
         assigneeName: c.assigneeName,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
+        dueDate: c.dueDate,
+        notesCount: c.notes.length,
+        activitiesCount: c.activities.length,
+      }));
+
+      // Prepare team members data for the API
+      const teamMembersData = users.map((u) => ({
+        id: u.id,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        title: u.title,
+        role: u.role,
+        activeCasesCount: u.activeCasesCount,
+        maxCaseCapacity: u.maxCaseCapacity,
       }));
 
       // Get conversation history (excluding system messages)
@@ -153,6 +251,7 @@ export function ChatBot() {
         body: JSON.stringify({
           messages: conversationHistory,
           cases: caseData,
+          teamMembers: teamMembersData,
         }),
       });
 
@@ -207,6 +306,259 @@ export function ChatBot() {
               content:
                 data.content ||
                 `I'll update case ${targetCase?.caseNumber || toolInput.case_id} with:\n\n${updatesList}\n\nShould I proceed? (Yes/No)`,
+            },
+          ]);
+        } else if (name === 'add_note') {
+          // Store pending action and ask for confirmation
+          const targetCase = findCase(toolInput.case_id as string);
+          setPendingAction({ type: 'add_note', data: toolInput });
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content:
+                data.content ||
+                `I'll add the following note to case ${targetCase?.caseNumber || toolInput.case_id}:\n\n"${toolInput.content}"${toolInput.is_private ? '\n\n(This will be a private note)' : ''}\n\nShould I proceed? (Yes/No)`,
+            },
+          ]);
+        } else if (name === 'assign_case') {
+          // Store pending action and ask for confirmation
+          const targetCase = findCase(toolInput.case_id as string);
+          const targetUser = users.find(u =>
+            getUserFullName(u).toLowerCase() === (toolInput.assignee_name as string).toLowerCase() ||
+            getUserFullName(u).toLowerCase().includes((toolInput.assignee_name as string).toLowerCase())
+          );
+          setPendingAction({ type: 'assign', data: toolInput });
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content:
+                data.content ||
+                `I'll assign case ${targetCase?.caseNumber || toolInput.case_id} to ${targetUser ? getUserFullName(targetUser) : toolInput.assignee_name}.\n\nShould I proceed? (Yes/No)`,
+            },
+          ]);
+        } else if (name === 'unassign_case') {
+          // Store pending action and ask for confirmation
+          const targetCase = findCase(toolInput.case_id as string);
+          setPendingAction({ type: 'unassign', data: toolInput });
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content:
+                data.content ||
+                `I'll remove the current assignee from case ${targetCase?.caseNumber || toolInput.case_id}${targetCase?.assigneeName ? ` (currently assigned to ${targetCase.assigneeName})` : ''}.\n\nShould I proceed? (Yes/No)`,
+            },
+          ]);
+        } else if (name === 'delete_case') {
+          // Store pending action and ask for confirmation
+          const targetCase = findCase(toolInput.case_id as string);
+          setPendingAction({ type: 'delete', data: toolInput });
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content:
+                data.content ||
+                `⚠️ **Warning:** I'll permanently delete case ${targetCase?.caseNumber || toolInput.case_id}${targetCase ? `: "${targetCase.title}"` : ''}.\n\nThis action cannot be undone. Should I proceed? (Yes/No)`,
+            },
+          ]);
+        } else if (name === 'list_team_members') {
+          // Generate team members list
+          const teamList = users.map(u =>
+            `- **${getUserFullName(u)}** (${u.title}): ${u.activeCasesCount}/${u.maxCaseCapacity} cases`
+          ).join('\n');
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content:
+                data.content ||
+                `**Team Members Available for Assignment:**\n\n${teamList}`,
+            },
+          ]);
+        } else if (name === 'get_case_stats') {
+          // Generate case statistics
+          const statsContent = `**Case Statistics:**\n\n` +
+            `- **Total Cases:** ${caseStats.total}\n` +
+            `- **Open:** ${caseStats.open}\n` +
+            `- **In Progress:** ${caseStats.inProgress}\n` +
+            `- **Closed:** ${caseStats.closed}\n\n` +
+            `**Priority Breakdown:**\n` +
+            `- **Critical:** ${caseStats.critical}\n` +
+            `- **High:** ${caseStats.high}\n\n` +
+            `**Unassigned Cases:** ${caseStats.unassigned}`;
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: data.content || statsContent,
+            },
+          ]);
+        } else if (name === 'search_cases') {
+          // Filter cases based on criteria
+          let results = [...cases];
+          const { keyword, status, priority, type, assignee_name } = toolInput;
+
+          if (keyword) {
+            const kw = (keyword as string).toLowerCase();
+            results = results.filter(c =>
+              c.title.toLowerCase().includes(kw) ||
+              c.description.toLowerCase().includes(kw) ||
+              c.caseNumber.toLowerCase().includes(kw)
+            );
+          }
+          if (status) {
+            results = results.filter(c => c.status === status);
+          }
+          if (priority) {
+            results = results.filter(c => c.priority === priority);
+          }
+          if (type) {
+            results = results.filter(c => c.type === type);
+          }
+          if (assignee_name) {
+            const an = (assignee_name as string).toLowerCase();
+            results = results.filter(c =>
+              c.assigneeName && c.assigneeName.toLowerCase().includes(an)
+            );
+          }
+
+          const resultsList = results.length > 0
+            ? results.map(c =>
+                `- **${c.caseNumber}**: ${c.title} (${c.status}, ${c.priority})${c.assigneeName ? ` - ${c.assigneeName}` : ''}`
+              ).join('\n')
+            : 'No cases found matching your criteria.';
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: data.content || `**Search Results (${results.length} cases):**\n\n${resultsList}`,
+            },
+          ]);
+        } else if (name === 'get_case_activity') {
+          // Get activity timeline for a case
+          const targetCase = findCase(toolInput.case_id as string);
+          if (!targetCase) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: `Case not found.`,
+              },
+            ]);
+          } else {
+            const activities = targetCase.activities.slice(0, 10).map(a =>
+              `- **${new Date(a.timestamp).toLocaleString()}**: ${a.details} (by ${a.userName})`
+            ).join('\n');
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: data.content || `**Activity History for ${targetCase.caseNumber}:**\n\n${activities || 'No activity recorded.'}`,
+              },
+            ]);
+          }
+        } else if (name === 'change_status') {
+          // Store pending action and ask for confirmation
+          const targetCase = findCase(toolInput.case_id as string);
+          setPendingAction({ type: 'change_status', data: toolInput });
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content:
+                data.content ||
+                `I'll change the status of case ${targetCase?.caseNumber || toolInput.case_id} from **${targetCase?.status || 'unknown'}** to **${toolInput.new_status}**.\n\nShould I proceed? (Yes/No)`,
+            },
+          ]);
+        } else if (name === 'get_case_notes') {
+          // Get notes for a case
+          const targetCase = findCase(toolInput.case_id as string);
+          if (!targetCase) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: `Case not found.`,
+              },
+            ]);
+          } else {
+            const notes = targetCase.notes.length > 0
+              ? targetCase.notes.map(n =>
+                  `**${new Date(n.createdAt).toLocaleString()}** (${n.authorName})${n.isPrivate ? ' [Private]' : ''}:\n${n.content}`
+                ).join('\n\n---\n\n')
+              : 'No notes on this case.';
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: data.content || `**Notes for ${targetCase.caseNumber}:**\n\n${notes}`,
+              },
+            ]);
+          }
+        } else if (name === 'get_overdue_cases') {
+          // Find overdue cases
+          const now = new Date();
+          const overdueCases = cases.filter(c =>
+            c.dueDate &&
+            c.status !== 'closed' &&
+            new Date(c.dueDate) < now
+          );
+
+          const overdueList = overdueCases.length > 0
+            ? overdueCases.map(c =>
+                `- **${c.caseNumber}**: ${c.title} (Due: ${new Date(c.dueDate!).toLocaleDateString()})${c.assigneeName ? ` - ${c.assigneeName}` : ' - Unassigned'}`
+              ).join('\n')
+            : 'No overdue cases found.';
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: data.content || `**Overdue Cases (${overdueCases.length}):**\n\n${overdueList}`,
+            },
+          ]);
+        } else if (name === 'get_unassigned_cases') {
+          // Find unassigned cases
+          const unassignedCases = cases.filter(c => !c.assigneeId);
+
+          const unassignedList = unassignedCases.length > 0
+            ? unassignedCases.map(c =>
+                `- **${c.caseNumber}**: ${c.title} (${c.status}, ${c.priority} priority)`
+              ).join('\n')
+            : 'No unassigned cases found.';
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: data.content || `**Unassigned Cases (${unassignedCases.length}):**\n\n${unassignedList}`,
             },
           ]);
         }
