@@ -384,22 +384,22 @@ Important: When referencing cases, use their case number (e.g., GCMP-2024-000001
 
     // Process the response
     let textContent = '';
-    let toolUse: { name: string; input: Record<string, unknown> } | null = null;
+    const toolUses: { name: string; input: Record<string, unknown> }[] = [];
 
     for (const block of response.content) {
       if (block.type === 'text') {
         textContent += block.text;
       } else if (block.type === 'tool_use') {
-        toolUse = {
+        toolUses.push({
           name: block.name,
           input: block.input as Record<string, unknown>,
-        };
+        });
       }
     }
 
     return NextResponse.json({
       content: textContent,
-      toolUse,
+      toolUses,
       stopReason: response.stop_reason,
     });
   } catch (error) {
