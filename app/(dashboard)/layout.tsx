@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { MobileNav } from '@/components/layout/mobile-nav';
+import { ChatBot } from '@/components/chat/chat-bot';
 import { CaseProvider } from '@/context/case-context';
 import { UserProvider } from '@/context/user-context';
 
@@ -46,6 +47,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <Header onMenuClick={() => setMobileNavOpen(true)} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+
+      {/* AI Chat Bot */}
+      <ChatBot />
     </div>
   );
 }
