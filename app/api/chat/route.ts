@@ -10,6 +10,15 @@ interface Message {
   content: string;
 }
 
+interface AttachmentData {
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  content?: string; // base64 encoded
+  textContent?: string;
+}
+
 interface CaseData {
   id: string;
   caseNumber: string;
@@ -21,6 +30,7 @@ interface CaseData {
   assigneeName: string | null;
   createdAt: string;
   updatedAt: string;
+  attachments?: AttachmentData[];
 }
 
 interface TeamMember {
@@ -305,7 +315,121 @@ const tools: Anthropic.Tool[] = [
       required: [],
     },
   },
+  {
+    name: 'summarize_attachments',
+    description: 'Summarize and analyze all attachments (images, documents, files) for a specific case. Uses AI vision to analyze images and extracts text from documents. Use this when the user asks to describe, summarize, or analyze case attachments.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        case_id: {
+          type: 'string',
+          description: 'The ID or case number of the case whose attachments to summarize',
+        },
+      },
+      required: ['case_id'],
+    },
+  },
 ];
+
+// Helper function to summarize attachments using Claude Vision
+async function summarizeAttachmentsForCase(
+  caseId: string,
+  cases: CaseData[]
+): Promise<string> {
+  // Find the case by ID or case number
+  const targetCase = cases.find(
+    (c) =>
+      c.id === caseId ||
+      c.caseNumber.toLowerCase() === caseId.toLowerCase() ||
+      c.caseNumber.toLowerCase().includes(caseId.toLowerCase())
+  );
+
+  if (!targetCase) {
+    return `Case "${caseId}" not found.`;
+  }
+
+  const attachments = targetCase.attachments || [];
+  if (attachments.length === 0) {
+    return `Case ${targetCase.caseNumber} has no attachments.`;
+  }
+
+  // Filter to only attachments with content
+  const attachmentsWithContent = attachments.filter((a) => a.content);
+  if (attachmentsWithContent.length === 0) {
+    return `Case ${targetCase.caseNumber} has ${attachments.length} attachment(s), but none have accessible content for analysis.`;
+  }
+
+  // Build multimodal content array
+  const content: Anthropic.MessageParam['content'] = [];
+
+  // Add instruction text
+  content.push({
+    type: 'text',
+    text: `Please analyze and summarize the following ${attachmentsWithContent.length} attachment(s) for case ${targetCase.caseNumber} ("${targetCase.title}"). For each attachment, provide a brief description of its contents and any relevant information that could be useful for the case investigation.`,
+  });
+
+  // Add each attachment
+  for (const attachment of attachmentsWithContent) {
+    const isImage = attachment.fileType.startsWith('image/');
+
+    if (isImage && attachment.content) {
+      // Extract base64 data (remove data URL prefix)
+      const base64Data = attachment.content.split(',')[1];
+      if (base64Data) {
+        const mediaType = attachment.fileType as
+          | 'image/jpeg'
+          | 'image/png'
+          | 'image/gif'
+          | 'image/webp';
+
+        content.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: base64Data,
+          },
+        });
+        content.push({
+          type: 'text',
+          text: `[Image file: ${attachment.fileName}]`,
+        });
+      }
+    } else if (attachment.textContent) {
+      // For text-based files, include extracted text
+      content.push({
+        type: 'text',
+        text: `[Document: ${attachment.fileName}]\n\nContent:\n${attachment.textContent.substring(0, 5000)}${attachment.textContent.length > 5000 ? '\n... (content truncated)' : ''}`,
+      });
+    } else {
+      // For other files without extractable content
+      content.push({
+        type: 'text',
+        text: `[File: ${attachment.fileName} (${attachment.fileType}) - Content not available for direct analysis]`,
+      });
+    }
+  }
+
+  try {
+    // Make vision-capable API call
+    const summaryResponse = await anthropic.messages.create({
+      model: 'claude-opus-4-5-20251101',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content }],
+    });
+
+    // Extract text from response
+    const summaryText = summaryResponse.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('\n');
+
+    return summaryText || 'Unable to generate summary.';
+  } catch (error) {
+    console.error('Error summarizing attachments:', error);
+    return 'Failed to analyze attachments. Please try again.';
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -365,6 +489,9 @@ Your capabilities:
 14. Get case notes - view all notes for a specific case
 15. Change status - quickly change a case's status (open, in-progress, closed)
 
+**Attachments:**
+16. Summarize attachments - analyze and summarize all attachments (images, documents) for a case using AI vision
+
 When creating, editing, assigning, or deleting cases, always confirm with the user before making changes. Be professional, concise, and helpful. Use the appropriate tools when the user wants to perform these actions.
 
 Important: When referencing cases, use their case number (e.g., GCMP-2024-000001) for clarity. When assigning cases, use the team member's full name.`;
@@ -384,16 +511,24 @@ Important: When referencing cases, use their case number (e.g., GCMP-2024-000001
 
     // Process the response
     let textContent = '';
-    const toolUses: { name: string; input: Record<string, unknown> }[] = [];
+    const toolUses: { name: string; input: Record<string, unknown>; result?: string }[] = [];
 
     for (const block of response.content) {
       if (block.type === 'text') {
         textContent += block.text;
       } else if (block.type === 'tool_use') {
-        toolUses.push({
+        const toolUse: { name: string; input: Record<string, unknown>; result?: string } = {
           name: block.name,
           input: block.input as Record<string, unknown>,
-        });
+        };
+
+        // Handle summarize_attachments tool server-side
+        if (block.name === 'summarize_attachments') {
+          const caseId = (block.input as { case_id: string }).case_id;
+          toolUse.result = await summarizeAttachmentsForCase(caseId, cases);
+        }
+
+        toolUses.push(toolUse);
       }
     }
 

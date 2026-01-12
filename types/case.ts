@@ -55,7 +55,31 @@ export interface CaseAttachment {
   fileSize: number;
   uploadedBy: string;
   uploadedAt: string;
+  content?: string; // base64 encoded file data (optional for legacy attachments)
+  textContent?: string; // extracted text for text-based files
 }
+
+// File upload constants
+export const ALLOWED_FILE_TYPES = {
+  images: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  documents: [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain',
+    'text/csv',
+  ],
+} as const;
+
+export const ALL_ALLOWED_FILE_TYPES = [
+  ...ALLOWED_FILE_TYPES.images,
+  ...ALLOWED_FILE_TYPES.documents,
+];
+
+export const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB per file
+export const MAX_TOTAL_ATTACHMENTS_SIZE = 3 * 1024 * 1024; // 3MB total per case
 
 export interface Case {
   id: string;

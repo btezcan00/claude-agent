@@ -159,11 +159,11 @@ export function CaseCreateDialog({ children }: CaseCreateDialogProps) {
               <div className="grid gap-2">
                 <Label htmlFor="assignee">Assignee</Label>
                 <Select
-                  value={formData.assigneeId || ''}
+                  value={formData.assigneeId || 'unassigned'}
                   onValueChange={(value) =>
                     setFormData({
                       ...formData,
-                      assigneeId: value || undefined,
+                      assigneeId: value === 'unassigned' ? undefined : value,
                     })
                   }
                 >
@@ -171,7 +171,7 @@ export function CaseCreateDialog({ children }: CaseCreateDialogProps) {
                     <SelectValue placeholder="Select assignee" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {getUserFullName(user)}

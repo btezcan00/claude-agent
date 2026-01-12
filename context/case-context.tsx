@@ -8,6 +8,7 @@ import {
   CreateCaseInput,
   UpdateCaseInput,
   CaseNote,
+  CaseAttachment,
   ActivityEntry,
   CaseStatus,
 } from '@/types/case';
@@ -42,6 +43,10 @@ interface CaseContextValue {
 
   // Notes Actions
   addNote: (caseId: string, content: string, isPrivate?: boolean) => void;
+
+  // Attachment Actions
+  addAttachment: (caseId: string, attachment: Omit<CaseAttachment, 'id' | 'caseId' | 'uploadedAt'>) => void;
+  removeAttachment: (caseId: string, attachmentId: string) => void;
 
   // Filter Actions
   setFilters: (filters: Partial<CaseFilters>) => void;
@@ -345,6 +350,71 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     );
   }, [setCases]);
 
+  const addAttachment = useCallback((
+    caseId: string,
+    attachment: Omit<CaseAttachment, 'id' | 'caseId' | 'uploadedAt'>
+  ) => {
+    const now = new Date().toISOString();
+    setCases((prev) =>
+      prev.map((c) => {
+        if (c.id !== caseId) return c;
+
+        const newAttachment: CaseAttachment = {
+          id: generateId(),
+          caseId,
+          uploadedAt: now,
+          ...attachment,
+        };
+
+        const activity: ActivityEntry = {
+          id: generateId(),
+          caseId,
+          userId: currentUser.id,
+          userName: `${currentUser.firstName} ${currentUser.lastName}`,
+          action: 'attachment-added',
+          details: `Added attachment: ${attachment.fileName}`,
+          timestamp: now,
+        };
+
+        return {
+          ...c,
+          updatedAt: now,
+          attachments: [...c.attachments, newAttachment],
+          activities: [activity, ...c.activities],
+        };
+      })
+    );
+  }, [setCases]);
+
+  const removeAttachment = useCallback((caseId: string, attachmentId: string) => {
+    const now = new Date().toISOString();
+    setCases((prev) =>
+      prev.map((c) => {
+        if (c.id !== caseId) return c;
+
+        const attachment = c.attachments.find(a => a.id === attachmentId);
+        if (!attachment) return c;
+
+        const activity: ActivityEntry = {
+          id: generateId(),
+          caseId,
+          userId: currentUser.id,
+          userName: `${currentUser.firstName} ${currentUser.lastName}`,
+          action: 'attachment-removed',
+          details: `Removed attachment: ${attachment.fileName}`,
+          timestamp: now,
+        };
+
+        return {
+          ...c,
+          updatedAt: now,
+          attachments: c.attachments.filter(a => a.id !== attachmentId),
+          activities: [activity, ...c.activities],
+        };
+      })
+    );
+  }, [setCases]);
+
   const setFilters = useCallback((newFilters: Partial<CaseFilters>) => {
     setFiltersState((prev) => ({ ...prev, ...newFilters }));
   }, []);
@@ -371,6 +441,8 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     unassignCase,
     updateStatus,
     addNote,
+    addAttachment,
+    removeAttachment,
     setFilters,
     clearFilters,
     setSearchQuery,

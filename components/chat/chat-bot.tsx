@@ -178,7 +178,7 @@ export function ChatBot() {
     }
 
     try {
-      // Prepare case data for the API
+      // Prepare case data for the API (including attachments for AI summarization)
       const caseData = cases.map((c) => ({
         id: c.id,
         caseNumber: c.caseNumber,
@@ -193,6 +193,14 @@ export function ChatBot() {
         dueDate: c.dueDate,
         notesCount: c.notes.length,
         activitiesCount: c.activities.length,
+        attachments: c.attachments.map((a) => ({
+          id: a.id,
+          fileName: a.fileName,
+          fileType: a.fileType,
+          fileSize: a.fileSize,
+          content: a.content,
+          textContent: a.textContent,
+        })),
       }));
 
       // Prepare team members data for the API
@@ -352,6 +360,14 @@ export function ChatBot() {
                 ).join('\n')
               : 'No unassigned cases found.';
             readResults.push(`**Unassigned Cases (${unassignedCases.length}):**\n\n${unassignedList}`);
+          } else if (name === 'summarize_attachments') {
+            // The result comes from the server-side processing
+            if (toolUse.result) {
+              readResults.push(`**Attachment Analysis:**\n\n${toolUse.result}`);
+            } else {
+              const targetCase = findCase(toolInput.case_id as string);
+              readResults.push(`Could not analyze attachments for ${targetCase?.caseNumber || toolInput.case_id}.`);
+            }
           }
         }
 
