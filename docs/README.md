@@ -65,6 +65,7 @@ The application will be available at `http://localhost:3000`.
 | [AI Agent](./ai-agent.md) | AI assistant capabilities and tools |
 | [API Reference](./api.md) | Chat API endpoint documentation |
 | [Data Models](./data-models.md) | TypeScript interfaces and types |
+| [Claude Agent SDK Research](./claude-agent-sdk-research.md) | Research report on using Claude Agent SDK for production |
 
 ## Key Features
 
