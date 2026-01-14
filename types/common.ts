@@ -20,7 +20,7 @@ export interface BadgeConfig {
   className?: string;
 }
 
-export interface CaseStats {
+export interface SignalStats {
   total: number;
   open: number;
   inProgress: number;

@@ -5,7 +5,8 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { ChatBot } from '@/components/chat/chat-bot';
-import { CaseProvider } from '@/context/case-context';
+import { SignalProvider } from '@/context/signal-context';
+import { FolderProvider } from '@/context/folder-context';
 import { UserProvider } from '@/context/user-context';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -61,9 +62,11 @@ export default function DashboardLayout({
 }) {
   return (
     <UserProvider>
-      <CaseProvider>
-        <DashboardContent>{children}</DashboardContent>
-      </CaseProvider>
+      <SignalProvider>
+        <FolderProvider>
+          <DashboardContent>{children}</DashboardContent>
+        </FolderProvider>
+      </SignalProvider>
     </UserProvider>
   );
 }

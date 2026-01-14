@@ -1,0 +1,69 @@
+'use client';
+
+import Link from 'next/link';
+import { Signal } from '@/types/signal';
+import { Button } from '@/components/ui/button';
+import { SignalTypeBadge } from './signal-type-badge';
+import { ArrowLeft, Edit, Trash2, FolderPlus } from 'lucide-react';
+import { FolderCreateDialog } from '@/components/folders/folder-create-dialog';
+
+interface SignalDetailHeaderProps {
+  signal: Signal;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+export function SignalDetailHeader({
+  signal,
+  onEdit,
+  onDelete,
+}: SignalDetailHeaderProps) {
+  return (
+    <div className="space-y-4">
+      {/* Back Navigation */}
+      <Link
+        href="/signals"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Signals
+      </Link>
+
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div className="space-y-2">
+          <span className="font-mono text-sm text-muted-foreground">
+            {signal.signalNumber}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {(signal.types || []).map((type) => (
+              <SignalTypeBadge key={type} type={type} />
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <FolderCreateDialog signalIds={[signal.id]}>
+            <Button variant="outline" size="sm">
+              <FolderPlus className="w-4 h-4 mr-2" />
+              Create Folder
+            </Button>
+          </FolderCreateDialog>
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            <Edit className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onDelete}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

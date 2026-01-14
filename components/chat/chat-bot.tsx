@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useCases } from '@/context/case-context';
+import { useSignals } from '@/context/signal-context';
 import { useUsers } from '@/context/user-context';
-import { CreateCaseInput, UpdateCaseInput } from '@/types/case';
+import { CreateSignalInput, UpdateSignalInput, SignalType } from '@/types/signal';
 
 interface Message {
   id: string;
@@ -25,27 +25,28 @@ export function ChatBot() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I\'m your GCMP assistant. I can help you summarize cases, create new cases, edit existing ones, assign cases to team members, and more. How can I help you today?',
+      content: 'Hello! I\'m your GCMP assistant. I can help you summarize signals, create new signals, edit existing ones, assign signals to team members, and more. How can I help you today?',
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState<{
-    type: 'create' | 'edit' | 'add_note' | 'assign' | 'unassign' | 'delete' | 'change_status';
+    type: 'create' | 'edit' | 'add_note' | 'delete' | 'change_status';
     data: Record<string, unknown>;
   }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { cases, createCase, updateCase, getCaseById, addNote, assignCase, unassignCase, deleteCase, updateStatus, caseStats } = useCases();
+  const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, updateStatus, signalStats } = useSignals();
   const { users, getUserFullName } = useUsers();
 
-  const findCase = (identifier: string) => {
-    // Search by ID first, then by case number or title
-    return getCaseById(identifier) || cases.find(c =>
-      c.caseNumber.toLowerCase() === identifier.toLowerCase() ||
-      c.caseNumber.toLowerCase().includes(identifier.toLowerCase()) ||
-      c.title.toLowerCase().includes(identifier.toLowerCase())
+  const findSignal = (identifier: string) => {
+    // Search by ID first, then by signal number or description
+    return getSignalById(identifier) || signals.find(s =>
+      s.signalNumber.toLowerCase() === identifier.toLowerCase() ||
+      s.signalNumber.toLowerCase().includes(identifier.toLowerCase()) ||
+      s.description.toLowerCase().includes(identifier.toLowerCase()) ||
+      s.placeOfObservation.toLowerCase().includes(identifier.toLowerCase())
     );
   };
 
@@ -84,65 +85,43 @@ export function ChatBot() {
 
         for (const pendingAction of pendingActions) {
           if (pendingAction.type === 'create') {
-            const newCase = createCase(pendingAction.data as unknown as CreateCaseInput);
-            results.push(`Case created: ${newCase.caseNumber}`);
+            const newSignal = createSignal(pendingAction.data as unknown as CreateSignalInput);
+            results.push(`Signal created: ${newSignal.signalNumber}`);
           } else if (pendingAction.type === 'edit') {
-            const { case_id, ...updates } = pendingAction.data;
-            const targetCase = findCase(case_id as string);
-            if (targetCase) {
-              updateCase(targetCase.id, updates as UpdateCaseInput);
-              results.push(`Case ${targetCase.caseNumber} updated`);
+            const { signal_id, ...updates } = pendingAction.data;
+            const targetSignal = findSignal(signal_id as string);
+            if (targetSignal) {
+              updateSignal(targetSignal.id, updates as UpdateSignalInput);
+              results.push(`Signal ${targetSignal.signalNumber} updated`);
             } else {
-              results.push(`Case ${case_id} not found`);
+              results.push(`Signal ${signal_id} not found`);
             }
           } else if (pendingAction.type === 'add_note') {
-            const { case_id, content, is_private } = pendingAction.data;
-            const targetCase = findCase(case_id as string);
-            if (targetCase) {
-              addNote(targetCase.id, content as string, is_private as boolean || false);
-              results.push(`Note added to ${targetCase.caseNumber}`);
+            const { signal_id, content, is_private } = pendingAction.data;
+            const targetSignal = findSignal(signal_id as string);
+            if (targetSignal) {
+              addNote(targetSignal.id, content as string, is_private as boolean || false);
+              results.push(`Note added to ${targetSignal.signalNumber}`);
             } else {
-              results.push(`Case ${case_id} not found`);
-            }
-          } else if (pendingAction.type === 'assign') {
-            const { case_id, assignee_name } = pendingAction.data;
-            const targetCase = findCase(case_id as string);
-            const targetUser = users.find(u =>
-              getUserFullName(u).toLowerCase() === (assignee_name as string).toLowerCase() ||
-              getUserFullName(u).toLowerCase().includes((assignee_name as string).toLowerCase())
-            );
-            if (targetCase && targetUser) {
-              assignCase(targetCase.id, targetUser.id, getUserFullName(targetUser));
-              results.push(`Case ${targetCase.caseNumber} assigned to ${getUserFullName(targetUser)}`);
-            } else {
-              results.push(`Could not assign: ${!targetCase ? 'Case not found' : 'User not found'}`);
-            }
-          } else if (pendingAction.type === 'unassign') {
-            const { case_id } = pendingAction.data;
-            const targetCase = findCase(case_id as string);
-            if (targetCase) {
-              unassignCase(targetCase.id);
-              results.push(`Case ${targetCase.caseNumber} unassigned`);
-            } else {
-              results.push(`Case ${case_id} not found`);
+              results.push(`Signal ${signal_id} not found`);
             }
           } else if (pendingAction.type === 'delete') {
-            const { case_id } = pendingAction.data;
-            const targetCase = findCase(case_id as string);
-            if (targetCase) {
-              deleteCase(targetCase.id);
-              results.push(`Case ${targetCase.caseNumber} deleted`);
+            const { signal_id } = pendingAction.data;
+            const targetSignal = findSignal(signal_id as string);
+            if (targetSignal) {
+              deleteSignal(targetSignal.id);
+              results.push(`Signal ${targetSignal.signalNumber} deleted`);
             } else {
-              results.push(`Case ${case_id} not found`);
+              results.push(`Signal ${signal_id} not found`);
             }
           } else if (pendingAction.type === 'change_status') {
-            const { case_id, new_status } = pendingAction.data;
-            const targetCase = findCase(case_id as string);
-            if (targetCase) {
-              updateStatus(targetCase.id, new_status as 'open' | 'in-progress' | 'closed');
-              results.push(`Case ${targetCase.caseNumber} status changed to ${new_status}`);
+            const { signal_id, new_status } = pendingAction.data;
+            const targetSignal = findSignal(signal_id as string);
+            if (targetSignal) {
+              updateStatus(targetSignal.id, new_status as 'open' | 'in-progress' | 'closed');
+              results.push(`Signal ${targetSignal.signalNumber} status changed to ${new_status}`);
             } else {
-              results.push(`Case ${case_id} not found`);
+              results.push(`Signal ${signal_id} not found`);
             }
           }
         }
@@ -178,22 +157,23 @@ export function ChatBot() {
     }
 
     try {
-      // Prepare case data for the API (including attachments for AI summarization)
-      const caseData = cases.map((c) => ({
-        id: c.id,
-        caseNumber: c.caseNumber,
-        title: c.title,
-        description: c.description,
-        type: c.type,
-        status: c.status,
-        priority: c.priority,
-        assigneeName: c.assigneeName,
-        createdAt: c.createdAt,
-        updatedAt: c.updatedAt,
-        dueDate: c.dueDate,
-        notesCount: c.notes.length,
-        activitiesCount: c.activities.length,
-        attachments: c.attachments.map((a) => ({
+      // Prepare signal data for the API (including attachments for AI summarization)
+      const signalData = signals.map((s) => ({
+        id: s.id,
+        signalNumber: s.signalNumber,
+        description: s.description,
+        types: s.types,
+        status: s.status,
+        placeOfObservation: s.placeOfObservation,
+        locationDescription: s.locationDescription,
+        timeOfObservation: s.timeOfObservation,
+        receivedBy: s.receivedBy,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+        notesCount: s.notes.length,
+        activitiesCount: s.activities.length,
+        photosCount: s.photos.length,
+        attachments: s.attachments.map((a) => ({
           id: a.id,
           fileName: a.fileName,
           fileType: a.fileType,
@@ -229,7 +209,7 @@ export function ChatBot() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: conversationHistory,
-          cases: caseData,
+          signals: signalData,
           teamMembers: teamMembersData,
         }),
       });
@@ -249,124 +229,96 @@ export function ChatBot() {
         for (const toolUse of data.toolUses) {
           const { name, input: toolInput } = toolUse;
 
-          if (name === 'summarize_cases') {
-            readResults.push(generateCaseSummary(toolInput.case_id as string | undefined));
-          } else if (name === 'create_case') {
+          if (name === 'summarize_signals') {
+            readResults.push(generateSignalSummary(toolInput.signal_id as string | undefined));
+          } else if (name === 'create_signal') {
             newPendingActions.push({ type: 'create', data: toolInput });
-          } else if (name === 'edit_case') {
+          } else if (name === 'edit_signal') {
             newPendingActions.push({ type: 'edit', data: toolInput });
           } else if (name === 'add_note') {
             newPendingActions.push({ type: 'add_note', data: toolInput });
-          } else if (name === 'assign_case') {
-            newPendingActions.push({ type: 'assign', data: toolInput });
-          } else if (name === 'unassign_case') {
-            newPendingActions.push({ type: 'unassign', data: toolInput });
-          } else if (name === 'delete_case') {
+          } else if (name === 'delete_signal') {
             newPendingActions.push({ type: 'delete', data: toolInput });
           } else if (name === 'change_status') {
             newPendingActions.push({ type: 'change_status', data: toolInput });
           } else if (name === 'list_team_members') {
             const teamList = users.map(u =>
-              `- **${getUserFullName(u)}** (${u.title}): ${u.activeCasesCount}/${u.maxCaseCapacity} cases`
+              `- **${getUserFullName(u)}** (${u.title}): ${u.activeCasesCount}/${u.maxCaseCapacity} signals`
             ).join('\n');
             readResults.push(`**Team Members Available for Assignment:**\n\n${teamList}`);
-          } else if (name === 'get_case_stats') {
-            const statsContent = `**Case Statistics:**\n\n` +
-              `- **Total Cases:** ${caseStats.total}\n` +
-              `- **Open:** ${caseStats.open}\n` +
-              `- **In Progress:** ${caseStats.inProgress}\n` +
-              `- **Closed:** ${caseStats.closed}\n\n` +
-              `**Priority Breakdown:**\n` +
-              `- **Critical:** ${caseStats.critical}\n` +
-              `- **High:** ${caseStats.high}\n\n` +
-              `**Unassigned Cases:** ${caseStats.unassigned}`;
+          } else if (name === 'get_signal_stats') {
+            const statsContent = `**Signal Statistics:**\n\n` +
+              `- **Total Signals:** ${signalStats.total}\n` +
+              `- **Open:** ${signalStats.open}\n` +
+              `- **In Progress:** ${signalStats.inProgress}\n` +
+              `- **Closed:** ${signalStats.closed}`;
             readResults.push(statsContent);
-          } else if (name === 'search_cases') {
-            let results = [...cases];
-            const { keyword, status, priority, type, assignee_name } = toolInput;
+          } else if (name === 'search_signals') {
+            let results = [...signals];
+            const { keyword, status, type, receivedBy } = toolInput;
 
             if (keyword) {
               const kw = (keyword as string).toLowerCase();
-              results = results.filter(c =>
-                c.title.toLowerCase().includes(kw) ||
-                c.description.toLowerCase().includes(kw) ||
-                c.caseNumber.toLowerCase().includes(kw)
+              results = results.filter(s =>
+                s.description.toLowerCase().includes(kw) ||
+                s.signalNumber.toLowerCase().includes(kw) ||
+                s.placeOfObservation.toLowerCase().includes(kw)
               );
             }
             if (status) {
-              results = results.filter(c => c.status === status);
-            }
-            if (priority) {
-              results = results.filter(c => c.priority === priority);
+              results = results.filter(s => s.status === status);
             }
             if (type) {
-              results = results.filter(c => c.type === type);
+              results = results.filter(s => s.types.includes(type as SignalType));
             }
-            if (assignee_name) {
-              const an = (assignee_name as string).toLowerCase();
-              results = results.filter(c =>
-                c.assigneeName && c.assigneeName.toLowerCase().includes(an)
-              );
+            if (receivedBy) {
+              results = results.filter(s => s.receivedBy === receivedBy);
             }
 
             const resultsList = results.length > 0
-              ? results.map(c =>
-                  `- **${c.caseNumber}**: ${c.title} (${c.status}, ${c.priority})${c.assigneeName ? ` - ${c.assigneeName}` : ''}`
+              ? results.map(s =>
+                  `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.status}, ${s.types.join(', ')})`
                 ).join('\n')
-              : 'No cases found matching your criteria.';
-            readResults.push(`**Search Results (${results.length} cases):**\n\n${resultsList}`);
-          } else if (name === 'get_case_activity') {
-            const targetCase = findCase(toolInput.case_id as string);
-            if (!targetCase) {
-              readResults.push(`Case not found.`);
+              : 'No signals found matching your criteria.';
+            readResults.push(`**Search Results (${results.length} signals):**\n\n${resultsList}`);
+          } else if (name === 'get_signal_activity') {
+            const targetSignal = findSignal(toolInput.signal_id as string);
+            if (!targetSignal) {
+              readResults.push(`Signal not found.`);
             } else {
-              const activities = targetCase.activities.slice(0, 10).map(a =>
+              const activities = targetSignal.activities.slice(0, 10).map(a =>
                 `- **${new Date(a.timestamp).toLocaleString()}**: ${a.details} (by ${a.userName})`
               ).join('\n');
-              readResults.push(`**Activity History for ${targetCase.caseNumber}:**\n\n${activities || 'No activity recorded.'}`);
+              readResults.push(`**Activity History for ${targetSignal.signalNumber}:**\n\n${activities || 'No activity recorded.'}`);
             }
-          } else if (name === 'get_case_notes') {
-            const targetCase = findCase(toolInput.case_id as string);
-            if (!targetCase) {
-              readResults.push(`Case not found.`);
+          } else if (name === 'get_signal_notes') {
+            const targetSignal = findSignal(toolInput.signal_id as string);
+            if (!targetSignal) {
+              readResults.push(`Signal not found.`);
             } else {
-              const notes = targetCase.notes.length > 0
-                ? targetCase.notes.map(n =>
+              const notes = targetSignal.notes.length > 0
+                ? targetSignal.notes.map(n =>
                     `**${new Date(n.createdAt).toLocaleString()}** (${n.authorName})${n.isPrivate ? ' [Private]' : ''}:\n${n.content}`
                   ).join('\n\n---\n\n')
-                : 'No notes on this case.';
-              readResults.push(`**Notes for ${targetCase.caseNumber}:**\n\n${notes}`);
+                : 'No notes on this signal.';
+              readResults.push(`**Notes for ${targetSignal.signalNumber}:**\n\n${notes}`);
             }
-          } else if (name === 'get_overdue_cases') {
-            const now = new Date();
-            const overdueCases = cases.filter(c =>
-              c.dueDate &&
-              c.status !== 'closed' &&
-              new Date(c.dueDate) < now
-            );
+          } else if (name === 'get_open_signals') {
+            const openSignals = signals.filter(s => s.status === 'open');
 
-            const overdueList = overdueCases.length > 0
-              ? overdueCases.map(c =>
-                  `- **${c.caseNumber}**: ${c.title} (Due: ${new Date(c.dueDate!).toLocaleDateString()})${c.assigneeName ? ` - ${c.assigneeName}` : ' - Unassigned'}`
+            const openList = openSignals.length > 0
+              ? openSignals.map(s =>
+                  `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.types.join(', ')})`
                 ).join('\n')
-              : 'No overdue cases found.';
-            readResults.push(`**Overdue Cases (${overdueCases.length}):**\n\n${overdueList}`);
-          } else if (name === 'get_unassigned_cases') {
-            const unassignedCases = cases.filter(c => !c.assigneeId);
-
-            const unassignedList = unassignedCases.length > 0
-              ? unassignedCases.map(c =>
-                  `- **${c.caseNumber}**: ${c.title} (${c.status}, ${c.priority} priority)`
-                ).join('\n')
-              : 'No unassigned cases found.';
-            readResults.push(`**Unassigned Cases (${unassignedCases.length}):**\n\n${unassignedList}`);
+              : 'No open signals found.';
+            readResults.push(`**Open Signals (${openSignals.length}):**\n\n${openList}`);
           } else if (name === 'summarize_attachments') {
             // The result comes from the server-side processing
             if (toolUse.result) {
               readResults.push(`**Attachment Analysis:**\n\n${toolUse.result}`);
             } else {
-              const targetCase = findCase(toolInput.case_id as string);
-              readResults.push(`Could not analyze attachments for ${targetCase?.caseNumber || toolInput.case_id}.`);
+              const targetSignal = findSignal(toolInput.signal_id as string);
+              readResults.push(`Could not analyze attachments for ${targetSignal?.signalNumber || toolInput.signal_id}.`);
             }
           }
         }
@@ -387,29 +339,24 @@ export function ChatBot() {
           // Build confirmation message for all pending actions
           const confirmationItems = newPendingActions.map(action => {
             if (action.type === 'create') {
-              return `**Create case:** "${action.data.title}" (${action.data.type}, ${action.data.priority})`;
+              const types = Array.isArray(action.data.types) ? action.data.types.join(', ') : action.data.types;
+              return `**Create signal:** at "${action.data.placeOfObservation}" (${types})`;
             } else if (action.type === 'edit') {
-              const targetCase = findCase(action.data.case_id as string);
+              const targetSignal = findSignal(action.data.signal_id as string);
               const updates = Object.entries(action.data)
-                .filter(([key]) => key !== 'case_id')
+                .filter(([key]) => key !== 'signal_id')
                 .map(([key, value]) => `${key}: ${value}`)
                 .join(', ');
-              return `**Edit ${targetCase?.caseNumber || action.data.case_id}:** ${updates}`;
+              return `**Edit ${targetSignal?.signalNumber || action.data.signal_id}:** ${updates}`;
             } else if (action.type === 'add_note') {
-              const targetCase = findCase(action.data.case_id as string);
-              return `**Add note to ${targetCase?.caseNumber || action.data.case_id}:** "${(action.data.content as string).substring(0, 50)}..."`;
-            } else if (action.type === 'assign') {
-              const targetCase = findCase(action.data.case_id as string);
-              return `**Assign ${targetCase?.caseNumber || action.data.case_id}** to ${action.data.assignee_name}`;
-            } else if (action.type === 'unassign') {
-              const targetCase = findCase(action.data.case_id as string);
-              return `**Unassign ${targetCase?.caseNumber || action.data.case_id}**`;
+              const targetSignal = findSignal(action.data.signal_id as string);
+              return `**Add note to ${targetSignal?.signalNumber || action.data.signal_id}:** "${(action.data.content as string).substring(0, 50)}..."`;
             } else if (action.type === 'delete') {
-              const targetCase = findCase(action.data.case_id as string);
-              return `**Delete ${targetCase?.caseNumber || action.data.case_id}**`;
+              const targetSignal = findSignal(action.data.signal_id as string);
+              return `**Delete ${targetSignal?.signalNumber || action.data.signal_id}**`;
             } else if (action.type === 'change_status') {
-              const targetCase = findCase(action.data.case_id as string);
-              return `**Change ${targetCase?.caseNumber || action.data.case_id} status** to ${action.data.new_status}`;
+              const targetSignal = findSignal(action.data.signal_id as string);
+              return `**Change ${targetSignal?.signalNumber || action.data.signal_id} status** to ${action.data.new_status}`;
             }
             return '';
           }).filter(Boolean);
@@ -454,27 +401,20 @@ export function ChatBot() {
     }
   };
 
-  const generateCaseSummary = (caseId?: string) => {
-    if (caseId) {
-      const targetCase = findCase(caseId);
-      if (!targetCase) return `Case "${caseId}" not found. Try asking about a specific case by name or number.`;
-      return `**${targetCase.caseNumber}: ${targetCase.title}**\n\n**Type:** ${targetCase.type}\n**Status:** ${targetCase.status}\n**Priority:** ${targetCase.priority}\n**Assigned to:** ${targetCase.assigneeName || 'Unassigned'}\n**Created:** ${new Date(targetCase.createdAt).toLocaleDateString()}\n\n**Description:**\n${targetCase.description}`;
+  const generateSignalSummary = (signalId?: string) => {
+    if (signalId) {
+      const targetSignal = findSignal(signalId);
+      if (!targetSignal) return `Signal "${signalId}" not found. Try asking about a specific signal by name or number.`;
+      return `**${targetSignal.signalNumber}**\n\n**Location:** ${targetSignal.placeOfObservation}\n**Type(s):** ${targetSignal.types.join(', ')}\n**Status:** ${targetSignal.status}\n**Received By:** ${targetSignal.receivedBy}\n**Time of Observation:** ${new Date(targetSignal.timeOfObservation).toLocaleString()}\n**Created:** ${new Date(targetSignal.createdAt).toLocaleDateString()}\n\n**Description:**\n${targetSignal.description}`;
     }
 
     const statusCounts = {
-      open: cases.filter((c) => c.status === 'open').length,
-      'in-progress': cases.filter((c) => c.status === 'in-progress').length,
-      closed: cases.filter((c) => c.status === 'closed').length,
+      open: signals.filter((s) => s.status === 'open').length,
+      'in-progress': signals.filter((s) => s.status === 'in-progress').length,
+      closed: signals.filter((s) => s.status === 'closed').length,
     };
 
-    const priorityCounts = {
-      critical: cases.filter((c) => c.priority === 'critical').length,
-      high: cases.filter((c) => c.priority === 'high').length,
-      medium: cases.filter((c) => c.priority === 'medium').length,
-      low: cases.filter((c) => c.priority === 'low').length,
-    };
-
-    return `**Case Summary (${cases.length} total cases)**\n\n**By Status:**\n- Open: ${statusCounts.open}\n- In Progress: ${statusCounts['in-progress']}\n- Closed: ${statusCounts.closed}\n\n**By Priority:**\n- Critical: ${priorityCounts.critical}\n- High: ${priorityCounts.high}\n- Medium: ${priorityCounts.medium}\n- Low: ${priorityCounts.low}`;
+    return `**Signal Summary (${signals.length} total signals)**\n\n**By Status:**\n- Open: ${statusCounts.open}\n- In Progress: ${statusCounts['in-progress']}\n- Closed: ${statusCounts.closed}`;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

@@ -1,29 +1,41 @@
-import { CaseType, CaseStatus, PriorityLevel } from '@/types/case';
+import { SignalType, SignalStatus, SignalSource } from '@/types/signal';
 import { BadgeConfig } from '@/types/common';
 import { UserRole } from '@/types/user';
 
-export const CASE_TYPE_CONFIG: Record<CaseType, BadgeConfig & { icon: string }> = {
+export const SIGNAL_TYPE_CONFIG: Record<SignalType, BadgeConfig & { icon: string }> = {
+  'bogus-scheme': {
+    label: 'Bogus Scheme',
+    variant: 'default',
+    className: 'bg-amber-100 text-amber-800 border-amber-200',
+    icon: 'AlertTriangle',
+  },
   'human-trafficking': {
     label: 'Human Trafficking',
     variant: 'destructive',
     className: 'bg-red-100 text-red-800 border-red-200',
     icon: 'Users',
   },
-  'illegal-drugs': {
-    label: 'Illegal Drugs',
+  'drug-trafficking': {
+    label: 'Drug Trafficking',
     variant: 'default',
     className: 'bg-orange-100 text-orange-800 border-orange-200',
     icon: 'Pill',
   },
-  'illegal-prostitution': {
-    label: 'Illegal Prostitution',
+  'bibob-research': {
+    label: 'Bibob Research',
     variant: 'secondary',
     className: 'bg-purple-100 text-purple-800 border-purple-200',
-    icon: 'AlertTriangle',
+    icon: 'FileSearch',
+  },
+  'money-laundering': {
+    label: 'Money Laundering',
+    variant: 'default',
+    className: 'bg-green-100 text-green-800 border-green-200',
+    icon: 'Banknote',
   },
 };
 
-export const CASE_STATUS_CONFIG: Record<CaseStatus, BadgeConfig & { icon: string }> = {
+export const SIGNAL_STATUS_CONFIG: Record<SignalStatus, BadgeConfig & { icon: string }> = {
   'open': {
     label: 'Open',
     variant: 'outline',
@@ -44,30 +56,36 @@ export const CASE_STATUS_CONFIG: Record<CaseStatus, BadgeConfig & { icon: string
   },
 };
 
-export const PRIORITY_CONFIG: Record<PriorityLevel, BadgeConfig & { icon: string }> = {
-  'low': {
-    label: 'Low',
-    variant: 'outline',
-    className: 'bg-slate-50 text-slate-600 border-slate-300',
-    icon: 'ArrowDown',
-  },
-  'medium': {
-    label: 'Medium',
-    variant: 'secondary',
-    className: 'bg-blue-50 text-blue-600 border-blue-300',
-    icon: 'Minus',
-  },
-  'high': {
-    label: 'High',
+export const SIGNAL_SOURCE_CONFIG: Record<SignalSource, BadgeConfig & { icon: string }> = {
+  'police': {
+    label: 'Police',
     variant: 'default',
-    className: 'bg-orange-50 text-orange-600 border-orange-300',
-    icon: 'ArrowUp',
+    className: 'bg-blue-100 text-blue-800 border-blue-200',
+    icon: 'Shield',
   },
-  'critical': {
-    label: 'Critical',
-    variant: 'destructive',
-    className: 'bg-red-100 text-red-700 border-red-400',
-    icon: 'AlertCircle',
+  'bibob-request': {
+    label: 'Bibob Request',
+    variant: 'secondary',
+    className: 'bg-purple-100 text-purple-800 border-purple-200',
+    icon: 'FileText',
+  },
+  'anonymous-report': {
+    label: 'Anonymous Report',
+    variant: 'outline',
+    className: 'bg-gray-100 text-gray-800 border-gray-200',
+    icon: 'EyeOff',
+  },
+  'municipal-department': {
+    label: 'Municipal Department',
+    variant: 'default',
+    className: 'bg-green-100 text-green-800 border-green-200',
+    icon: 'Building2',
+  },
+  'other': {
+    label: 'Other',
+    variant: 'outline',
+    className: 'bg-slate-100 text-slate-800 border-slate-200',
+    icon: 'MoreHorizontal',
   },
 };
 
@@ -94,12 +112,24 @@ export const USER_ROLE_CONFIG: Record<UserRole, BadgeConfig> = {
   },
 };
 
-export const STATUS_WORKFLOW: Record<CaseStatus, CaseStatus[]> = {
+export const STATUS_WORKFLOW: Record<SignalStatus, SignalStatus[]> = {
   'open': ['in-progress'],
   'in-progress': ['open', 'closed'],
   'closed': ['in-progress'],
 };
 
-export const CASE_TYPES: CaseType[] = ['human-trafficking', 'illegal-drugs', 'illegal-prostitution'];
-export const CASE_STATUSES: CaseStatus[] = ['open', 'in-progress', 'closed'];
-export const PRIORITY_LEVELS: PriorityLevel[] = ['low', 'medium', 'high', 'critical'];
+export const SIGNAL_TYPES: SignalType[] = ['bogus-scheme', 'human-trafficking', 'drug-trafficking', 'bibob-research', 'money-laundering'];
+export const SIGNAL_STATUSES: SignalStatus[] = ['open', 'in-progress', 'closed'];
+export const SIGNAL_SOURCES: SignalSource[] = ['police', 'bibob-request', 'anonymous-report', 'municipal-department', 'other'];
+
+export const FOLDER_COLORS: string[] = [
+  '#ef4444', // red
+  '#f97316', // orange
+  '#eab308', // yellow
+  '#22c55e', // green
+  '#14b8a6', // teal
+  '#3b82f6', // blue
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#6b7280', // gray
+];

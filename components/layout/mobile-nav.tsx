@@ -8,14 +8,16 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import {
-  Briefcase,
+  Radio,
+  FolderOpen,
   Users,
   Shield,
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Cases', href: '/cases', icon: Briefcase },
-  { name: 'Team', href: '/team', icon: Users },
+  { name: 'Signals', href: '/signals', icon: Radio },
+  { name: 'Folders', href: '/folders', icon: FolderOpen },
+  { name: 'Teams', href: '/team', icon: Users },
 ];
 
 interface MobileNavProps {
@@ -47,8 +49,10 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
         <nav className="px-3 py-4 space-y-1">
           {navigation.map((item) => {
             const isActive =
-              item.href === '/cases'
-                ? pathname === '/cases' || pathname.startsWith('/cases/')
+              item.href === '/signals'
+                ? pathname === '/signals' || pathname.startsWith('/signals/')
+                : item.href === '/folders'
+                ? pathname === '/folders' || pathname.startsWith('/folders/')
                 : pathname === item.href;
 
             return (

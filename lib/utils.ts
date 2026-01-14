@@ -9,10 +9,14 @@ export function generateId(): string {
   return `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-export function generateCaseNumber(): string {
+export function generateSignalNumber(): string {
   const year = new Date().getFullYear();
   const random = Math.floor(Math.random() * 900000) + 100000;
   return `GCMP-${year}-${random}`;
+}
+
+export function generateFolderId(): string {
+  return `folder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 export function formatFileSize(bytes: number): string {

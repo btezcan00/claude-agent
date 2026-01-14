@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useUsers } from '@/context/user-context';
-import { useCases } from '@/context/case-context';
+import { useSignals } from '@/context/signal-context';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useEffect, useState } from 'react';
@@ -27,7 +27,7 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const { currentUser, getUserInitials, getUserFullName } = useUsers();
-  const { setSearchQuery, searchQuery } = useCases();
+  const { setSearchQuery, searchQuery } = useSignals();
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [mounted, setMounted] = useState(false);
   const debouncedSearch = useDebounce(localSearch, 300);
@@ -48,12 +48,16 @@ export function Header({ onMenuClick }: HeaderProps) {
       const href = '/' + paths.slice(0, index + 1).join('/');
       let label = path.charAt(0).toUpperCase() + path.slice(1);
 
-      if (path === 'cases') {
-        label = 'Cases';
+      if (path === 'signals') {
+        label = 'Signals';
+      } else if (path === 'folders') {
+        label = 'Folders';
       } else if (path === 'team') {
-        label = 'Team';
-      } else if (paths[index - 1] === 'cases') {
-        label = 'Case Details';
+        label = 'Teams';
+      } else if (paths[index - 1] === 'signals') {
+        label = 'Signal Details';
+      } else if (paths[index - 1] === 'folders') {
+        label = 'Folder Details';
       }
 
       breadcrumbs.push({ label, href });
@@ -98,13 +102,13 @@ export function Header({ onMenuClick }: HeaderProps) {
         ))}
       </nav>
 
-      {/* Search - Only show on cases page */}
-      {pathname === '/cases' && (
+      {/* Search - Only show on signals page */}
+      {pathname === '/signals' && (
         <div className="hidden md:flex items-center gap-2 ml-auto mr-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search cases..."
+              placeholder="Search signals..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               className="w-64 pl-9 bg-background"
@@ -114,7 +118,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       )}
 
       {/* Right Section */}
-      <div className={cn('flex items-center gap-3', pathname !== '/cases' && 'ml-auto')}>
+      <div className={cn('flex items-center gap-3', pathname !== '/signals' && 'ml-auto')}>
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5" />

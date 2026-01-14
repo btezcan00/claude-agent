@@ -1,19 +1,19 @@
 'use client';
 
 import { useUsers } from '@/context/user-context';
-import { useCases } from '@/context/case-context';
+import { useSignals } from '@/context/signal-context';
 import { TeamMemberCard } from '@/components/team/team-member-card';
 import { StatsCard } from '@/components/common/stats-card';
-import { Users, Briefcase, TrendingUp, AlertCircle } from 'lucide-react';
+import { Users, Radio, TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function TeamPage() {
   const { users } = useUsers();
-  const { caseStats } = useCases();
+  const { signalStats } = useSignals();
 
   const activeUsers = users.filter((u) => u.isActive);
-  const totalActiveCases = users.reduce((acc, u) => acc + u.activeCasesCount, 0);
+  const totalActiveSignals = users.reduce((acc, u) => acc + u.activeCasesCount, 0);
   const totalCapacity = users.reduce((acc, u) => acc + u.maxCaseCapacity, 0);
-  const avgWorkload = Math.round((totalActiveCases / totalCapacity) * 100);
+  const avgWorkload = Math.round((totalActiveSignals / totalCapacity) * 100);
   const overloadedUsers = users.filter(
     (u) => u.activeCasesCount >= u.maxCaseCapacity
   ).length;
@@ -36,9 +36,9 @@ export default function TeamPage() {
           icon={Users}
         />
         <StatsCard
-          title="Active Cases"
-          value={caseStats.total - caseStats.closed}
-          icon={Briefcase}
+          title="Active Signals"
+          value={signalStats.total - signalStats.closed}
+          icon={Radio}
         />
         <StatsCard
           title="Avg Workload"
