@@ -19,17 +19,21 @@ interface AttachmentData {
   textContent?: string;
 }
 
-interface CaseData {
+interface SignalData {
   id: string;
-  caseNumber: string;
-  title: string;
+  signalNumber: string;
   description: string;
-  type: string;
+  types: string[];
   status: string;
-  priority: string;
-  assigneeName: string | null;
+  placeOfObservation: string;
+  locationDescription?: string;
+  timeOfObservation: string;
+  receivedBy: string;
   createdAt: string;
   updatedAt: string;
+  notesCount: number;
+  activitiesCount: number;
+  photosCount: number;
   attachments?: AttachmentData[];
 }
 
@@ -45,101 +49,88 @@ interface TeamMember {
 
 const tools: Anthropic.Tool[] = [
   {
-    name: 'summarize_cases',
-    description: 'Summarize all cases or a specific case by ID. Use this when the user wants an overview of cases.',
+    name: 'summarize_signals',
+    description: 'Summarize all signals or a specific signal by ID. Use this when the user wants an overview of signals.',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        signal_id: {
           type: 'string',
-          description: 'Optional specific case ID to summarize. If not provided, summarizes all cases.',
+          description: 'Optional specific signal ID or signal number to summarize. If not provided, summarizes all signals.',
         },
       },
       required: [],
     },
   },
   {
-    name: 'create_case',
-    description: 'Create a new case with the specified details. Returns the case data that should be created.',
+    name: 'create_signal',
+    description: 'Create a new signal with the specified details. Returns the signal data that should be created.',
     input_schema: {
       type: 'object',
       properties: {
-        title: {
-          type: 'string',
-          description: 'The title of the case',
-        },
         description: {
           type: 'string',
-          description: 'Detailed description of the case',
+          description: 'Detailed description of the signal/observation',
         },
-        type: {
-          type: 'string',
-          enum: ['human-trafficking', 'illegal-drugs', 'illegal-prostitution'],
-          description: 'The type of crime',
+        types: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'The types of the signal (e.g., human-trafficking, drug-trafficking, bogus-scheme)',
         },
-        priority: {
+        placeOfObservation: {
           type: 'string',
-          enum: ['low', 'medium', 'high', 'critical'],
-          description: 'Priority level of the case',
+          description: 'Location/address where the observation was made',
         },
-        location: {
+        receivedBy: {
           type: 'string',
-          description: 'Location where the crime occurred',
+          enum: ['police', 'anonymous-report', 'municipal-department', 'bibob-request', 'other'],
+          description: 'Source that received the signal',
         },
       },
-      required: ['title', 'description', 'type', 'priority'],
+      required: ['description', 'types', 'placeOfObservation', 'receivedBy'],
     },
   },
   {
-    name: 'edit_case',
-    description: 'Edit an existing case. Returns the updates that should be applied.',
+    name: 'edit_signal',
+    description: 'Edit an existing signal. Returns the updates that should be applied.',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        signal_id: {
           type: 'string',
-          description: 'The ID or case number of the case to edit',
-        },
-        title: {
-          type: 'string',
-          description: 'New title for the case',
+          description: 'The ID or signal number of the signal to edit',
         },
         description: {
           type: 'string',
-          description: 'New description for the case',
+          description: 'New description for the signal',
         },
-        type: {
-          type: 'string',
-          enum: ['human-trafficking', 'illegal-drugs', 'illegal-prostitution'],
-          description: 'New type for the case',
-        },
-        priority: {
-          type: 'string',
-          enum: ['low', 'medium', 'high', 'critical'],
-          description: 'New priority level',
+        types: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'New types for the signal',
         },
         status: {
           type: 'string',
           enum: ['open', 'in-progress', 'closed'],
-          description: 'New status for the case',
+          description: 'New status for the signal',
         },
-        location: {
+        placeOfObservation: {
           type: 'string',
-          description: 'New location for the case',
+          description: 'New location for the signal',
         },
       },
-      required: ['case_id'],
+      required: ['signal_id'],
     },
   },
   {
     name: 'add_note',
-    description: 'Add a note to an existing case. Use this when the user wants to add comments, observations, or updates to a case.',
+    description: 'Add a note to an existing signal. Use this when the user wants to add comments, observations, or updates to a signal.',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        signal_id: {
           type: 'string',
-          description: 'The ID or case number of the case to add a note to',
+          description: 'The ID or signal number of the signal to add a note to',
         },
         content: {
           type: 'string',
@@ -150,58 +141,26 @@ const tools: Anthropic.Tool[] = [
           description: 'Whether the note should be private (default: false)',
         },
       },
-      required: ['case_id', 'content'],
+      required: ['signal_id', 'content'],
     },
   },
   {
-    name: 'assign_case',
-    description: 'Assign a case to a team member. Use this when the user wants to assign a case to someone.',
+    name: 'delete_signal',
+    description: 'Delete a signal from the system. Use this when the user explicitly wants to delete/remove a signal. Always confirm before deleting.',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        signal_id: {
           type: 'string',
-          description: 'The ID or case number of the case to assign',
-        },
-        assignee_name: {
-          type: 'string',
-          description: 'The full name of the team member to assign the case to (e.g., "James Rodriguez")',
+          description: 'The ID or signal number of the signal to delete',
         },
       },
-      required: ['case_id', 'assignee_name'],
-    },
-  },
-  {
-    name: 'unassign_case',
-    description: 'Remove the current assignee from a case. Use this when the user wants to unassign a case.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or case number of the case to unassign',
-        },
-      },
-      required: ['case_id'],
-    },
-  },
-  {
-    name: 'delete_case',
-    description: 'Delete a case from the system. Use this when the user explicitly wants to delete/remove a case. Always confirm before deleting.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or case number of the case to delete',
-        },
-      },
-      required: ['case_id'],
+      required: ['signal_id'],
     },
   },
   {
     name: 'list_team_members',
-    description: 'List all available team members who can be assigned to cases. Use this when the user asks who is available or wants to see team member workload.',
+    description: 'List all available team members. Use this when the user asks who is available or wants to see team member workload.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -209,8 +168,8 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
-    name: 'get_case_stats',
-    description: 'Get dashboard statistics about all cases. Returns total count, counts by status (open, in-progress, closed), counts by priority (critical, high), and unassigned count.',
+    name: 'get_signal_stats',
+    description: 'Get dashboard statistics about all signals. Returns total count, counts by status (open, in-progress, closed).',
     input_schema: {
       type: 'object',
       properties: {},
@@ -218,97 +177,83 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
-    name: 'search_cases',
-    description: 'Search and filter cases by various criteria. Use this when the user wants to find specific cases.',
+    name: 'search_signals',
+    description: 'Search and filter signals by various criteria. Use this when the user wants to find specific signals.',
     input_schema: {
       type: 'object',
       properties: {
         keyword: {
           type: 'string',
-          description: 'Search keyword to match against case title, description, or case number',
+          description: 'Search keyword to match against signal description, location, or signal number',
         },
         status: {
           type: 'string',
           enum: ['open', 'in-progress', 'closed'],
-          description: 'Filter by case status',
-        },
-        priority: {
-          type: 'string',
-          enum: ['low', 'medium', 'high', 'critical'],
-          description: 'Filter by priority level',
+          description: 'Filter by signal status',
         },
         type: {
           type: 'string',
-          enum: ['human-trafficking', 'illegal-drugs', 'illegal-prostitution'],
-          description: 'Filter by case type',
+          description: 'Filter by signal type (e.g., human-trafficking, drug-trafficking)',
         },
-        assignee_name: {
+        receivedBy: {
           type: 'string',
-          description: 'Filter by assignee name',
+          enum: ['police', 'anonymous-report', 'municipal-department', 'bibob-request', 'other'],
+          description: 'Filter by source that received the signal',
         },
       },
       required: [],
     },
   },
   {
-    name: 'get_case_activity',
-    description: 'Get the activity history/timeline for a specific case. Shows all actions taken on the case.',
+    name: 'get_signal_activity',
+    description: 'Get the activity history/timeline for a specific signal. Shows all actions taken on the signal.',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        signal_id: {
           type: 'string',
-          description: 'The ID or case number of the case',
+          description: 'The ID or signal number of the signal',
         },
       },
-      required: ['case_id'],
+      required: ['signal_id'],
     },
   },
   {
     name: 'change_status',
-    description: 'Change the status of a case. Use this for quick status updates (open, in-progress, closed).',
+    description: 'Change the status of a signal. Use this for quick status updates (open, in-progress, closed).',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        signal_id: {
           type: 'string',
-          description: 'The ID or case number of the case',
+          description: 'The ID or signal number of the signal',
         },
         new_status: {
           type: 'string',
           enum: ['open', 'in-progress', 'closed'],
-          description: 'The new status for the case',
+          description: 'The new status for the signal',
         },
       },
-      required: ['case_id', 'new_status'],
+      required: ['signal_id', 'new_status'],
     },
   },
   {
-    name: 'get_case_notes',
-    description: 'Get all notes for a specific case.',
+    name: 'get_signal_notes',
+    description: 'Get all notes for a specific signal.',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        signal_id: {
           type: 'string',
-          description: 'The ID or case number of the case',
+          description: 'The ID or signal number of the signal',
         },
       },
-      required: ['case_id'],
+      required: ['signal_id'],
     },
   },
   {
-    name: 'get_overdue_cases',
-    description: 'Get all cases that are past their due date and not yet closed.',
-    input_schema: {
-      type: 'object',
-      properties: {},
-      required: [],
-    },
-  },
-  {
-    name: 'get_unassigned_cases',
-    description: 'Get all cases that do not have an assignee.',
+    name: 'get_open_signals',
+    description: 'Get all signals that are currently open.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -317,46 +262,46 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: 'summarize_attachments',
-    description: 'Summarize and analyze all attachments (images, documents, files) for a specific case. Uses AI vision to analyze images and extracts text from documents. Use this when the user asks to describe, summarize, or analyze case attachments.',
+    description: 'Summarize and analyze all attachments (images, documents, files) for a specific signal. Uses AI vision to analyze images and extracts text from documents. Use this when the user asks to describe, summarize, or analyze signal attachments.',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        signal_id: {
           type: 'string',
-          description: 'The ID or case number of the case whose attachments to summarize',
+          description: 'The ID or signal number of the signal whose attachments to summarize',
         },
       },
-      required: ['case_id'],
+      required: ['signal_id'],
     },
   },
 ];
 
 // Helper function to summarize attachments using Claude Vision
-async function summarizeAttachmentsForCase(
-  caseId: string,
-  cases: CaseData[]
+async function summarizeAttachmentsForSignal(
+  signalId: string,
+  signals: SignalData[]
 ): Promise<string> {
-  // Find the case by ID or case number
-  const targetCase = cases.find(
-    (c) =>
-      c.id === caseId ||
-      c.caseNumber.toLowerCase() === caseId.toLowerCase() ||
-      c.caseNumber.toLowerCase().includes(caseId.toLowerCase())
+  // Find the signal by ID or signal number
+  const targetSignal = signals.find(
+    (s) =>
+      s.id === signalId ||
+      s.signalNumber.toLowerCase() === signalId.toLowerCase() ||
+      s.signalNumber.toLowerCase().includes(signalId.toLowerCase())
   );
 
-  if (!targetCase) {
-    return `Case "${caseId}" not found.`;
+  if (!targetSignal) {
+    return `Signal "${signalId}" not found.`;
   }
 
-  const attachments = targetCase.attachments || [];
+  const attachments = targetSignal.attachments || [];
   if (attachments.length === 0) {
-    return `Case ${targetCase.caseNumber} has no attachments.`;
+    return `Signal ${targetSignal.signalNumber} has no attachments.`;
   }
 
   // Filter to only attachments with content
   const attachmentsWithContent = attachments.filter((a) => a.content);
   if (attachmentsWithContent.length === 0) {
-    return `Case ${targetCase.caseNumber} has ${attachments.length} attachment(s), but none have accessible content for analysis.`;
+    return `Signal ${targetSignal.signalNumber} has ${attachments.length} attachment(s), but none have accessible content for analysis.`;
   }
 
   // Build multimodal content array
@@ -365,7 +310,7 @@ async function summarizeAttachmentsForCase(
   // Add instruction text
   content.push({
     type: 'text',
-    text: `Please analyze and summarize the following ${attachmentsWithContent.length} attachment(s) for case ${targetCase.caseNumber} ("${targetCase.title}"). For each attachment, provide a brief description of its contents and any relevant information that could be useful for the case investigation.`,
+    text: `Please analyze and summarize the following ${attachmentsWithContent.length} attachment(s) for signal ${targetSignal.signalNumber} ("${targetSignal.description.substring(0, 50)}..."). For each attachment, provide a brief description of its contents and any relevant information that could be useful for the investigation.`,
   });
 
   // Add each attachment
@@ -433,7 +378,7 @@ async function summarizeAttachmentsForCase(
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, cases, teamMembers }: { messages: Message[]; cases: CaseData[]; teamMembers: TeamMember[] } = await request.json();
+    const { messages, signals, teamMembers }: { messages: Message[]; signals: SignalData[]; teamMembers: TeamMember[] } = await request.json();
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
@@ -442,41 +387,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const caseSummary = cases
+    const signalSummary = (signals || [])
       .map(
-        (c) =>
-          `- ${c.caseNumber}: "${c.title}" (${c.type}, ${c.status}, ${c.priority} priority)${c.assigneeName ? ` - Assigned to ${c.assigneeName}` : ' - Unassigned'}`
+        (s) =>
+          `- ${s.signalNumber}: ${s.placeOfObservation} (${s.types.join(', ')}, ${s.status}, received by: ${s.receivedBy})`
       )
       .join('\n');
 
-    const teamSummary = teamMembers
+    const teamSummary = (teamMembers || [])
       .map(
         (m) =>
-          `- ${m.firstName} ${m.lastName} (${m.id}): ${m.title} - ${m.activeCasesCount}/${m.maxCaseCapacity} cases`
+          `- ${m.firstName} ${m.lastName} (${m.id}): ${m.title} - ${m.activeCasesCount}/${m.maxCaseCapacity} signals`
       )
       .join('\n');
 
-    const systemPrompt = `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage crime cases related to human trafficking, illegal drugs, and illegal prostitution.
+    const systemPrompt = `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals related to human trafficking, drugs, and other criminal activities.
 
-Current Cases in the System:
-${caseSummary}
+Current Signals in the System:
+${signalSummary || 'No signals available'}
 
-Team Members Available for Assignment:
-${teamSummary}
+Team Members Available:
+${teamSummary || 'No team members available'}
 
 Your capabilities:
 
-**Case Management:**
-1. Summarize cases - provide overviews of all cases or specific case details
-2. Create new cases - help users create cases by gathering required information
-3. Edit existing cases - help users update case details, status, priority, etc.
-4. Add notes to cases - add comments, observations, or updates to existing cases
-5. Delete cases - remove a case from the system (always confirm first)
+**Signal Management:**
+1. Summarize signals - provide overviews of all signals or specific signal details
+2. Create new signals - help users create signals by gathering required information
+3. Edit existing signals - help users update signal details, status, etc.
+4. Add notes to signals - add comments, observations, or updates to existing signals
+5. Delete signals - remove a signal from the system (always confirm first)
+6. Change signal status - update status to open, in-progress, or closed
 
-**Assignment:**
-6. Assign cases - assign a case to a team member
-7. Unassign cases - remove the current assignee from a case
-8. List team members - show available team members and their current workload
+**Team:**
+7. List team members - show available team members and their current workload
 
 **Analytics & Search:**
 9. Get case stats - show dashboard statistics (total, open, in-progress, closed, critical, unassigned)
@@ -524,8 +468,8 @@ Important: When referencing cases, use their case number (e.g., GCMP-2024-000001
 
         // Handle summarize_attachments tool server-side
         if (block.name === 'summarize_attachments') {
-          const caseId = (block.input as { case_id: string }).case_id;
-          toolUse.result = await summarizeAttachmentsForCase(caseId, cases);
+          const signalId = (block.input as { signal_id: string }).signal_id;
+          toolUse.result = await summarizeAttachmentsForSignal(signalId, signals);
         }
 
         toolUses.push(toolUse);
