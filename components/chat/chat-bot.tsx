@@ -5,6 +5,7 @@ import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSignals } from '@/context/signal-context';
+import { useFolders } from '@/context/folder-context';
 import { useUsers } from '@/context/user-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType } from '@/types/signal';
 
@@ -38,6 +39,7 @@ export function ChatBot() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, updateStatus, signalStats } = useSignals();
+  const { folders, folderStats, getSignalCountForFolder } = useFolders();
   const { users, getUserFullName } = useUsers();
 
   const findSignal = (identifier: string) => {
@@ -194,6 +196,18 @@ export function ChatBot() {
         maxCaseCapacity: u.maxCaseCapacity,
       }));
 
+      // Prepare folder data for the API
+      const folderData = folders.map((f) => ({
+        id: f.id,
+        name: f.name,
+        description: f.description,
+        status: f.status,
+        ownerName: f.ownerName,
+        signalCount: getSignalCountForFolder(f.id),
+        createdAt: f.createdAt,
+        tags: f.tags,
+      }));
+
       // Get conversation history (excluding system messages)
       const conversationHistory = messages
         .filter((m) => !m.pending)
@@ -210,6 +224,7 @@ export function ChatBot() {
         body: JSON.stringify({
           messages: conversationHistory,
           signals: signalData,
+          folders: folderData,
           teamMembers: teamMembersData,
         }),
       });
@@ -320,6 +335,19 @@ export function ChatBot() {
               const targetSignal = findSignal(toolInput.signal_id as string);
               readResults.push(`Could not analyze attachments for ${targetSignal?.signalNumber || toolInput.signal_id}.`);
             }
+          } else if (name === 'list_folders') {
+            const folderList = folders.length > 0
+              ? folders.map(f =>
+                  `- **${f.name}**: ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`
+                ).join('\n')
+              : 'No folders found.';
+            readResults.push(`**Folders (${folders.length}):**\n\n${folderList}`);
+          } else if (name === 'get_folder_stats') {
+            const statsContent = `**Folder Statistics:**\n\n` +
+              `- **Total Folders:** ${folderStats.total}\n` +
+              `- **With Signals:** ${folderStats.withSignals}\n` +
+              `- **Empty:** ${folderStats.empty}`;
+            readResults.push(statsContent);
           }
         }
 

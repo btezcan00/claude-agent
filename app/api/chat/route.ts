@@ -47,6 +47,17 @@ interface TeamMember {
   maxCaseCapacity: number;
 }
 
+interface FolderData {
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+  ownerName: string | null;
+  signalCount: number;
+  createdAt: string;
+  tags: string[];
+}
+
 const tools: Anthropic.Tool[] = [
   {
     name: 'summarize_signals',
@@ -274,6 +285,24 @@ const tools: Anthropic.Tool[] = [
       required: ['signal_id'],
     },
   },
+  {
+    name: 'list_folders',
+    description: 'List all folders in the system. Use this when the user wants to see available folders or asks about folders.',
+    input_schema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'get_folder_stats',
+    description: 'Get statistics about folders. Returns total count and count by status.',
+    input_schema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+  },
 ];
 
 // Helper function to summarize attachments using Claude Vision
@@ -378,7 +407,7 @@ async function summarizeAttachmentsForSignal(
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, signals, teamMembers }: { messages: Message[]; signals: SignalData[]; teamMembers: TeamMember[] } = await request.json();
+    const { messages, signals, folders, teamMembers }: { messages: Message[]; signals: SignalData[]; folders: FolderData[]; teamMembers: TeamMember[] } = await request.json();
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
@@ -394,6 +423,13 @@ export async function POST(request: NextRequest) {
       )
       .join('\n');
 
+    const folderSummary = (folders || [])
+      .map(
+        (f) =>
+          `- ${f.name}: ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (status: ${f.status}, ${f.signalCount} signals)`
+      )
+      .join('\n');
+
     const teamSummary = (teamMembers || [])
       .map(
         (m) =>
@@ -401,10 +437,13 @@ export async function POST(request: NextRequest) {
       )
       .join('\n');
 
-    const systemPrompt = `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals related to human trafficking, drugs, and other criminal activities.
+    const systemPrompt = `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals and folders related to human trafficking, drugs, and other criminal activities.
 
-Current Signals in the System:
+Current Signals in the System (${(signals || []).length} total):
 ${signalSummary || 'No signals available'}
+
+Current Folders in the System (${(folders || []).length} total):
+${folderSummary || 'No folders available'}
 
 Team Members Available:
 ${teamSummary || 'No team members available'}
@@ -419,19 +458,22 @@ Your capabilities:
 5. Delete signals - remove a signal from the system (always confirm first)
 6. Change signal status - update status to open, in-progress, or closed
 
+**Folder Management:**
+7. List folders - show all folders with their signal counts
+8. Get folder stats - show folder statistics
+
 **Team:**
-7. List team members - show available team members and their current workload
+9. List team members - show available team members and their current workload
 
 **Analytics & Search:**
-9. Get case stats - show dashboard statistics (total, open, in-progress, closed, critical, unassigned)
-10. Search cases - find cases by keyword, status, priority, type, or assignee
-11. Get overdue cases - find cases past their due date
-12. Get unassigned cases - find cases without an assignee
+10. Get signal stats - show signal statistics (total, open, in-progress, closed)
+11. Search signals - find signals by keyword, status, type, or source
+12. Get open signals - find signals that are currently open
 
-**Case Details:**
-13. Get case activity - view the activity history/timeline for a case
-14. Get case notes - view all notes for a specific case
-15. Change status - quickly change a case's status (open, in-progress, closed)
+**Signal Details:**
+13. Get signal activity - view the activity history/timeline for a signal
+14. Get signal notes - view all notes for a specific signal
+15. Change status - quickly change a signal's status (open, in-progress, closed)
 
 **Attachments:**
 16. Summarize attachments - analyze and summarize all attachments (images, documents) for a case using AI vision

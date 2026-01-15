@@ -51,10 +51,10 @@ export default function FoldersPage() {
         <div>
           <div className="flex items-center gap-2">
             <Kanban className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Cases</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Folders</h1>
           </div>
           <p className="text-muted-foreground">
-            Track and manage cases through the Bibob process
+            Track and manage folders through the Bibob process
           </p>
         </div>
         <FolderCreateDialog />
@@ -63,7 +63,7 @@ export default function FoldersPage() {
       {/* Stats Row */}
       <div className="flex flex-wrap gap-3">
         <StatsCard
-          title="Total Cases"
+          title="Total Folders"
           value={folders.length}
           icon={FolderOpen}
           className="min-w-[140px]"
