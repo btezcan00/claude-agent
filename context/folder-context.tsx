@@ -7,6 +7,11 @@ import {
   CreateFolderInput,
   UpdateFolderInput,
   FolderStats,
+  FolderStatus,
+  FolderAccessLevel,
+  FolderNote,
+  ApplicationData,
+  APPLICATION_CRITERIA,
 } from '@/types/folder';
 import { mockFolders } from '@/data/mock-folders';
 import { currentUser } from '@/data/mock-users';
@@ -32,6 +37,34 @@ interface FolderContextValue {
   // Ownership
   assignFolderOwner: (folderId: string, userId: string, userName: string) => void;
   unassignFolderOwner: (folderId: string) => void;
+
+  // Status
+  updateFolderStatus: (folderId: string, status: FolderStatus) => void;
+  getFoldersByStatus: (status: FolderStatus) => Folder[];
+
+  // Notes
+  addFolderNote: (folderId: string, content: string, isAdminNote: boolean) => void;
+  removeFolderNote: (folderId: string, noteId: string) => void;
+
+  // Practitioners
+  addPractitioner: (folderId: string, userId: string, userName: string) => void;
+  removePractitioner: (folderId: string, userId: string) => void;
+
+  // Sharing
+  shareFolder: (folderId: string, userId: string, userName: string, accessLevel: FolderAccessLevel) => void;
+  updateShareAccess: (folderId: string, userId: string, accessLevel: FolderAccessLevel) => void;
+  removeShare: (folderId: string, userId: string) => void;
+
+  // Tags
+  addTag: (folderId: string, tag: string) => void;
+  removeTag: (folderId: string, tag: string) => void;
+
+  // Location
+  updateLocation: (folderId: string, location: string) => void;
+
+  // Application
+  updateApplicationData: (folderId: string, data: Partial<ApplicationData>) => void;
+  completeApplication: (folderId: string) => void;
 
   // Computed
   getSignalCountForFolder: (folderId: string) => number;
@@ -121,6 +154,27 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       ownerName: null,
       color: data.color,
       icon: data.icon,
+      status: 'application',
+      statusDates: {
+        application: now,
+      },
+      tags: [],
+      signalTypes: [],
+      practitioners: [],
+      sharedWith: [],
+      location: '',
+      notes: [],
+      applicationData: {
+        explanation: '',
+        criteria: APPLICATION_CRITERIA.map((c) => ({
+          id: c.id,
+          name: c.name,
+          label: c.label,
+          isMet: false,
+          explanation: '',
+        })),
+        isCompleted: false,
+      },
     };
 
     setFolders((prev) => [newFolder, ...prev]);
@@ -191,6 +245,237 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [setFolders]);
 
+  const updateFolderStatus = useCallback((folderId: string, status: FolderStatus) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          status,
+          statusDates: {
+            ...f.statusDates,
+            [status]: now,
+          },
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  const getFoldersByStatus = useCallback((status: FolderStatus): Folder[] => {
+    return folders.filter((f) => f.status === status);
+  }, [folders]);
+
+  // Notes
+  const addFolderNote = useCallback((folderId: string, content: string, isAdminNote: boolean) => {
+    const now = new Date().toISOString();
+    const newNote: FolderNote = {
+      id: generateId(),
+      content,
+      createdAt: now,
+      createdBy: currentUser.id,
+      createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
+      isAdminNote,
+    };
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          notes: [...(f.notes || []), newNote],
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  const removeFolderNote = useCallback((folderId: string, noteId: string) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          notes: (f.notes || []).filter((n) => n.id !== noteId),
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  // Practitioners
+  const addPractitioner = useCallback((folderId: string, userId: string, userName: string) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        if ((f.practitioners || []).some((p) => p.userId === userId)) return f;
+        return {
+          ...f,
+          practitioners: [...(f.practitioners || []), { userId, userName, addedAt: now }],
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  const removePractitioner = useCallback((folderId: string, userId: string) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          practitioners: (f.practitioners || []).filter((p) => p.userId !== userId),
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  // Sharing
+  const shareFolder = useCallback((folderId: string, userId: string, userName: string, accessLevel: FolderAccessLevel) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        if ((f.sharedWith || []).some((s) => s.userId === userId)) return f;
+        return {
+          ...f,
+          sharedWith: [
+            ...(f.sharedWith || []),
+            {
+              userId,
+              userName,
+              accessLevel,
+              sharedAt: now,
+              sharedBy: `${currentUser.firstName} ${currentUser.lastName}`,
+            },
+          ],
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  const updateShareAccess = useCallback((folderId: string, userId: string, accessLevel: FolderAccessLevel) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          sharedWith: (f.sharedWith || []).map((s) =>
+            s.userId === userId ? { ...s, accessLevel } : s
+          ),
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  const removeShare = useCallback((folderId: string, userId: string) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          sharedWith: (f.sharedWith || []).filter((s) => s.userId !== userId),
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  // Tags
+  const addTag = useCallback((folderId: string, tag: string) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        if ((f.tags || []).includes(tag)) return f;
+        return {
+          ...f,
+          tags: [...(f.tags || []), tag],
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  const removeTag = useCallback((folderId: string, tag: string) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          tags: (f.tags || []).filter((t) => t !== tag),
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  // Location
+  const updateLocation = useCallback((folderId: string, location: string) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          location,
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  // Application
+  const updateApplicationData = useCallback((folderId: string, data: Partial<ApplicationData>) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          applicationData: {
+            ...f.applicationData,
+            ...data,
+          },
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
+  const completeApplication = useCallback((folderId: string) => {
+    const now = new Date().toISOString();
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id !== folderId) return f;
+        return {
+          ...f,
+          applicationData: {
+            ...f.applicationData,
+            isCompleted: true,
+            completedAt: now,
+            completedBy: `${currentUser.firstName} ${currentUser.lastName}`,
+          },
+          status: 'research',
+          statusDates: {
+            ...f.statusDates,
+            research: now,
+          },
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setFolders]);
+
   const setFilters = useCallback((newFilters: Partial<FolderFilters>) => {
     setFiltersState((prev) => ({ ...prev, ...newFilters }));
   }, []);
@@ -214,6 +499,20 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     getFolderById,
     assignFolderOwner,
     unassignFolderOwner,
+    updateFolderStatus,
+    getFoldersByStatus,
+    addFolderNote,
+    removeFolderNote,
+    addPractitioner,
+    removePractitioner,
+    shareFolder,
+    updateShareAccess,
+    removeShare,
+    addTag,
+    removeTag,
+    updateLocation,
+    updateApplicationData,
+    completeApplication,
     getSignalCountForFolder,
     setFilters,
     clearFilters,

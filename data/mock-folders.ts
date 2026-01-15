@@ -13,6 +13,36 @@ export const mockFolders: Folder[] = [
     ownerName: 'Sarah Mitchell',
     color: '#ef4444',
     icon: 'alert-triangle',
+    status: 'research',
+    statusDates: {
+      application: '2024-01-10T09:00:00Z',
+      research: '2024-01-20T10:00:00Z',
+    },
+    tags: ['priority', 'trafficking', 'urgent'],
+    signalTypes: ['human_trafficking', 'forced_labor'],
+    practitioners: [
+      { userId: 'user-001', userName: 'Sarah Mitchell', addedAt: '2024-01-10T09:00:00Z' },
+      { userId: 'user-002', userName: 'John Smith', addedAt: '2024-01-15T10:00:00Z' },
+    ],
+    sharedWith: [
+      { userId: 'user-003', userName: 'Emma Wilson', accessLevel: 'view', sharedAt: '2024-01-20T10:00:00Z', sharedBy: 'Sarah Mitchell' },
+    ],
+    location: 'Amsterdam, Netherlands',
+    notes: [
+      { id: 'note-001', content: 'Initial assessment completed. Multiple indicators found.', createdAt: '2024-01-12T10:00:00Z', createdBy: 'user-001', createdByName: 'Sarah Mitchell', isAdminNote: false },
+    ],
+    applicationData: {
+      explanation: 'Application reviewed and all criteria met for Bibob test.',
+      criteria: [
+        { id: 'necessary_info', name: 'necessary_info', label: 'Provided all necessary information?', isMet: true, explanation: 'All required documents submitted.' },
+        { id: 'annual_accounts', name: 'annual_accounts', label: 'Annual Accounts', isMet: true, explanation: 'Annual accounts for last 3 years provided.' },
+        { id: 'budgets', name: 'budgets', label: 'Budgets', isMet: true, explanation: 'Budget documentation complete.' },
+        { id: 'loan_agreement', name: 'loan_agreement', label: 'Loan Agreement', isMet: true, explanation: 'Loan agreements reviewed and verified.' },
+      ],
+      isCompleted: true,
+      completedAt: '2024-01-15T10:00:00Z',
+      completedBy: 'Sarah Mitchell',
+    },
   },
   {
     id: 'folder-002',
@@ -26,6 +56,32 @@ export const mockFolders: Folder[] = [
     ownerName: 'Michael Thompson',
     color: '#8b5cf6',
     icon: 'shield',
+    status: 'national_office',
+    statusDates: {
+      application: '2024-01-15T10:00:00Z',
+      research: '2024-01-25T11:00:00Z',
+      national_office: '2024-02-10T09:00:00Z',
+    },
+    tags: ['narcotics', 'organized-crime'],
+    signalTypes: ['drug_trafficking'],
+    practitioners: [
+      { userId: 'user-004', userName: 'Michael Thompson', addedAt: '2024-01-15T10:00:00Z' },
+    ],
+    sharedWith: [],
+    location: 'Rotterdam, Netherlands',
+    notes: [],
+    applicationData: {
+      explanation: 'Narcotics case application completed.',
+      criteria: [
+        { id: 'necessary_info', name: 'necessary_info', label: 'Provided all necessary information?', isMet: true, explanation: 'Complete documentation received.' },
+        { id: 'annual_accounts', name: 'annual_accounts', label: 'Annual Accounts', isMet: true, explanation: 'Accounts verified.' },
+        { id: 'budgets', name: 'budgets', label: 'Budgets', isMet: true, explanation: 'Budget reviewed.' },
+        { id: 'loan_agreement', name: 'loan_agreement', label: 'Loan Agreement', isMet: true, explanation: 'No loans applicable.' },
+      ],
+      isCompleted: true,
+      completedAt: '2024-01-20T10:00:00Z',
+      completedBy: 'Michael Thompson',
+    },
   },
   {
     id: 'folder-003',
@@ -39,6 +95,29 @@ export const mockFolders: Folder[] = [
     ownerName: null,
     color: '#3b82f6',
     icon: 'users',
+    status: 'application',
+    statusDates: {
+      application: '2024-02-01T08:00:00Z',
+    },
+    tags: ['multi-agency', 'coordination'],
+    signalTypes: [],
+    practitioners: [],
+    sharedWith: [
+      { userId: 'user-001', userName: 'Sarah Mitchell', accessLevel: 'admin', sharedAt: '2024-02-01T08:00:00Z', sharedBy: 'System' },
+      { userId: 'user-002', userName: 'John Smith', accessLevel: 'edit', sharedAt: '2024-02-05T09:00:00Z', sharedBy: 'Sarah Mitchell' },
+    ],
+    location: 'The Hague, Netherlands',
+    notes: [],
+    applicationData: {
+      explanation: '',
+      criteria: [
+        { id: 'necessary_info', name: 'necessary_info', label: 'Provided all necessary information?', isMet: false, explanation: '' },
+        { id: 'annual_accounts', name: 'annual_accounts', label: 'Annual Accounts', isMet: false, explanation: '' },
+        { id: 'budgets', name: 'budgets', label: 'Budgets', isMet: false, explanation: '' },
+        { id: 'loan_agreement', name: 'loan_agreement', label: 'Loan Agreement', isMet: false, explanation: '' },
+      ],
+      isCompleted: false,
+    },
   },
 ];
 
