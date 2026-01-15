@@ -8,7 +8,6 @@ import {
   Activity,
   Plus,
   Edit,
-  RefreshCw,
   MessageSquare,
   Image,
   Paperclip,
@@ -25,7 +24,6 @@ interface SignalActivityTimelineProps {
 const actionIcons: Record<ActivityAction, React.ElementType> = {
   'signal-created': Plus,
   'signal-updated': Edit,
-  'status-changed': RefreshCw,
   'assigned': Activity,
   'unassigned': Activity,
   'note-added': MessageSquare,
@@ -40,7 +38,6 @@ const actionIcons: Record<ActivityAction, React.ElementType> = {
 const actionColors: Record<ActivityAction, string> = {
   'signal-created': 'bg-green-100 text-green-600',
   'signal-updated': 'bg-blue-100 text-blue-600',
-  'status-changed': 'bg-yellow-100 text-yellow-600',
   'assigned': 'bg-purple-100 text-purple-600',
   'unassigned': 'bg-gray-100 text-gray-600',
   'note-added': 'bg-blue-100 text-blue-600',

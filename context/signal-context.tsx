@@ -13,17 +13,10 @@ import {
   ActivityEntry,
   SignalIndicator,
   SignalFolderRelation,
-  SignalStatus,
 } from '@/types/signal';
 
 interface SignalStats {
   total: number;
-  open: number;
-  inProgress: number;
-  closed: number;
-  critical: number;
-  high: number;
-  unassigned: number;
 }
 import { ViewMode } from '@/types/common';
 import { mockSignals } from '@/data/mock-signals';
@@ -44,7 +37,6 @@ interface SignalContextValue {
 
   // Signal Actions
   createSignal: (data: CreateSignalInput) => Signal;
-  updateStatus: (signalId: string, status: SignalStatus) => void;
   updateSignal: (id: string, data: UpdateSignalInput) => void;
   deleteSignal: (id: string) => void;
   getSignalById: (id: string) => Signal | undefined;
@@ -86,7 +78,6 @@ interface SignalContextValue {
 }
 
 const defaultFilters: SignalFilters = {
-  status: [],
   type: [],
   receivedBy: [],
   folderId: [],
@@ -131,9 +122,6 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     }
 
     // Apply filters
-    if (filters.status.length > 0) {
-      result = result.filter((s) => filters.status.includes(s.status));
-    }
     if (filters.type.length > 0) {
       result = result.filter((s) => s.types.some(t => filters.type.includes(t)));
     }
@@ -157,11 +145,6 @@ export function SignalProvider({ children }: { children: ReactNode }) {
         case 'timeOfObservation':
           comparison = new Date(a.timeOfObservation).getTime() - new Date(b.timeOfObservation).getTime();
           break;
-        case 'status': {
-          const statusOrder = { open: 1, 'in-progress': 2, closed: 3 };
-          comparison = statusOrder[a.status] - statusOrder[b.status];
-          break;
-        }
       }
       return sortOption.order === 'asc' ? comparison : -comparison;
     });
@@ -170,16 +153,10 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   }, [signals, filters, searchQuery, sortOption, isHydrated]);
 
   const signalStats = useMemo((): SignalStats => {
-    if (!isHydrated) return { total: 0, open: 0, inProgress: 0, closed: 0, critical: 0, high: 0, unassigned: 0 };
+    if (!isHydrated) return { total: 0 };
 
     return {
       total: signals.length,
-      open: signals.filter((s) => s.status === 'open').length,
-      inProgress: signals.filter((s) => s.status === 'in-progress').length,
-      closed: signals.filter((s) => s.status === 'closed').length,
-      critical: 0,
-      high: 0,
-      unassigned: 0,
     };
   }, [signals, isHydrated]);
 
@@ -190,7 +167,6 @@ export function SignalProvider({ children }: { children: ReactNode }) {
       signalNumber: generateSignalNumber(),
       description: data.description,
       types: data.types,
-      status: 'open',
       placeOfObservation: data.placeOfObservation,
       locationDescription: data.locationDescription,
       timeOfObservation: data.timeOfObservation,
@@ -259,33 +235,6 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   const getSignalsByFolderId = useCallback((folderId: string): Signal[] => {
     return signals.filter((s) => s.folderRelations.some(fr => fr.folderId === folderId));
   }, [signals]);
-
-  const updateStatus = useCallback((signalId: string, status: SignalStatus) => {
-    const now = new Date().toISOString();
-    setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'status-changed',
-          details: `Status changed from ${s.status} to ${status}`,
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          status,
-          updatedAt: now,
-          closedAt: status === 'closed' ? now : s.closedAt,
-          activities: [activity, ...s.activities],
-        };
-      })
-    );
-  }, [setSignals]);
 
   const addNote = useCallback((signalId: string, content: string, isPrivate: boolean = false) => {
     const now = new Date().toISOString();
@@ -626,7 +575,6 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     deleteSignal,
     getSignalById,
     getSignalsByFolderId,
-    updateStatus,
     addNote,
     addPhoto,
     removePhoto,

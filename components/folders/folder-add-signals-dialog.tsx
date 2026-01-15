@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Search, Radio } from 'lucide-react';
-import { SIGNAL_TYPE_CONFIG, SIGNAL_STATUS_CONFIG } from '@/lib/constants';
+import { SIGNAL_TYPE_CONFIG } from '@/lib/constants';
 
 interface FolderAddSignalsDialogProps {
   folder: Folder;
@@ -81,10 +81,6 @@ export function FolderAddSignalsDialog({
     onClose();
   };
 
-  const getStatusConfig = (status: string) => {
-    return SIGNAL_STATUS_CONFIG[status as keyof typeof SIGNAL_STATUS_CONFIG];
-  };
-
   const getTypeConfig = (type: string) => {
     return SIGNAL_TYPE_CONFIG[type as keyof typeof SIGNAL_TYPE_CONFIG];
   };
@@ -147,7 +143,6 @@ export function FolderAddSignalsDialog({
           ) : (
             <div className="space-y-2 py-2">
               {filteredSignals.map((signal) => {
-                const statusConfig = getStatusConfig(signal.status);
                 const isSelected = selectedSignalIds.includes(signal.id);
 
                 return (
@@ -170,14 +165,6 @@ export function FolderAddSignalsDialog({
                         <span className="font-medium text-sm">
                           {signal.signalNumber}
                         </span>
-                        {statusConfig && (
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${statusConfig.className}`}
-                          >
-                            {statusConfig.label}
-                          </Badge>
-                        )}
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-1">
                         {signal.placeOfObservation}

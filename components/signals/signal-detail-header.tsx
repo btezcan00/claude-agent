@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Signal } from '@/types/signal';
 import { Button } from '@/components/ui/button';
 import { SignalTypeBadge } from './signal-type-badge';
-import { SignalStatusBadge } from './signal-status-badge';
 import { ArrowLeft, Edit, Trash2, FolderPlus } from 'lucide-react';
 import { FolderCreateDialog } from '@/components/folders/folder-create-dialog';
 
@@ -37,7 +36,6 @@ export function SignalDetailHeader({
             <span className="font-mono text-lg font-semibold">
               {signal.signalNumber}
             </span>
-            <SignalStatusBadge status={signal.status} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(signal.types || []).map((type) => (

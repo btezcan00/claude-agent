@@ -36,8 +36,8 @@ export default function TeamPage() {
           icon={Users}
         />
         <StatsCard
-          title="Active Signals"
-          value={signalStats.total - signalStats.closed}
+          title="Total Signals"
+          value={signalStats.total}
           icon={Radio}
         />
         <StatsCard

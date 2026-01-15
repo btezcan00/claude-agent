@@ -1,4 +1,4 @@
-import { SignalType, SignalStatus, SignalSource } from '@/types/signal';
+import { SignalType, SignalSource } from '@/types/signal';
 import { BadgeConfig } from '@/types/common';
 import { UserRole } from '@/types/user';
 
@@ -32,27 +32,6 @@ export const SIGNAL_TYPE_CONFIG: Record<SignalType, BadgeConfig & { icon: string
     variant: 'default',
     className: 'bg-green-100 text-green-800 border-green-200',
     icon: 'Banknote',
-  },
-};
-
-export const SIGNAL_STATUS_CONFIG: Record<SignalStatus, BadgeConfig & { icon: string }> = {
-  'open': {
-    label: 'Open',
-    variant: 'outline',
-    className: 'bg-blue-50 text-blue-700 border-blue-300',
-    icon: 'Circle',
-  },
-  'in-progress': {
-    label: 'In Progress',
-    variant: 'default',
-    className: 'bg-yellow-50 text-yellow-700 border-yellow-300',
-    icon: 'Clock',
-  },
-  'closed': {
-    label: 'Closed',
-    variant: 'secondary',
-    className: 'bg-gray-100 text-gray-600 border-gray-300',
-    icon: 'CheckCircle',
   },
 };
 
@@ -112,14 +91,7 @@ export const USER_ROLE_CONFIG: Record<UserRole, BadgeConfig> = {
   },
 };
 
-export const STATUS_WORKFLOW: Record<SignalStatus, SignalStatus[]> = {
-  'open': ['in-progress'],
-  'in-progress': ['open', 'closed'],
-  'closed': ['in-progress'],
-};
-
 export const SIGNAL_TYPES: SignalType[] = ['bogus-scheme', 'human-trafficking', 'drug-trafficking', 'bibob-research', 'money-laundering'];
-export const SIGNAL_STATUSES: SignalStatus[] = ['open', 'in-progress', 'closed'];
 export const SIGNAL_SOURCES: SignalSource[] = ['police', 'bibob-request', 'anonymous-report', 'municipal-department', 'other'];
 
 export const FOLDER_COLORS: string[] = [

@@ -16,7 +16,6 @@ const sortOptions: { field: SortField; label: string }[] = [
   { field: 'createdAt', label: 'Created Date' },
   { field: 'updatedAt', label: 'Updated Date' },
   { field: 'timeOfObservation', label: 'Observation Time' },
-  { field: 'status', label: 'Status' },
 ];
 
 export function SignalSort() {

@@ -32,13 +32,13 @@ export function ChatBot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState<{
-    type: 'create' | 'edit' | 'add_note' | 'delete' | 'change_status';
+    type: 'create' | 'edit' | 'add_note' | 'delete';
     data: Record<string, unknown>;
   }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, updateStatus, signalStats } = useSignals();
+  const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
   const { folders, folderStats, getSignalCountForFolder } = useFolders();
   const { users, getUserFullName } = useUsers();
 
@@ -116,15 +116,6 @@ export function ChatBot() {
             } else {
               results.push(`Signal ${signal_id} not found`);
             }
-          } else if (pendingAction.type === 'change_status') {
-            const { signal_id, new_status } = pendingAction.data;
-            const targetSignal = findSignal(signal_id as string);
-            if (targetSignal) {
-              updateStatus(targetSignal.id, new_status as 'open' | 'in-progress' | 'closed');
-              results.push(`Signal ${targetSignal.signalNumber} status changed to ${new_status}`);
-            } else {
-              results.push(`Signal ${signal_id} not found`);
-            }
           }
         }
 
@@ -165,7 +156,6 @@ export function ChatBot() {
         signalNumber: s.signalNumber,
         description: s.description,
         types: s.types,
-        status: s.status,
         placeOfObservation: s.placeOfObservation,
         locationDescription: s.locationDescription,
         timeOfObservation: s.timeOfObservation,
@@ -254,8 +244,6 @@ export function ChatBot() {
             newPendingActions.push({ type: 'add_note', data: toolInput });
           } else if (name === 'delete_signal') {
             newPendingActions.push({ type: 'delete', data: toolInput });
-          } else if (name === 'change_status') {
-            newPendingActions.push({ type: 'change_status', data: toolInput });
           } else if (name === 'list_team_members') {
             const teamList = users.map(u =>
               `- **${getUserFullName(u)}** (${u.title}): ${u.activeCasesCount}/${u.maxCaseCapacity} signals`
@@ -263,14 +251,11 @@ export function ChatBot() {
             readResults.push(`**Team Members Available for Assignment:**\n\n${teamList}`);
           } else if (name === 'get_signal_stats') {
             const statsContent = `**Signal Statistics:**\n\n` +
-              `- **Total Signals:** ${signalStats.total}\n` +
-              `- **Open:** ${signalStats.open}\n` +
-              `- **In Progress:** ${signalStats.inProgress}\n` +
-              `- **Closed:** ${signalStats.closed}`;
+              `- **Total Signals:** ${signalStats.total}`;
             readResults.push(statsContent);
           } else if (name === 'search_signals') {
             let results = [...signals];
-            const { keyword, status, type, receivedBy } = toolInput;
+            const { keyword, type, receivedBy } = toolInput;
 
             if (keyword) {
               const kw = (keyword as string).toLowerCase();
@@ -279,9 +264,6 @@ export function ChatBot() {
                 s.signalNumber.toLowerCase().includes(kw) ||
                 s.placeOfObservation.toLowerCase().includes(kw)
               );
-            }
-            if (status) {
-              results = results.filter(s => s.status === status);
             }
             if (type) {
               results = results.filter(s => s.types.includes(type as SignalType));
@@ -292,7 +274,7 @@ export function ChatBot() {
 
             const resultsList = results.length > 0
               ? results.map(s =>
-                  `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.status}, ${s.types.join(', ')})`
+                  `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.types.join(', ')})`
                 ).join('\n')
               : 'No signals found matching your criteria.';
             readResults.push(`**Search Results (${results.length} signals):**\n\n${resultsList}`);
@@ -318,15 +300,6 @@ export function ChatBot() {
                 : 'No notes on this signal.';
               readResults.push(`**Notes for ${targetSignal.signalNumber}:**\n\n${notes}`);
             }
-          } else if (name === 'get_open_signals') {
-            const openSignals = signals.filter(s => s.status === 'open');
-
-            const openList = openSignals.length > 0
-              ? openSignals.map(s =>
-                  `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.types.join(', ')})`
-                ).join('\n')
-              : 'No open signals found.';
-            readResults.push(`**Open Signals (${openSignals.length}):**\n\n${openList}`);
           } else if (name === 'summarize_attachments') {
             // The result comes from the server-side processing
             if (toolUse.result) {
@@ -382,9 +355,6 @@ export function ChatBot() {
             } else if (action.type === 'delete') {
               const targetSignal = findSignal(action.data.signal_id as string);
               return `**Delete ${targetSignal?.signalNumber || action.data.signal_id}**`;
-            } else if (action.type === 'change_status') {
-              const targetSignal = findSignal(action.data.signal_id as string);
-              return `**Change ${targetSignal?.signalNumber || action.data.signal_id} status** to ${action.data.new_status}`;
             }
             return '';
           }).filter(Boolean);
@@ -433,16 +403,10 @@ export function ChatBot() {
     if (signalId) {
       const targetSignal = findSignal(signalId);
       if (!targetSignal) return `Signal "${signalId}" not found. Try asking about a specific signal by name or number.`;
-      return `**${targetSignal.signalNumber}**\n\n**Location:** ${targetSignal.placeOfObservation}\n**Type(s):** ${targetSignal.types.join(', ')}\n**Status:** ${targetSignal.status}\n**Received By:** ${targetSignal.receivedBy}\n**Time of Observation:** ${new Date(targetSignal.timeOfObservation).toLocaleString()}\n**Created:** ${new Date(targetSignal.createdAt).toLocaleDateString()}\n\n**Description:**\n${targetSignal.description}`;
+      return `**${targetSignal.signalNumber}**\n\n**Location:** ${targetSignal.placeOfObservation}\n**Type(s):** ${targetSignal.types.join(', ')}\n**Received By:** ${targetSignal.receivedBy}\n**Time of Observation:** ${new Date(targetSignal.timeOfObservation).toLocaleString()}\n**Created:** ${new Date(targetSignal.createdAt).toLocaleDateString()}\n\n**Description:**\n${targetSignal.description}`;
     }
 
-    const statusCounts = {
-      open: signals.filter((s) => s.status === 'open').length,
-      'in-progress': signals.filter((s) => s.status === 'in-progress').length,
-      closed: signals.filter((s) => s.status === 'closed').length,
-    };
-
-    return `**Signal Summary (${signals.length} total signals)**\n\n**By Status:**\n- Open: ${statusCounts.open}\n- In Progress: ${statusCounts['in-progress']}\n- Closed: ${statusCounts.closed}`;
+    return `**Signal Summary (${signals.length} total signals)**`;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

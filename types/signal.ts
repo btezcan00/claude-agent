@@ -5,11 +5,6 @@ export type SignalType =
   | 'bibob-research'
   | 'money-laundering';
 
-export type SignalStatus =
-  | 'open'
-  | 'in-progress'
-  | 'closed';
-
 export type SignalSource =
   | 'police'
   | 'bibob-request'
@@ -56,7 +51,6 @@ export interface SignalNote {
 export type ActivityAction =
   | 'signal-created'
   | 'signal-updated'
-  | 'status-changed'
   | 'assigned'
   | 'unassigned'
   | 'note-added'
@@ -139,7 +133,6 @@ export interface Signal {
   signalNumber: string;
   description: string;
   types: SignalType[];
-  status: SignalStatus;
   placeOfObservation: string;
   locationDescription?: string;
   timeOfObservation: string;
@@ -149,7 +142,6 @@ export interface Signal {
   createdByName: string;
   createdAt: string;
   updatedAt: string;
-  closedAt?: string;
   notes: SignalNote[];
   activities: ActivityEntry[];
   photos: SignalPhoto[];
@@ -160,13 +152,12 @@ export interface Signal {
 }
 
 export interface SignalFilters {
-  status: SignalStatus[];
   type: SignalType[];
   receivedBy: SignalSource[];
   folderId: string[];
 }
 
-export type SortField = 'createdAt' | 'updatedAt' | 'status' | 'timeOfObservation';
+export type SortField = 'createdAt' | 'updatedAt' | 'timeOfObservation';
 export type SortOrder = 'asc' | 'desc';
 
 export interface SortOption {
@@ -188,7 +179,6 @@ export interface CreateSignalInput {
 export interface UpdateSignalInput {
   description?: string;
   types?: SignalType[];
-  status?: SignalStatus;
   placeOfObservation?: string;
   locationDescription?: string;
   timeOfObservation?: string;

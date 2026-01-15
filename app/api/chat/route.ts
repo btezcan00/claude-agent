@@ -24,7 +24,6 @@ interface SignalData {
   signalNumber: string;
   description: string;
   types: string[];
-  status: string;
   placeOfObservation: string;
   locationDescription?: string;
   timeOfObservation: string;
@@ -120,11 +119,6 @@ const tools: Anthropic.Tool[] = [
           items: { type: 'string' },
           description: 'New types for the signal',
         },
-        status: {
-          type: 'string',
-          enum: ['open', 'in-progress', 'closed'],
-          description: 'New status for the signal',
-        },
         placeOfObservation: {
           type: 'string',
           description: 'New location for the signal',
@@ -180,7 +174,7 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: 'get_signal_stats',
-    description: 'Get dashboard statistics about all signals. Returns total count, counts by status (open, in-progress, closed).',
+    description: 'Get dashboard statistics about all signals. Returns total count.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -196,11 +190,6 @@ const tools: Anthropic.Tool[] = [
         keyword: {
           type: 'string',
           description: 'Search keyword to match against signal description, location, or signal number',
-        },
-        status: {
-          type: 'string',
-          enum: ['open', 'in-progress', 'closed'],
-          description: 'Filter by signal status',
         },
         type: {
           type: 'string',
@@ -230,25 +219,6 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
-    name: 'change_status',
-    description: 'Change the status of a signal. Use this for quick status updates (open, in-progress, closed).',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'The ID or signal number of the signal',
-        },
-        new_status: {
-          type: 'string',
-          enum: ['open', 'in-progress', 'closed'],
-          description: 'The new status for the signal',
-        },
-      },
-      required: ['signal_id', 'new_status'],
-    },
-  },
-  {
     name: 'get_signal_notes',
     description: 'Get all notes for a specific signal.',
     input_schema: {
@@ -260,15 +230,6 @@ const tools: Anthropic.Tool[] = [
         },
       },
       required: ['signal_id'],
-    },
-  },
-  {
-    name: 'get_open_signals',
-    description: 'Get all signals that are currently open.',
-    input_schema: {
-      type: 'object',
-      properties: {},
-      required: [],
     },
   },
   {
@@ -419,7 +380,7 @@ export async function POST(request: NextRequest) {
     const signalSummary = (signals || [])
       .map(
         (s) =>
-          `- ${s.signalNumber}: ${s.placeOfObservation} (${s.types.join(', ')}, ${s.status}, received by: ${s.receivedBy})`
+          `- ${s.signalNumber}: ${s.placeOfObservation} (${s.types.join(', ')}, received by: ${s.receivedBy})`
       )
       .join('\n');
 
@@ -453,30 +414,27 @@ Your capabilities:
 **Signal Management:**
 1. Summarize signals - provide overviews of all signals or specific signal details
 2. Create new signals - help users create signals by gathering required information
-3. Edit existing signals - help users update signal details, status, etc.
+3. Edit existing signals - help users update signal details
 4. Add notes to signals - add comments, observations, or updates to existing signals
 5. Delete signals - remove a signal from the system (always confirm first)
-6. Change signal status - update status to open, in-progress, or closed
 
 **Folder Management:**
-7. List folders - show all folders with their signal counts
-8. Get folder stats - show folder statistics
+6. List folders - show all folders with their signal counts
+7. Get folder stats - show folder statistics
 
 **Team:**
-9. List team members - show available team members and their current workload
+8. List team members - show available team members and their current workload
 
 **Analytics & Search:**
-10. Get signal stats - show signal statistics (total, open, in-progress, closed)
-11. Search signals - find signals by keyword, status, type, or source
-12. Get open signals - find signals that are currently open
+9. Get signal stats - show signal statistics (total count)
+10. Search signals - find signals by keyword, type, or source
 
 **Signal Details:**
-13. Get signal activity - view the activity history/timeline for a signal
-14. Get signal notes - view all notes for a specific signal
-15. Change status - quickly change a signal's status (open, in-progress, closed)
+11. Get signal activity - view the activity history/timeline for a signal
+12. Get signal notes - view all notes for a specific signal
 
 **Attachments:**
-16. Summarize attachments - analyze and summarize all attachments (images, documents) for a case using AI vision
+13. Summarize attachments - analyze and summarize all attachments (images, documents) for a signal using AI vision
 
 When creating, editing, assigning, or deleting cases, always confirm with the user before making changes. Be professional, concise, and helpful. Use the appropriate tools when the user wants to perform these actions.
 
