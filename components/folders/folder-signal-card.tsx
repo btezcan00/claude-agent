@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Signal } from '@/types/signal';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -17,17 +18,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, MapPin, User, ImageIcon, FileSearch, Trash2 } from 'lucide-react';
+import { MoreVertical, MapPin, User, ImageIcon, FileSearch, Trash2, Pencil, Check, X } from 'lucide-react';
 
 interface FolderSignalCardProps {
   signal: Signal;
   folderId: string;
+  relation?: string;
   onRemove: (signalId: string) => void;
+  onRelationChange: (signalId: string, relation: string) => void;
 }
 
-export function FolderSignalCard({ signal, folderId, onRemove }: FolderSignalCardProps) {
+export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelationChange }: FolderSignalCardProps) {
   const [showDescription, setShowDescription] = useState(false);
   const [showConsultMessage, setShowConsultMessage] = useState(false);
+  const [isEditingRelation, setIsEditingRelation] = useState(false);
+  const [relationText, setRelationText] = useState(relation || '');
 
   const firstPhoto = signal.photos?.[0];
   const hasPhoto = firstPhoto?.content;
@@ -91,9 +96,59 @@ export function FolderSignalCard({ signal, folderId, onRemove }: FolderSignalCar
             <p className="text-sm text-muted-foreground">{signal.createdByName}</p>
           </div>
 
-          {/* Relationship placeholder */}
-          <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5">
-            Relationship: Signal linked to this folder for investigation purposes.
+          {/* Relation field */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Relation</span>
+              {!isEditingRelation && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setIsEditingRelation(true)}
+                >
+                  <Pencil className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+            {isEditingRelation ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={relationText}
+                  onChange={(e) => setRelationText(e.target.value)}
+                  placeholder="Describe the relation between this signal and the folder..."
+                  className="text-xs min-h-[60px] resize-none"
+                />
+                <div className="flex gap-1 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      setRelationText(relation || '');
+                      setIsEditingRelation(false);
+                    }}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-primary"
+                    onClick={() => {
+                      onRelationChange(signal.id, relationText);
+                      setIsEditingRelation(false);
+                    }}
+                  >
+                    <Check className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5 min-h-[32px]">
+                {relation || <span className="italic">No relation defined</span>}
+              </div>
+            )}
           </div>
 
           {/* View Description Button */}

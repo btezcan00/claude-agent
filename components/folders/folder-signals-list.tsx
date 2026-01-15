@@ -10,7 +10,7 @@ interface FolderSignalsListProps {
 }
 
 export function FolderSignalsList({ folder }: FolderSignalsListProps) {
-  const { getSignalsByFolderId, removeSignalFromFolder } = useSignals();
+  const { getSignalsByFolderId, removeSignalFromFolder, updateSignalFolderRelation } = useSignals();
   const signals = getSignalsByFolderId(folder.id);
 
   if (signals.length === 0) {
@@ -29,14 +29,19 @@ export function FolderSignalsList({ folder }: FolderSignalsListProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {signals.map((signal) => (
-        <FolderSignalCard
-          key={signal.id}
-          signal={signal}
-          folderId={folder.id}
-          onRemove={(signalId) => removeSignalFromFolder(signalId, folder.id)}
-        />
-      ))}
+      {signals.map((signal) => {
+        const folderRelation = signal.folderRelations.find(fr => fr.folderId === folder.id);
+        return (
+          <FolderSignalCard
+            key={signal.id}
+            signal={signal}
+            folderId={folder.id}
+            relation={folderRelation?.relation}
+            onRemove={(signalId) => removeSignalFromFolder(signalId, folder.id)}
+            onRelationChange={(signalId, relation) => updateSignalFolderRelation(signalId, folder.id, relation)}
+          />
+        );
+      })}
     </div>
   );
 }

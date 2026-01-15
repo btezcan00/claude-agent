@@ -22,7 +22,7 @@ export const mockSignals: Signal[] = [
     createdByName: 'Sarah Mitchell',
     createdAt: '2024-01-15T09:00:00Z',
     updatedAt: '2024-03-10T14:30:00Z',
-    folderIds: ['folder-001', 'folder-003'],
+    folderRelations: [{ folderId: 'folder-001' }, { folderId: 'folder-003' }],
     notes: [
       {
         id: 'note-001',
@@ -109,7 +109,7 @@ export const mockSignals: Signal[] = [
     createdByName: 'Sarah Mitchell',
     createdAt: '2024-02-28T13:00:00Z',
     updatedAt: '2024-03-08T10:00:00Z',
-    folderIds: ['folder-002'],
+    folderRelations: [{ folderId: 'folder-002' }],
     notes: [],
     activities: [
       {
@@ -146,7 +146,7 @@ export const mockSignals: Signal[] = [
     createdByName: 'Sarah Mitchell',
     createdAt: '2024-01-08T10:30:00Z',
     updatedAt: '2024-03-01T09:00:00Z',
-    folderIds: [],
+    folderRelations: [],
     notes: [
       {
         id: 'note-003',
@@ -197,7 +197,7 @@ export const mockSignals: Signal[] = [
     createdAt: '2023-06-15T08:00:00Z',
     updatedAt: '2023-12-20T16:00:00Z',
     closedAt: '2023-12-20T16:00:00Z',
-    folderIds: ['folder-002'],
+    folderRelations: [{ folderId: 'folder-002' }],
     notes: [
       {
         id: 'note-004',
@@ -238,7 +238,7 @@ export const mockSignals: Signal[] = [
     createdByName: 'Emily Chen',
     createdAt: '2024-03-05T11:00:00Z',
     updatedAt: '2024-03-05T11:00:00Z',
-    folderIds: ['folder-001'],
+    folderRelations: [{ folderId: 'folder-001' }],
     notes: [],
     activities: [
       {
@@ -275,7 +275,7 @@ export const mockSignals: Signal[] = [
     createdByName: 'Sarah Mitchell',
     createdAt: '2024-03-10T09:00:00Z',
     updatedAt: '2024-03-10T09:00:00Z',
-    folderIds: [],
+    folderRelations: [],
     notes: [],
     activities: [
       {
@@ -306,7 +306,7 @@ export const mockSignals: Signal[] = [
     createdByName: 'Lisa Patel',
     createdAt: '2024-02-01T08:00:00Z',
     updatedAt: '2024-03-12T14:00:00Z',
-    folderIds: ['folder-001', 'folder-003'],
+    folderRelations: [{ folderId: 'folder-001' }, { folderId: 'folder-003' }],
     notes: [
       {
         id: 'note-005',
@@ -367,7 +367,7 @@ export const mockSignals: Signal[] = [
     createdAt: '2023-11-01T10:00:00Z',
     updatedAt: '2024-02-28T15:00:00Z',
     closedAt: '2024-02-28T15:00:00Z',
-    folderIds: ['folder-002'],
+    folderRelations: [{ folderId: 'folder-002' }],
     notes: [
       {
         id: 'note-006',

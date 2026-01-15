@@ -12,6 +12,7 @@ import {
   SignalPhoto,
   ActivityEntry,
   SignalIndicator,
+  SignalFolderRelation,
 } from '@/types/signal';
 import { ViewMode } from '@/types/common';
 import { mockSignals } from '@/data/mock-signals';
@@ -54,6 +55,8 @@ interface SignalContextValue {
   addSignalToFolder: (signalId: string, folderId: string) => void;
   removeSignalFromFolder: (signalId: string, folderId: string) => void;
   addSignalsToFolder: (signalIds: string[], folderId: string) => void;
+  updateSignalFolderRelation: (signalId: string, folderId: string, relation: string) => void;
+  getSignalFolderRelation: (signalId: string, folderId: string) => SignalFolderRelation | undefined;
 
   // Selection Actions
   toggleSignalSelection: (signalId: string) => void;
@@ -125,7 +128,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
       result = result.filter((s) => filters.receivedBy.includes(s.receivedBy));
     }
     if (filters.folderId.length > 0) {
-      result = result.filter((s) => s.folderIds.some((fId) => filters.folderId.includes(fId)));
+      result = result.filter((s) => s.folderRelations.some((fr) => filters.folderId.includes(fr.folderId)));
     }
 
     // Apply sorting
@@ -184,7 +187,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
       createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
       createdAt: now,
       updatedAt: now,
-      folderIds: data.folderIds || [],
+      folderRelations: (data.folderIds || []).map(folderId => ({ folderId })),
       notes: [],
       activities: [
         {
@@ -241,7 +244,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   }, [signals]);
 
   const getSignalsByFolderId = useCallback((folderId: string): Signal[] => {
-    return signals.filter((s) => s.folderIds.includes(folderId));
+    return signals.filter((s) => s.folderRelations.some(fr => fr.folderId === folderId));
   }, [signals]);
 
   const updateStatus = useCallback((signalId: string, status: SignalStatus) => {
@@ -468,7 +471,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     setSignals((prev) =>
       prev.map((s) => {
         if (s.id !== signalId) return s;
-        if (s.folderIds.includes(folderId)) return s;
+        if (s.folderRelations.some(fr => fr.folderId === folderId)) return s;
 
         const activity: ActivityEntry = {
           id: generateId(),
@@ -482,7 +485,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
 
         return {
           ...s,
-          folderIds: [...s.folderIds, folderId],
+          folderRelations: [...s.folderRelations, { folderId }],
           updatedAt: now,
           activities: [activity, ...s.activities],
         };
@@ -495,7 +498,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     setSignals((prev) =>
       prev.map((s) => {
         if (s.id !== signalId) return s;
-        if (!s.folderIds.includes(folderId)) return s;
+        if (!s.folderRelations.some(fr => fr.folderId === folderId)) return s;
 
         const activity: ActivityEntry = {
           id: generateId(),
@@ -509,7 +512,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
 
         return {
           ...s,
-          folderIds: s.folderIds.filter((id) => id !== folderId),
+          folderRelations: s.folderRelations.filter((fr) => fr.folderId !== folderId),
           updatedAt: now,
           activities: [activity, ...s.activities],
         };
@@ -522,7 +525,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     setSignals((prev) =>
       prev.map((s) => {
         if (!signalIds.includes(s.id)) return s;
-        if (s.folderIds.includes(folderId)) return s;
+        if (s.folderRelations.some(fr => fr.folderId === folderId)) return s;
 
         const activity: ActivityEntry = {
           id: generateId(),
@@ -536,13 +539,39 @@ export function SignalProvider({ children }: { children: ReactNode }) {
 
         return {
           ...s,
-          folderIds: [...s.folderIds, folderId],
+          folderRelations: [...s.folderRelations, { folderId }],
           updatedAt: now,
           activities: [activity, ...s.activities],
         };
       })
     );
   }, [setSignals]);
+
+  const updateSignalFolderRelation = useCallback((signalId: string, folderId: string, relation: string) => {
+    const now = new Date().toISOString();
+    setSignals((prev) =>
+      prev.map((s) => {
+        if (s.id !== signalId) return s;
+        const relationIndex = s.folderRelations.findIndex(fr => fr.folderId === folderId);
+        if (relationIndex === -1) return s;
+
+        const updatedRelations = [...s.folderRelations];
+        updatedRelations[relationIndex] = { ...updatedRelations[relationIndex], relation };
+
+        return {
+          ...s,
+          folderRelations: updatedRelations,
+          updatedAt: now,
+        };
+      })
+    );
+  }, [setSignals]);
+
+  const getSignalFolderRelation = useCallback((signalId: string, folderId: string): SignalFolderRelation | undefined => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return undefined;
+    return signal.folderRelations.find(fr => fr.folderId === folderId);
+  }, [signals]);
 
   const toggleSignalSelection = useCallback((signalId: string) => {
     setSelectedSignalIds((prev) =>
@@ -594,6 +623,8 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     addSignalToFolder,
     removeSignalFromFolder,
     addSignalsToFolder,
+    updateSignalFolderRelation,
+    getSignalFolderRelation,
     toggleSignalSelection,
     selectAllSignals,
     clearSignalSelection,

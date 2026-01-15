@@ -35,7 +35,7 @@ export function FolderAddSignalsDialog({
 
   // Get signals not already in this folder
   const availableSignals = useMemo(() => {
-    return signals.filter((signal) => !signal.folderIds.includes(folder.id));
+    return signals.filter((signal) => !signal.folderRelations.some(fr => fr.folderId === folder.id));
   }, [signals, folder.id]);
 
   // Filter by search query

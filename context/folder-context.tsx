@@ -126,7 +126,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     if (!isHydrated) return { total: 0, withSignals: 0, empty: 0 };
 
     const foldersWithSignals = folders.filter((f) =>
-      signals.some((s) => s.folderIds.includes(f.id))
+      signals.some((s) => s.folderRelations.some(fr => fr.folderId === f.id))
     );
 
     return {
@@ -137,7 +137,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders, signals, isHydrated]);
 
   const getSignalCountForFolder = useCallback((folderId: string): number => {
-    return signals.filter((s) => s.folderIds.includes(folderId)).length;
+    return signals.filter((s) => s.folderRelations.some(fr => fr.folderId === folderId)).length;
   }, [signals]);
 
   const createFolder = useCallback((data: CreateFolderInput): Folder => {

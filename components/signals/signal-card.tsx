@@ -17,8 +17,8 @@ interface SignalCardProps {
 export function SignalCard({ signal }: SignalCardProps) {
   const { getFolderById } = useFolders();
 
-  const folders = signal.folderIds
-    .map((id) => getFolderById(id))
+  const folders = signal.folderRelations
+    .map((fr) => getFolderById(fr.folderId))
     .filter(Boolean);
 
   return (

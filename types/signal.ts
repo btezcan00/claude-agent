@@ -90,6 +90,11 @@ export interface SignalAttachment {
   textContent?: string;
 }
 
+export interface SignalFolderRelation {
+  folderId: string;
+  relation?: string;
+}
+
 export interface SignalPhoto {
   id: string;
   signalId: string;
@@ -150,7 +155,7 @@ export interface Signal {
   photos: SignalPhoto[];
   attachments: SignalAttachment[];
   tags?: string[];
-  folderIds: string[];
+  folderRelations: SignalFolderRelation[];
   indicators: SignalIndicator[];
 }
 
