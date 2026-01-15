@@ -24,7 +24,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FolderOpen, ClipboardList } from 'lucide-react';
+import { FolderOpen, ClipboardList, Plus } from 'lucide-react';
+import { FolderAddSignalsDialog } from '@/components/folders/folder-add-signals-dialog';
 
 export default function FolderDetailPage() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function FolderDetailPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [applicationDialogOpen, setApplicationDialogOpen] = useState(false);
+  const [addSignalsDialogOpen, setAddSignalsDialogOpen] = useState(false);
 
   useEffect(() => {
     const id = params.id as string;
@@ -122,7 +124,17 @@ export default function FolderDetailPage() {
 
             {/* Signals in Folder */}
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Signals in this case</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Signals</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAddSignalsDialogOpen(true)}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add
+                </Button>
+              </div>
               <FolderSignalsList folder={folder} />
             </div>
           </div>
@@ -167,6 +179,13 @@ export default function FolderDetailPage() {
         onStartResearch={() => {
           setApplicationDialogOpen(false);
         }}
+      />
+
+      {/* Add Signals Dialog */}
+      <FolderAddSignalsDialog
+        folder={folder}
+        open={addSignalsDialogOpen}
+        onClose={() => setAddSignalsDialogOpen(false)}
       />
     </div>
   );
