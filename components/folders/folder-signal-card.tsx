@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, MapPin, User, ImageIcon, FileSearch, Trash2, Pencil, Check, X } from 'lucide-react';
+import { MoreVertical, MapPin, User, ImageIcon, FileSearch, Trash2, Check, X } from 'lucide-react';
 
 interface FolderSignalCardProps {
   signal: Signal;
@@ -109,19 +109,7 @@ export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelat
 
           {/* Relation field */}
           <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Relation</span>
-              {!isEditingRelation && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setIsEditingRelation(true)}
-                >
-                  <Pencil className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
+            <span className="text-xs font-medium text-muted-foreground">Relation</span>
             {isEditingRelation ? (
               <div className="space-y-2">
                 <Textarea
@@ -129,6 +117,7 @@ export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelat
                   onChange={(e) => setRelationText(e.target.value)}
                   placeholder="Describe the relation between this signal and the folder..."
                   className="text-xs min-h-[60px] resize-none"
+                  autoFocus
                 />
                 <div className="flex gap-1 justify-end">
                   <Button
@@ -156,8 +145,11 @@ export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelat
                 </div>
               </div>
             ) : (
-              <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5 min-h-[32px]">
-                {relation || <span className="italic">No relation defined</span>}
+              <div
+                className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5 min-h-[32px] cursor-pointer hover:bg-muted transition-colors"
+                onClick={() => setIsEditingRelation(true)}
+              >
+                {relation || <span className="italic">Click to add relation...</span>}
               </div>
             )}
           </div>
