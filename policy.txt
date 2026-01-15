@@ -86,7 +86,7 @@ Chain of Custody: Ensure all seized physical evidence (ledgers, electronics, cas
 
 Search Warrants: All searches of private property or electronic devices must be conducted pursuant to a valid search warrant based on probable cause.
 
-Confidentiality: The identities of informants and the details of ongoing investigations must be strictly protected to ensure the integrity of the case.
+Confidentiality: The identities of informants and the details of ongoing investigations must be strictly protected to ensure the integrity of the signal.
 
 Non-Discrimination: Investigations must be based on criminal intelligence, not on the race, ethnicity, or national origin of the business owners or employees.
 

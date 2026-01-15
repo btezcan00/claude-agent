@@ -101,8 +101,8 @@ export default function FolderDetailPage() {
             <ClipboardList className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-xl font-semibold mb-2">Application Pending</h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              This case is in the application phase. Complete the Bibob test application
-              to access case details and start research.
+              This folder is in the application phase. Complete the Bibob test application
+              to access folder details and start research.
             </p>
             <Button onClick={() => setApplicationDialogOpen(true)}>
               <ClipboardList className="w-4 h-4 mr-2" />
