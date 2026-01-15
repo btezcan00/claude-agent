@@ -182,8 +182,7 @@ export function ChatBot() {
         lastName: u.lastName,
         title: u.title,
         role: u.role,
-        activeCasesCount: u.activeCasesCount,
-        maxCaseCapacity: u.maxCaseCapacity,
+        ownedFolderCount: folders.filter((f) => f.ownerId === u.id).length,
       }));
 
       // Prepare folder data for the API
@@ -245,10 +244,11 @@ export function ChatBot() {
           } else if (name === 'delete_signal') {
             newPendingActions.push({ type: 'delete', data: toolInput });
           } else if (name === 'list_team_members') {
-            const teamList = users.map(u =>
-              `- **${getUserFullName(u)}** (${u.title}): ${u.activeCasesCount}/${u.maxCaseCapacity} signals`
-            ).join('\n');
-            readResults.push(`**Team Members Available for Assignment:**\n\n${teamList}`);
+            const teamList = users.map(u => {
+              const ownedCount = folders.filter(f => f.ownerId === u.id).length;
+              return `- **${getUserFullName(u)}** (${u.title}): owns ${ownedCount} folder(s)`;
+            }).join('\n');
+            readResults.push(`**Team Members:**\n\n${teamList}`);
           } else if (name === 'get_signal_stats') {
             const statsContent = `**Signal Statistics:**\n\n` +
               `- **Total Signals:** ${signalStats.total}`;
@@ -274,8 +274,8 @@ export function ChatBot() {
 
             const resultsList = results.length > 0
               ? results.map(s =>
-                  `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.types.join(', ')})`
-                ).join('\n')
+                `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.types.join(', ')})`
+              ).join('\n')
               : 'No signals found matching your criteria.';
             readResults.push(`**Search Results (${results.length} signals):**\n\n${resultsList}`);
           } else if (name === 'get_signal_activity') {
@@ -295,8 +295,8 @@ export function ChatBot() {
             } else {
               const notes = targetSignal.notes.length > 0
                 ? targetSignal.notes.map(n =>
-                    `**${new Date(n.createdAt).toLocaleString()}** (${n.authorName})${n.isPrivate ? ' [Private]' : ''}:\n${n.content}`
-                  ).join('\n\n---\n\n')
+                  `**${new Date(n.createdAt).toLocaleString()}** (${n.authorName})${n.isPrivate ? ' [Private]' : ''}:\n${n.content}`
+                ).join('\n\n---\n\n')
                 : 'No notes on this signal.';
               readResults.push(`**Notes for ${targetSignal.signalNumber}:**\n\n${notes}`);
             }
@@ -311,8 +311,8 @@ export function ChatBot() {
           } else if (name === 'list_folders') {
             const folderList = folders.length > 0
               ? folders.map(f =>
-                  `- **${f.name}**: ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`
-                ).join('\n')
+                `- **${f.name}**: ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`
+              ).join('\n')
               : 'No folders found.';
             readResults.push(`**Folders (${folders.length}):**\n\n${folderList}`);
           } else if (name === 'get_folder_stats') {

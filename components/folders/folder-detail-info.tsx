@@ -84,7 +84,7 @@ export function FolderDetailInfo({ folder }: FolderDetailInfoProps) {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="w-4 h-4" />
-          Case Details
+          Folder Details
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">

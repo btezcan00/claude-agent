@@ -16,7 +16,7 @@ export function FolderStatusRoadmap({ folder }: FolderStatusRoadmapProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Case Progress</CardTitle>
+        <CardTitle className="text-base">Folder Progress</CardTitle>
       </CardHeader>
       <CardContent>
         {/* Roadmap */}

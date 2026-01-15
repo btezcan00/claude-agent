@@ -42,8 +42,7 @@ interface TeamMember {
   lastName: string;
   title: string;
   role: string;
-  activeCasesCount: number;
-  maxCaseCapacity: number;
+  ownedFolderCount: number;
 }
 
 interface FolderData {
@@ -165,7 +164,7 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: 'list_team_members',
-    description: 'List all available team members. Use this when the user asks who is available or wants to see team member workload.',
+    description: 'List all available team members and their folder ownership. Use this when the user asks about team members or folder assignments.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -394,7 +393,7 @@ export async function POST(request: NextRequest) {
     const teamSummary = (teamMembers || [])
       .map(
         (m) =>
-          `- ${m.firstName} ${m.lastName} (${m.id}): ${m.title} - ${m.activeCasesCount}/${m.maxCaseCapacity} signals`
+          `- ${m.firstName} ${m.lastName} (${m.id}): ${m.title} - owns ${m.ownedFolderCount} folder(s)`
       )
       .join('\n');
 
@@ -423,7 +422,7 @@ Your capabilities:
 7. Get folder stats - show folder statistics
 
 **Team:**
-8. List team members - show available team members and their current workload
+8. List team members - show available team members and their folder ownership
 
 **Analytics & Search:**
 9. Get signal stats - show signal statistics (total count)
@@ -436,9 +435,9 @@ Your capabilities:
 **Attachments:**
 13. Summarize attachments - analyze and summarize all attachments (images, documents) for a signal using AI vision
 
-When creating, editing, assigning, or deleting cases, always confirm with the user before making changes. Be professional, concise, and helpful. Use the appropriate tools when the user wants to perform these actions.
+When creating, editing, assigning, or deleting folders or signals, always confirm with the user before making changes. Be professional, concise, and helpful. Use the appropriate tools when the user wants to perform these actions.
 
-Important: When referencing cases, use their case number (e.g., GCMP-2024-000001) for clarity. When assigning cases, use the team member's full name.`;
+Important: When referencing folders or signals, use their folder or signal number (e.g., GCMP-2024-000001) for clarity. When assigning folders or signals, use the team member's full name.`;
 
     const anthropicMessages = messages.map((m) => ({
       role: m.role as 'user' | 'assistant',

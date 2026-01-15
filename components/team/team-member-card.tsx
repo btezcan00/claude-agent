@@ -1,39 +1,26 @@
 'use client';
 
 import { User } from '@/types/user';
+import { Folder } from '@/types/folder';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useUsers } from '@/context/user-context';
 import { USER_ROLE_CONFIG } from '@/lib/constants';
 import { cn } from '@/lib/utils';
-import { Mail, Phone, Briefcase, Building } from 'lucide-react';
+import { Mail, Phone, FolderOpen, Building } from 'lucide-react';
 
 interface TeamMemberCardProps {
   user: User;
+  folders: Folder[];
 }
 
-export function TeamMemberCard({ user }: TeamMemberCardProps) {
+export function TeamMemberCard({ user, folders }: TeamMemberCardProps) {
   const { getUserFullName, getUserInitials } = useUsers();
 
-  const workloadPercent = Math.round(
-    (user.activeCasesCount / user.maxCaseCapacity) * 100
-  );
-
-  const getWorkloadColor = (percent: number) => {
-    if (percent >= 100) return 'bg-red-500';
-    if (percent >= 75) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getWorkloadLabel = (percent: number) => {
-    if (percent >= 100) return 'At Capacity';
-    if (percent >= 75) return 'High';
-    if (percent >= 50) return 'Moderate';
-    return 'Light';
-  };
+  const ownedFolders = folders.filter((f) => f.ownerId === user.id);
+  const ownedFolderCount = ownedFolders.length;
 
   const roleConfig = USER_ROLE_CONFIG[user.role];
 
@@ -81,44 +68,15 @@ export function TeamMemberCard({ user }: TeamMemberCardProps) {
 
         <Separator />
 
-        {/* Workload */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-muted-foreground" />
-              <span className="font-medium">Workload</span>
-            </div>
-            <span
-              className={cn(
-                'text-xs font-medium',
-                workloadPercent >= 100
-                  ? 'text-red-600'
-                  : workloadPercent >= 75
-                  ? 'text-yellow-600'
-                  : 'text-green-600'
-              )}
-            >
-              {getWorkloadLabel(workloadPercent)}
-            </span>
+        {/* Folder Ownership */}
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <FolderOpen className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium">Folder Ownership</span>
           </div>
-          <div className="space-y-1">
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all',
-                  getWorkloadColor(workloadPercent)
-                )}
-                style={{ width: `${Math.min(workloadPercent, 100)}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>
-                {user.activeCasesCount} active case
-                {user.activeCasesCount !== 1 ? 's' : ''}
-              </span>
-              <span>Max: {user.maxCaseCapacity}</span>
-            </div>
-          </div>
+          <span className="text-muted-foreground">
+            {ownedFolderCount} folder{ownedFolderCount !== 1 ? 's' : ''}
+          </span>
         </div>
 
         <Separator />

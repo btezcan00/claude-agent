@@ -21,8 +21,6 @@ export interface User {
   department: Department;
   title: string;
   avatar?: string;
-  activeCasesCount: number;
-  maxCaseCapacity: number;
   isActive: boolean;
   joinedAt: string;
   lastActiveAt?: string;
@@ -38,11 +36,16 @@ export interface Team {
 }
 
 export type Permission =
-  | 'cases:read'
-  | 'cases:create'
-  | 'cases:update'
-  | 'cases:delete'
-  | 'cases:assign'
+  | 'signals:read'
+  | 'signals:create'
+  | 'signals:update'
+  | 'signals:delete'
+  | 'signals:assign'
+  | 'folders:read'
+  | 'folders:create'
+  | 'folders:update'
+  | 'folders:delete'
+  | 'folders:assign'
   | 'team:read'
   | 'team:manage'
   | 'admin:access';
