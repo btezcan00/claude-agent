@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Signal } from '@/types/signal';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ interface FolderSignalCardProps {
 }
 
 export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelationChange }: FolderSignalCardProps) {
+  const router = useRouter();
   const [showDescription, setShowDescription] = useState(false);
   const [showConsultMessage, setShowConsultMessage] = useState(false);
   const [isEditingRelation, setIsEditingRelation] = useState(false);
@@ -37,9 +39,18 @@ export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelat
   const firstPhoto = signal.photos?.[0];
   const hasPhoto = firstPhoto?.content;
 
+  const handleCardClick = () => {
+    if (!isEditingRelation) {
+      router.push(`/signals/${signal.id}`);
+    }
+  };
+
   return (
     <>
-      <Card className="overflow-hidden py-0 gap-0">
+      <Card
+        className="overflow-hidden py-0 gap-0 cursor-pointer hover:shadow-md transition-shadow"
+        onClick={handleCardClick}
+      >
         {/* Image Section */}
         <div className="relative h-40 bg-muted">
           {hasPhoto ? (
@@ -54,7 +65,7 @@ export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelat
             </div>
           )}
           {/* 3-dot menu */}
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -97,7 +108,7 @@ export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelat
           </div>
 
           {/* Relation field */}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Relation</span>
               {!isEditingRelation && (
@@ -156,7 +167,10 @@ export function FolderSignalCard({ signal, folderId, relation, onRemove, onRelat
             variant="outline"
             size="sm"
             className="w-full"
-            onClick={() => setShowDescription(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDescription(true);
+            }}
           >
             View description
           </Button>

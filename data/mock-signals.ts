@@ -94,6 +94,7 @@ export const mockSignals: Signal[] = [
       },
     ],
     tags: ['high-profile', 'multi-agency', 'federal-coordination'],
+    indicators: [],
   },
   {
     id: 'signal-002',
@@ -125,6 +126,7 @@ export const mockSignals: Signal[] = [
     photos: [],
     attachments: [],
     tags: ['opioid-crisis', 'urgent'],
+    indicators: [],
   },
   {
     id: 'signal-003',
@@ -181,6 +183,7 @@ export const mockSignals: Signal[] = [
     photos: [],
     attachments: [],
     tags: ['business-front', 'licensing-issues'],
+    indicators: [],
   },
   {
     id: 'signal-004',
@@ -223,6 +226,7 @@ export const mockSignals: Signal[] = [
     photos: [],
     attachments: [],
     tags: ['customs', 'border-security', 'successful-prosecution'],
+    indicators: [],
   },
   {
     id: 'signal-005',
@@ -254,6 +258,7 @@ export const mockSignals: Signal[] = [
     photos: [],
     attachments: [],
     tags: ['cyber', 'social-media', 'youth-protection'],
+    indicators: [],
   },
   {
     id: 'signal-006',
@@ -291,6 +296,7 @@ export const mockSignals: Signal[] = [
     photos: [],
     attachments: [],
     tags: ['online-activity', 'preliminary'],
+    indicators: [],
   },
   {
     id: 'signal-007',
@@ -351,6 +357,7 @@ export const mockSignals: Signal[] = [
       },
     ],
     tags: ['labor-trafficking', 'multi-agency', 'federal-coordination'],
+    indicators: [],
   },
   {
     id: 'signal-008',
@@ -393,6 +400,7 @@ export const mockSignals: Signal[] = [
     photos: [],
     attachments: [],
     tags: ['healthcare-fraud', 'prescription-drugs'],
+    indicators: [],
   },
 ];
 

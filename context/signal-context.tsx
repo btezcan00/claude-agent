@@ -13,7 +13,18 @@ import {
   ActivityEntry,
   SignalIndicator,
   SignalFolderRelation,
+  SignalStatus,
 } from '@/types/signal';
+
+interface SignalStats {
+  total: number;
+  open: number;
+  inProgress: number;
+  closed: number;
+  critical: number;
+  high: number;
+  unassigned: number;
+}
 import { ViewMode } from '@/types/common';
 import { mockSignals } from '@/data/mock-signals';
 import { currentUser } from '@/data/mock-users';
@@ -29,9 +40,11 @@ interface SignalContextValue {
   searchQuery: string;
   sortOption: SortOption;
   viewMode: ViewMode;
+  signalStats: SignalStats;
 
   // Signal Actions
   createSignal: (data: CreateSignalInput) => Signal;
+  updateStatus: (signalId: string, status: SignalStatus) => void;
   updateSignal: (id: string, data: UpdateSignalInput) => void;
   deleteSignal: (id: string) => void;
   getSignalById: (id: string) => Signal | undefined;
