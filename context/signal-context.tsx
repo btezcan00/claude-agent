@@ -11,9 +11,9 @@ import {
   SignalAttachment,
   SignalPhoto,
   ActivityEntry,
-  SignalStatus,
+  SignalIndicator,
 } from '@/types/signal';
-import { ViewMode, SignalStats } from '@/types/common';
+import { ViewMode } from '@/types/common';
 import { mockSignals } from '@/data/mock-signals';
 import { currentUser } from '@/data/mock-users';
 import { generateId, generateSignalNumber } from '@/lib/utils';
@@ -28,7 +28,6 @@ interface SignalContextValue {
   searchQuery: string;
   sortOption: SortOption;
   viewMode: ViewMode;
-  signalStats: SignalStats;
 
   // Signal Actions
   createSignal: (data: CreateSignalInput) => Signal;
@@ -36,9 +35,6 @@ interface SignalContextValue {
   deleteSignal: (id: string) => void;
   getSignalById: (id: string) => Signal | undefined;
   getSignalsByFolderId: (folderId: string) => Signal[];
-
-  // Status Actions
-  updateStatus: (signalId: string, status: SignalStatus) => void;
 
   // Notes Actions
   addNote: (signalId: string, content: string, isPrivate?: boolean) => void;
@@ -50,6 +46,9 @@ interface SignalContextValue {
   // Attachment Actions
   addAttachment: (signalId: string, attachment: Omit<SignalAttachment, 'id' | 'signalId' | 'uploadedAt'>) => void;
   removeAttachment: (signalId: string, attachmentId: string) => void;
+
+  // Indicator Actions
+  updateIndicators: (signalId: string, indicators: SignalIndicator[]) => void;
 
   // Folder Actions
   addSignalToFolder: (signalId: string, folderId: string) => void;
@@ -201,6 +200,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
       photos: [],
       attachments: [],
       tags: [],
+      indicators: [],
     };
     newSignal.activities[0].signalId = newSignal.id;
 
@@ -437,6 +437,32 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     );
   }, [setSignals]);
 
+  const updateIndicators = useCallback((signalId: string, indicators: SignalIndicator[]) => {
+    const now = new Date().toISOString();
+    setSignals((prev) =>
+      prev.map((s) => {
+        if (s.id !== signalId) return s;
+
+        const activity: ActivityEntry = {
+          id: generateId(),
+          signalId,
+          userId: currentUser.id,
+          userName: `${currentUser.firstName} ${currentUser.lastName}`,
+          action: 'signal-updated',
+          details: 'Updated indicators',
+          timestamp: now,
+        };
+
+        return {
+          ...s,
+          indicators,
+          updatedAt: now,
+          activities: [activity, ...s.activities],
+        };
+      })
+    );
+  }, [setSignals]);
+
   const addSignalToFolder = useCallback((signalId: string, folderId: string) => {
     const now = new Date().toISOString();
     setSignals((prev) =>
@@ -564,6 +590,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     removePhoto,
     addAttachment,
     removeAttachment,
+    updateIndicators,
     addSignalToFolder,
     removeSignalFromFolder,
     addSignalsToFolder,

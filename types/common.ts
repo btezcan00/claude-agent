@@ -20,12 +20,3 @@ export interface BadgeConfig {
   className?: string;
 }
 
-export interface SignalStats {
-  total: number;
-  open: number;
-  inProgress: number;
-  closed: number;
-  critical: number;
-  high: number;
-  unassigned: number;
-}

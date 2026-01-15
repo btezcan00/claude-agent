@@ -25,6 +25,23 @@ export interface ContactPerson {
   wantsFeedback: boolean;
 }
 
+// Signal Indicators
+export interface IndicatorSubcategory {
+  id: string;
+  label: string;
+}
+
+export interface IndicatorCategory {
+  id: string;
+  label: string;
+  subcategories: IndicatorSubcategory[];
+}
+
+export interface SignalIndicator {
+  categoryId: string;
+  subcategoryId: string;
+}
+
 export interface SignalNote {
   id: string;
   signalId: string;
@@ -134,6 +151,7 @@ export interface Signal {
   attachments: SignalAttachment[];
   tags?: string[];
   folderIds: string[];
+  indicators: SignalIndicator[];
 }
 
 export interface SignalFilters {

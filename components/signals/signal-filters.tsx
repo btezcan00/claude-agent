@@ -10,13 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { X, Filter, FolderOpen } from 'lucide-react';
 import {
   SIGNAL_TYPES,
-  SIGNAL_STATUSES,
   SIGNAL_SOURCES,
   SIGNAL_TYPE_CONFIG,
-  SIGNAL_STATUS_CONFIG,
   SIGNAL_SOURCE_CONFIG,
 } from '@/lib/constants';
-import { SignalType, SignalStatus, SignalSource } from '@/types/signal';
+import { SignalType, SignalSource } from '@/types/signal';
 import { cn } from '@/lib/utils';
 
 export function SignalFilters() {
@@ -24,17 +22,9 @@ export function SignalFilters() {
   const { folders } = useFolders();
 
   const activeFilterCount =
-    filters.status.length +
     filters.type.length +
     filters.receivedBy.length +
     filters.folderId.length;
-
-  const toggleStatus = (status: SignalStatus) => {
-    const newStatuses = filters.status.includes(status)
-      ? filters.status.filter((s) => s !== status)
-      : [...filters.status, status];
-    setFilters({ status: newStatuses });
-  };
 
   const toggleType = (type: SignalType) => {
     const newTypes = filters.type.includes(type)
@@ -121,33 +111,6 @@ export function SignalFilters() {
             <Separator />
           </>
         )}
-
-        {/* Status Filter */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Status</Label>
-          <div className="flex flex-wrap gap-2">
-            {SIGNAL_STATUSES.map((status) => {
-              const config = SIGNAL_STATUS_CONFIG[status];
-              const isActive = filters.status.includes(status);
-              return (
-                <button
-                  key={status}
-                  onClick={() => toggleStatus(status)}
-                  className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-md border transition-all',
-                    isActive
-                      ? config.className
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  )}
-                >
-                  {config.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <Separator />
 
         {/* Type Filter */}
         <div className="space-y-2">

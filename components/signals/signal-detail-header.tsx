@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Signal } from '@/types/signal';
 import { Button } from '@/components/ui/button';
 import { SignalTypeBadge } from './signal-type-badge';
+import { SignalStatusBadge } from './signal-status-badge';
 import { ArrowLeft, Edit, Trash2, FolderPlus } from 'lucide-react';
 import { FolderCreateDialog } from '@/components/folders/folder-create-dialog';
 
@@ -31,10 +32,13 @@ export function SignalDetailHeader({
 
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div className="space-y-2">
-          <span className="font-mono text-sm text-muted-foreground">
-            {signal.signalNumber}
-          </span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-lg font-semibold">
+              {signal.signalNumber}
+            </span>
+            <SignalStatusBadge status={signal.status} />
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             {(signal.types || []).map((type) => (
               <SignalTypeBadge key={type} type={type} />

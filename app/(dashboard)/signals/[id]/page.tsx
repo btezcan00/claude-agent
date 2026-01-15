@@ -7,9 +7,11 @@ import { Signal } from '@/types/signal';
 import { SignalDetailHeader } from '@/components/signals/signal-detail-header';
 import { SignalDetailInfo } from '@/components/signals/signal-detail-info';
 import { SignalNotes } from '@/components/signals/signal-notes';
-import { SignalActivityTimeline } from '@/components/signals/signal-activity-timeline';
 import { SignalAttachments } from '@/components/signals/signal-attachments';
+import { SignalPhotos } from '@/components/signals/signal-photos';
+import { SignalOverview } from '@/components/signals/signal-overview';
 import { SignalEditDialog } from '@/components/signals/signal-edit-dialog';
+import { SignalIndicators } from '@/components/signals/signal-indicators';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,15 +84,14 @@ export default function SignalDetailPage() {
         onDelete={() => setDeleteDialogOpen(true)}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <SignalDetailInfo signal={signal} />
-          <SignalAttachments signal={signal} />
-        </div>
-        <div className="space-y-6">
-          <SignalNotes signal={signal} />
-          <SignalActivityTimeline signal={signal} />
-        </div>
+      <SignalOverview signal={signal} />
+
+      <div className="space-y-6">
+        <SignalDetailInfo signal={signal} />
+        <SignalPhotos signal={signal} />
+        <SignalIndicators signal={signal} />
+        <SignalAttachments signal={signal} />
+        <SignalNotes signal={signal} />
       </div>
 
       {/* Edit Dialog */}

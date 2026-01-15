@@ -12,6 +12,7 @@ import {
 import { useSignals } from '@/context/signal-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { formatFileSize } from '@/lib/utils';
 import { formatRelativeTime } from '@/lib/date-utils';
 import {
@@ -191,18 +192,18 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Upload Area */}
+    <>
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload Attachment
+            <Paperclip className="w-4 h-4" />
+            Attachments ({signal.attachments.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Upload Area */}
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
               isDragging
                 ? 'border-primary bg-primary/5'
                 : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -212,8 +213,8 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
             onDragOver={handleDragOver}
             onDrop={handleDrop}
           >
-            <Paperclip className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-4">
+            <Paperclip className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground mb-3">
               Drag and drop files here, or click to browse
             </p>
             <input
@@ -232,20 +233,20 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
               <Upload className="w-4 h-4 mr-2" />
               Browse Files
             </Button>
-            <p className="text-xs text-muted-foreground mt-3">
-              Max {formatFileSize(MAX_FILE_SIZE)} per file. Supports images, PDF, Word, Excel, text files.
+            <p className="text-xs text-muted-foreground mt-2">
+              Max {formatFileSize(MAX_FILE_SIZE)} per file
             </p>
           </div>
 
           {/* Storage Usage */}
-          <div className="mt-4">
+          <div>
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
               <span>Storage used</span>
               <span>
                 {formatFileSize(currentTotalSize)} / {formatFileSize(MAX_TOTAL_ATTACHMENTS_SIZE)}
               </span>
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all ${
                   storageUsedPercent > 80 ? 'bg-destructive' : 'bg-primary'
@@ -257,7 +258,7 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
 
           {/* Error Message */}
           {uploadError && (
-            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
               <p className="text-sm text-destructive">{uploadError}</p>
               <button
@@ -268,90 +269,75 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
               </button>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Attachments List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Paperclip className="w-4 h-4" />
-            Attachments ({signal.attachments.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {signal.attachments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Paperclip className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>No attachments</p>
-              <p className="text-sm">Upload files to attach them to this signal</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {signal.attachments.map((attachment) => {
-                const Icon = getFileIcon(attachment.fileType);
-                const hasContent = !!attachment.content;
+          {/* Attachments List */}
+          {signal.attachments.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                {signal.attachments.map((attachment) => {
+                  const Icon = getFileIcon(attachment.fileType);
+                  const hasContent = !!attachment.content;
 
-                return (
-                  <div
-                    key={attachment.id}
-                    className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
-                      hasContent
-                        ? 'hover:bg-muted/50 cursor-pointer'
-                        : 'opacity-75'
-                    }`}
-                    onClick={() => hasContent && setPreviewAttachment(attachment)}
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {attachment.fileName}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{formatFileSize(attachment.fileSize)}</span>
-                        <span>-</span>
-                        <span>Uploaded by {attachment.uploadedBy}</span>
-                        <span>-</span>
-                        <span>{formatRelativeTime(attachment.uploadedAt)}</span>
-                        {!hasContent && (
-                          <>
-                            <span>-</span>
-                            <span className="text-amber-600">Legacy (no content)</span>
-                          </>
-                        )}
+                  return (
+                    <div
+                      key={attachment.id}
+                      className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
+                        hasContent
+                          ? 'hover:bg-muted/50 cursor-pointer'
+                          : 'opacity-75'
+                      }`}
+                      onClick={() => hasContent && setPreviewAttachment(attachment)}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Icon className="w-5 h-5 text-primary" />
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {hasContent && (
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {attachment.fileName}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{formatFileSize(attachment.fileSize)}</span>
+                          <span>-</span>
+                          <span>{formatRelativeTime(attachment.uploadedAt)}</span>
+                          {!hasContent && (
+                            <>
+                              <span>-</span>
+                              <span className="text-amber-600">Legacy</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {hasContent && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(attachment);
+                            }}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDownload(attachment);
+                            handleDelete(attachment.id);
                           }}
                         >
-                          <Download className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(attachment.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -362,6 +348,6 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
         open={!!previewAttachment}
         onClose={() => setPreviewAttachment(null)}
       />
-    </div>
+    </>
   );
 }

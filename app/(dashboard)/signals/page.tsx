@@ -8,22 +8,13 @@ import { SignalList } from '@/components/signals/signal-list';
 import { SignalGrid } from '@/components/signals/signal-grid';
 import { SignalSort } from '@/components/signals/signal-sort';
 import { SignalCreateDialog } from '@/components/signals/signal-create-dialog';
-import { StatsCard } from '@/components/common/stats-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Radio,
-  AlertCircle,
-  Clock,
-  CheckCircle,
-  LayoutGrid,
-  List,
-  UserX,
-} from 'lucide-react';
+import { LayoutGrid, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function SignalsPage() {
   const [mounted, setMounted] = useState(false);
-  const { viewMode, setViewMode, signalStats, filteredSignals } = useSignals();
+  const { viewMode, setViewMode, filteredSignals, signals } = useSignals();
 
   useEffect(() => {
     setMounted(true);
@@ -38,11 +29,6 @@ export default function SignalsPage() {
             <Skeleton className="h-4 w-64 mt-2" />
           </div>
           <Skeleton className="h-10 w-28" />
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
         </div>
         <div className="flex flex-col lg:flex-row gap-6">
           <Skeleton className="w-full lg:w-64 h-96" />
@@ -67,45 +53,6 @@ export default function SignalsPage() {
         <SignalCreateDialog />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <StatsCard
-          title="Total Signals"
-          value={signalStats.total}
-          icon={Radio}
-        />
-        <StatsCard
-          title="Open"
-          value={signalStats.open}
-          icon={Clock}
-          valueClassName="text-blue-600"
-        />
-        <StatsCard
-          title="In Progress"
-          value={signalStats.inProgress}
-          icon={Clock}
-          valueClassName="text-yellow-600"
-        />
-        <StatsCard
-          title="Closed"
-          value={signalStats.closed}
-          icon={CheckCircle}
-          valueClassName="text-gray-600"
-        />
-        <StatsCard
-          title="Critical"
-          value={signalStats.critical}
-          icon={AlertCircle}
-          valueClassName="text-red-600"
-        />
-        <StatsCard
-          title="Unassigned"
-          value={signalStats.unassigned}
-          icon={UserX}
-          valueClassName="text-orange-600"
-        />
-      </div>
-
       {/* Main Content */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Filters Sidebar */}
@@ -118,7 +65,7 @@ export default function SignalsPage() {
           {/* Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredSignals.length} of {signalStats.total} signals
+              Showing {filteredSignals.length} of {signals.length} signals
             </p>
             <div className="flex items-center gap-2">
               <SignalSort />

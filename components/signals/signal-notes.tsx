@@ -31,52 +31,38 @@ export function SignalNotes({ signal }: SignalNotesProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Add Note Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
-            Add Note
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Textarea
-              placeholder="Add a note to this signal..."
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              rows={3}
-            />
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                disabled={!newNote.trim() || isSubmitting}
-                size="sm"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Add Note
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <MessageSquare className="w-4 h-4" />
+          Notes ({signal.notes.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Add Note Form */}
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <Textarea
+            placeholder="Add a note to this signal..."
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            rows={3}
+          />
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={!newNote.trim() || isSubmitting}
+              size="sm"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Add Note
+            </Button>
+          </div>
+        </form>
 
-      {/* Notes List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Notes ({signal.notes.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {signal.notes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>No notes yet</p>
-              <p className="text-sm">Add a note to track progress on this signal</p>
-            </div>
-          ) : (
+        {/* Notes List */}
+        {signal.notes.length > 0 && (
+          <>
+            <Separator />
             <div className="space-y-4">
               {signal.notes.map((note, index) => (
                 <div key={note.id}>
@@ -110,9 +96,9 @@ export function SignalNotes({ signal }: SignalNotesProps) {
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
