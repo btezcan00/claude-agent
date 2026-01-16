@@ -186,14 +186,14 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
       contactPerson,
     };
 
-    const newSignal = createSignal(signalData);
+    const newSignal = await createSignal(signalData);
 
     // Upload photos
     for (const photoPreview of photos) {
       const reader = new FileReader();
       await new Promise<void>((resolve) => {
-        reader.onload = () => {
-          addPhoto(newSignal.id, {
+        reader.onload = async () => {
+          await addPhoto(newSignal.id, {
             fileName: photoPreview.file.name,
             fileType: photoPreview.file.type,
             fileSize: photoPreview.file.size,
@@ -210,8 +210,8 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
     for (const attachmentPreview of attachments) {
       const reader = new FileReader();
       await new Promise<void>((resolve) => {
-        reader.onload = () => {
-          addAttachment(newSignal.id, {
+        reader.onload = async () => {
+          await addAttachment(newSignal.id, {
             fileName: attachmentPreview.file.name,
             fileType: attachmentPreview.file.type,
             fileSize: attachmentPreview.file.size,

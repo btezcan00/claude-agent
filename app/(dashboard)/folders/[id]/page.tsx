@@ -43,9 +43,9 @@ export default function FolderDetailPage() {
     setFolder(foundFolder || null);
   }, [params.id, getFolderById, folders]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (folder) {
-      deleteFolder(folder.id);
+      await deleteFolder(folder.id);
       router.push('/folders');
     }
   };

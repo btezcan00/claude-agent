@@ -88,13 +88,13 @@ export function ChatBot() {
 
         for (const pendingAction of pendingActions) {
           if (pendingAction.type === 'create') {
-            const newSignal = createSignal(pendingAction.data as unknown as CreateSignalInput);
+            const newSignal = await createSignal(pendingAction.data as unknown as CreateSignalInput);
             results.push(`Signal created: ${newSignal.signalNumber}`);
           } else if (pendingAction.type === 'edit') {
             const { signal_id, ...updates } = pendingAction.data;
             const targetSignal = findSignal(signal_id as string);
             if (targetSignal) {
-              updateSignal(targetSignal.id, updates as UpdateSignalInput);
+              await updateSignal(targetSignal.id, updates as UpdateSignalInput);
               results.push(`Signal ${targetSignal.signalNumber} updated`);
             } else {
               results.push(`Signal ${signal_id} not found`);
@@ -103,7 +103,7 @@ export function ChatBot() {
             const { signal_id, content, is_private } = pendingAction.data;
             const targetSignal = findSignal(signal_id as string);
             if (targetSignal) {
-              addNote(targetSignal.id, content as string, is_private as boolean || false);
+              await addNote(targetSignal.id, content as string, is_private as boolean || false);
               results.push(`Note added to ${targetSignal.signalNumber}`);
             } else {
               results.push(`Signal ${signal_id} not found`);
@@ -112,7 +112,7 @@ export function ChatBot() {
             const { signal_id } = pendingAction.data;
             const targetSignal = findSignal(signal_id as string);
             if (targetSignal) {
-              deleteSignal(targetSignal.id);
+              await deleteSignal(targetSignal.id);
               results.push(`Signal ${targetSignal.signalNumber} deleted`);
             } else {
               results.push(`Signal ${signal_id} not found`);
@@ -134,11 +134,11 @@ export function ChatBot() {
                   explanation: incoming?.explanation ?? '',
                 };
               });
-              updateApplicationData(folder.id, {
+              await updateApplicationData(folder.id, {
                 explanation: explanation as string,
                 criteria: fullCriteria
               });
-              completeApplication(folder.id);
+              await completeApplication(folder.id);
               results.push(`Bibob application completed for "${folder.name}". Folder moved to research phase.`);
             } else {
               results.push(`Folder "${folder_id}" not found`);
@@ -150,7 +150,7 @@ export function ChatBot() {
               f.name.toLowerCase().includes((folder_id as string).toLowerCase())
             );
             if (folder) {
-              assignFolderOwner(folder.id, user_id as string, user_name as string);
+              await assignFolderOwner(folder.id, user_id as string, user_name as string);
               results.push(`${user_name} assigned as owner of "${folder.name}"`);
             } else {
               results.push(`Folder "${folder_id}" not found`);
@@ -168,21 +168,25 @@ export function ChatBot() {
               if (description) updates.description = description;
               if (color) updates.color = color;
               if (Object.keys(updates).length > 0) {
-                updateFolder(folder.id, updates as { name?: string; description?: string; color?: string });
+                await updateFolder(folder.id, updates as { name?: string; description?: string; color?: string });
               }
               // Update status separately (uses specialized function)
               if (status) {
-                updateFolderStatus(folder.id, status as FolderStatus);
+                await updateFolderStatus(folder.id, status as FolderStatus);
               }
               // Update location separately
               if (location) {
-                updateLocation(folder.id, location as string);
+                await updateLocation(folder.id, location as string);
               }
               // Update tags (replace all)
               if (tags && Array.isArray(tags)) {
                 // Remove existing tags, add new ones
-                folder.tags.forEach(tag => removeTag(folder.id, tag));
-                (tags as string[]).forEach(tag => addTag(folder.id, tag));
+                for (const tag of folder.tags) {
+                  await removeTag(folder.id, tag);
+                }
+                for (const tag of (tags as string[])) {
+                  await addTag(folder.id, tag);
+                }
               }
               results.push(`Folder "${folder.name}" updated`);
             } else {

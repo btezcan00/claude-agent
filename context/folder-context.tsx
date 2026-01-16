@@ -11,12 +11,9 @@ import {
   FolderAccessLevel,
   FolderNote,
   ApplicationData,
-  APPLICATION_CRITERIA,
 } from '@/types/folder';
-import { mockFolders } from '@/data/mock-folders';
 import { currentUser } from '@/data/mock-users';
-import { generateId, generateFolderId } from '@/lib/utils';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { generateId } from '@/lib/utils';
 import { useSignals } from './signal-context';
 
 interface FolderContextValue {
@@ -26,45 +23,47 @@ interface FolderContextValue {
   filters: FolderFilters;
   searchQuery: string;
   folderStats: FolderStats;
+  isLoading: boolean;
 
   // Folder CRUD
-  createFolder: (data: CreateFolderInput) => Folder;
-  createFolderFromSignals: (name: string, description: string, signalIds: string[]) => Folder;
-  updateFolder: (id: string, data: UpdateFolderInput) => void;
-  deleteFolder: (id: string) => void;
+  createFolder: (data: CreateFolderInput) => Promise<Folder>;
+  createFolderFromSignals: (name: string, description: string, signalIds: string[]) => Promise<Folder>;
+  updateFolder: (id: string, data: UpdateFolderInput) => Promise<void>;
+  deleteFolder: (id: string) => Promise<void>;
   getFolderById: (id: string) => Folder | undefined;
+  refreshFolders: () => Promise<void>;
 
   // Ownership
-  assignFolderOwner: (folderId: string, userId: string, userName: string) => void;
-  unassignFolderOwner: (folderId: string) => void;
+  assignFolderOwner: (folderId: string, userId: string, userName: string) => Promise<void>;
+  unassignFolderOwner: (folderId: string) => Promise<void>;
 
   // Status
-  updateFolderStatus: (folderId: string, status: FolderStatus) => void;
+  updateFolderStatus: (folderId: string, status: FolderStatus) => Promise<void>;
   getFoldersByStatus: (status: FolderStatus) => Folder[];
 
   // Notes
-  addFolderNote: (folderId: string, content: string, isAdminNote: boolean) => void;
-  removeFolderNote: (folderId: string, noteId: string) => void;
+  addFolderNote: (folderId: string, content: string, isAdminNote: boolean) => Promise<void>;
+  removeFolderNote: (folderId: string, noteId: string) => Promise<void>;
 
   // Practitioners
-  addPractitioner: (folderId: string, userId: string, userName: string) => void;
-  removePractitioner: (folderId: string, userId: string) => void;
+  addPractitioner: (folderId: string, userId: string, userName: string) => Promise<void>;
+  removePractitioner: (folderId: string, userId: string) => Promise<void>;
 
   // Sharing
-  shareFolder: (folderId: string, userId: string, userName: string, accessLevel: FolderAccessLevel) => void;
-  updateShareAccess: (folderId: string, userId: string, accessLevel: FolderAccessLevel) => void;
-  removeShare: (folderId: string, userId: string) => void;
+  shareFolder: (folderId: string, userId: string, userName: string, accessLevel: FolderAccessLevel) => Promise<void>;
+  updateShareAccess: (folderId: string, userId: string, accessLevel: FolderAccessLevel) => Promise<void>;
+  removeShare: (folderId: string, userId: string) => Promise<void>;
 
   // Tags
-  addTag: (folderId: string, tag: string) => void;
-  removeTag: (folderId: string, tag: string) => void;
+  addTag: (folderId: string, tag: string) => Promise<void>;
+  removeTag: (folderId: string, tag: string) => Promise<void>;
 
   // Location
-  updateLocation: (folderId: string, location: string) => void;
+  updateLocation: (folderId: string, location: string) => Promise<void>;
 
   // Application
-  updateApplicationData: (folderId: string, data: Partial<ApplicationData>) => void;
-  completeApplication: (folderId: string) => void;
+  updateApplicationData: (folderId: string, data: Partial<ApplicationData>) => Promise<void>;
+  completeApplication: (folderId: string) => Promise<void>;
 
   // Computed
   getSignalCountForFolder: (folderId: string) => number;
@@ -83,21 +82,39 @@ const defaultFilters: FolderFilters = {
 const FolderContext = createContext<FolderContextValue | null>(null);
 
 export function FolderProvider({ children }: { children: ReactNode }) {
-  const [folders, setFolders] = useLocalStorage<Folder[]>('gcmp-folders', mockFolders);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [filters, setFiltersState] = useState<FolderFilters>(defaultFilters);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { signals, addSignalsToFolder } = useSignals();
 
-  useEffect(() => {
-    setIsHydrated(true);
+  // Fetch folders from API on mount
+  const fetchFolders = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/folders');
+      if (response.ok) {
+        const data = await response.json();
+        setFolders(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch folders:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const filteredFolders = useMemo(() => {
-    if (!isHydrated) return [];
+  useEffect(() => {
+    fetchFolders();
+  }, [fetchFolders]);
 
+  const refreshFolders = useCallback(async () => {
+    await fetchFolders();
+  }, [fetchFolders]);
+
+  const filteredFolders = useMemo(() => {
     let result = [...folders];
 
     // Apply search
@@ -120,11 +137,9 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     result.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
     return result;
-  }, [folders, filters, searchQuery, isHydrated]);
+  }, [folders, filters, searchQuery]);
 
   const folderStats = useMemo((): FolderStats => {
-    if (!isHydrated) return { total: 0, withSignals: 0, empty: 0 };
-
     const foldersWithSignals = folders.filter((f) =>
       signals.some((s) => s.folderRelations.some(fr => fr.folderId === f.id))
     );
@@ -134,60 +149,35 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       withSignals: foldersWithSignals.length,
       empty: folders.length - foldersWithSignals.length,
     };
-  }, [folders, signals, isHydrated]);
+  }, [folders, signals]);
 
   const getSignalCountForFolder = useCallback((folderId: string): number => {
     return signals.filter((s) => s.folderRelations.some(fr => fr.folderId === folderId)).length;
   }, [signals]);
 
-  const createFolder = useCallback((data: CreateFolderInput): Folder => {
-    const now = new Date().toISOString();
-    const newFolder: Folder = {
-      id: generateFolderId(),
-      name: data.name,
-      description: data.description,
-      createdById: currentUser.id,
-      createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
-      createdAt: now,
-      updatedAt: now,
-      ownerId: data.ownerId || null,
-      ownerName: null,
-      color: data.color,
-      icon: data.icon,
-      status: 'application',
-      statusDates: {
-        application: now,
-      },
-      tags: [],
-      signalTypes: [],
-      practitioners: [],
-      sharedWith: [],
-      location: '',
-      notes: [],
-      applicationData: {
-        explanation: '',
-        criteria: APPLICATION_CRITERIA.map((c) => ({
-          id: c.id,
-          name: c.name,
-          label: c.label,
-          isMet: false,
-          explanation: '',
-        })),
-        isCompleted: false,
-      },
-    };
+  const createFolder = useCallback(async (data: CreateFolderInput): Promise<Folder> => {
+    const response = await fetch('/api/folders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
 
+    if (!response.ok) {
+      throw new Error('Failed to create folder');
+    }
+
+    const newFolder = await response.json();
     setFolders((prev) => [newFolder, ...prev]);
 
     // If signalIds provided, add signals to folder
     if (data.signalIds && data.signalIds.length > 0) {
-      addSignalsToFolder(data.signalIds, newFolder.id);
+      await addSignalsToFolder(data.signalIds, newFolder.id);
     }
 
     return newFolder;
-  }, [setFolders, addSignalsToFolder]);
+  }, [addSignalsToFolder]);
 
-  const createFolderFromSignals = useCallback((name: string, description: string, signalIds: string[]): Folder => {
+  const createFolderFromSignals = useCallback(async (name: string, description: string, signalIds: string[]): Promise<Folder> => {
     return createFolder({
       name,
       description,
@@ -195,80 +185,115 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     });
   }, [createFolder]);
 
-  const updateFolder = useCallback((id: string, data: UpdateFolderInput) => {
-    const now = new Date().toISOString();
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== id) return f;
-        return { ...f, ...data, updatedAt: now };
-      })
-    );
-  }, [setFolders]);
+  const updateFolder = useCallback(async (id: string, data: UpdateFolderInput) => {
+    const response = await fetch(`/api/folders/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
 
-  const deleteFolder = useCallback((id: string) => {
+    if (!response.ok) {
+      throw new Error('Failed to update folder');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === id ? updatedFolder : f))
+    );
+  }, []);
+
+  const deleteFolder = useCallback(async (id: string) => {
+    const response = await fetch(`/api/folders/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete folder');
+    }
+
     setFolders((prev) => prev.filter((f) => f.id !== id));
-    // Note: Signals keep their folderIds array, but the folder no longer exists
-    // This is acceptable as the folder reference becomes orphaned
-  }, [setFolders]);
+  }, []);
 
   const getFolderById = useCallback((id: string): Folder | undefined => {
     return folders.find((f) => f.id === id);
   }, [folders]);
 
-  const assignFolderOwner = useCallback((folderId: string, userId: string, userName: string) => {
-    const now = new Date().toISOString();
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          ownerId: userId,
-          ownerName: userName,
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setFolders]);
+  const assignFolderOwner = useCallback(async (folderId: string, userId: string, userName: string) => {
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ownerId: userId,
+        ownerName: userName,
+      }),
+    });
 
-  const unassignFolderOwner = useCallback((folderId: string) => {
-    const now = new Date().toISOString();
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          ownerId: null,
-          ownerName: null,
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setFolders]);
+    if (!response.ok) {
+      throw new Error('Failed to assign folder owner');
+    }
 
-  const updateFolderStatus = useCallback((folderId: string, status: FolderStatus) => {
-    const now = new Date().toISOString();
+    const updatedFolder = await response.json();
     setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          status,
-          statusDates: {
-            ...f.statusDates,
-            [status]: now,
-          },
-          updatedAt: now,
-        };
-      })
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [setFolders]);
+  }, []);
+
+  const unassignFolderOwner = useCallback(async (folderId: string) => {
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ownerId: null,
+        ownerName: null,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to unassign folder owner');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, []);
+
+  const updateFolderStatus = useCallback(async (folderId: string, status: FolderStatus) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const now = new Date().toISOString();
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status,
+        statusDates: {
+          ...folder.statusDates,
+          [status]: now,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update folder status');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
 
   const getFoldersByStatus = useCallback((status: FolderStatus): Folder[] => {
     return folders.filter((f) => f.status === status);
   }, [folders]);
 
   // Notes
-  const addFolderNote = useCallback((folderId: string, content: string, isAdminNote: boolean) => {
+  const addFolderNote = useCallback(async (folderId: string, content: string, isAdminNote: boolean) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
     const now = new Date().toISOString();
     const newNote: FolderNote = {
       id: generateId(),
@@ -278,203 +303,279 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
       isAdminNote,
     };
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          notes: [...(f.notes || []), newNote],
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setFolders]);
 
-  const removeFolderNote = useCallback((folderId: string, noteId: string) => {
-    const now = new Date().toISOString();
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notes: [...(folder.notes || []), newNote],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add folder note');
+    }
+
+    const updatedFolder = await response.json();
     setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          notes: (f.notes || []).filter((n) => n.id !== noteId),
-          updatedAt: now,
-        };
-      })
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [setFolders]);
+  }, [folders]);
+
+  const removeFolderNote = useCallback(async (folderId: string, noteId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notes: (folder.notes || []).filter((n) => n.id !== noteId),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove folder note');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
 
   // Practitioners
-  const addPractitioner = useCallback((folderId: string, userId: string, userName: string) => {
-    const now = new Date().toISOString();
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        if ((f.practitioners || []).some((p) => p.userId === userId)) return f;
-        return {
-          ...f,
-          practitioners: [...(f.practitioners || []), { userId, userName, addedAt: now }],
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setFolders]);
+  const addPractitioner = useCallback(async (folderId: string, userId: string, userName: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.practitioners || []).some((p) => p.userId === userId)) return;
 
-  const removePractitioner = useCallback((folderId: string, userId: string) => {
     const now = new Date().toISOString();
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        practitioners: [...(folder.practitioners || []), { userId, userName, addedAt: now }],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add practitioner');
+    }
+
+    const updatedFolder = await response.json();
     setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          practitioners: (f.practitioners || []).filter((p) => p.userId !== userId),
-          updatedAt: now,
-        };
-      })
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [setFolders]);
+  }, [folders]);
+
+  const removePractitioner = useCallback(async (folderId: string, userId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        practitioners: (folder.practitioners || []).filter((p) => p.userId !== userId),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove practitioner');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
 
   // Sharing
-  const shareFolder = useCallback((folderId: string, userId: string, userName: string, accessLevel: FolderAccessLevel) => {
-    const now = new Date().toISOString();
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        if ((f.sharedWith || []).some((s) => s.userId === userId)) return f;
-        return {
-          ...f,
-          sharedWith: [
-            ...(f.sharedWith || []),
-            {
-              userId,
-              userName,
-              accessLevel,
-              sharedAt: now,
-              sharedBy: `${currentUser.firstName} ${currentUser.lastName}`,
-            },
-          ],
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setFolders]);
+  const shareFolder = useCallback(async (folderId: string, userId: string, userName: string, accessLevel: FolderAccessLevel) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.sharedWith || []).some((s) => s.userId === userId)) return;
 
-  const updateShareAccess = useCallback((folderId: string, userId: string, accessLevel: FolderAccessLevel) => {
     const now = new Date().toISOString();
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          sharedWith: (f.sharedWith || []).map((s) =>
-            s.userId === userId ? { ...s, accessLevel } : s
-          ),
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setFolders]);
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sharedWith: [
+          ...(folder.sharedWith || []),
+          {
+            userId,
+            userName,
+            accessLevel,
+            sharedAt: now,
+            sharedBy: `${currentUser.firstName} ${currentUser.lastName}`,
+          },
+        ],
+      }),
+    });
 
-  const removeShare = useCallback((folderId: string, userId: string) => {
-    const now = new Date().toISOString();
+    if (!response.ok) {
+      throw new Error('Failed to share folder');
+    }
+
+    const updatedFolder = await response.json();
     setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          sharedWith: (f.sharedWith || []).filter((s) => s.userId !== userId),
-          updatedAt: now,
-        };
-      })
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [setFolders]);
+  }, [folders]);
+
+  const updateShareAccess = useCallback(async (folderId: string, userId: string, accessLevel: FolderAccessLevel) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sharedWith: (folder.sharedWith || []).map((s) =>
+          s.userId === userId ? { ...s, accessLevel } : s
+        ),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update share access');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeShare = useCallback(async (folderId: string, userId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sharedWith: (folder.sharedWith || []).filter((s) => s.userId !== userId),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove share');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
 
   // Tags
-  const addTag = useCallback((folderId: string, tag: string) => {
-    const now = new Date().toISOString();
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        if ((f.tags || []).includes(tag)) return f;
-        return {
-          ...f,
-          tags: [...(f.tags || []), tag],
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setFolders]);
+  const addTag = useCallback(async (folderId: string, tag: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.tags || []).includes(tag)) return;
 
-  const removeTag = useCallback((folderId: string, tag: string) => {
-    const now = new Date().toISOString();
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tags: [...(folder.tags || []), tag],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add tag');
+    }
+
+    const updatedFolder = await response.json();
     setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          tags: (f.tags || []).filter((t) => t !== tag),
-          updatedAt: now,
-        };
-      })
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [setFolders]);
+  }, [folders]);
+
+  const removeTag = useCallback(async (folderId: string, tag: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tags: (folder.tags || []).filter((t) => t !== tag),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove tag');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
 
   // Location
-  const updateLocation = useCallback((folderId: string, location: string) => {
-    const now = new Date().toISOString();
+  const updateLocation = useCallback(async (folderId: string, location: string) => {
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update location');
+    }
+
+    const updatedFolder = await response.json();
     setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          location,
-          updatedAt: now,
-        };
-      })
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [setFolders]);
+  }, []);
 
   // Application
-  const updateApplicationData = useCallback((folderId: string, data: Partial<ApplicationData>) => {
-    const now = new Date().toISOString();
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          applicationData: {
-            ...f.applicationData,
-            ...data,
-          },
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setFolders]);
+  const updateApplicationData = useCallback(async (folderId: string, data: Partial<ApplicationData>) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
 
-  const completeApplication = useCallback((folderId: string) => {
-    const now = new Date().toISOString();
+    const response = await fetch(`/api/folders/${folderId}/application`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        applicationData: data,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update application data');
+    }
+
+    const updatedFolder = await response.json();
     setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id !== folderId) return f;
-        return {
-          ...f,
-          applicationData: {
-            ...f.applicationData,
-            isCompleted: true,
-            completedAt: now,
-            completedBy: `${currentUser.firstName} ${currentUser.lastName}`,
-          },
-          status: 'research',
-          statusDates: {
-            ...f.statusDates,
-            research: now,
-          },
-          updatedAt: now,
-        };
-      })
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [setFolders]);
+  }, [folders]);
+
+  const completeApplication = useCallback(async (folderId: string) => {
+    const response = await fetch(`/api/folders/${folderId}/application`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        complete: true,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to complete application');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, []);
 
   const setFilters = useCallback((newFilters: Partial<FolderFilters>) => {
     setFiltersState((prev) => ({ ...prev, ...newFilters }));
@@ -492,11 +593,13 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     filters,
     searchQuery,
     folderStats,
+    isLoading,
     createFolder,
     createFolderFromSignals,
     updateFolder,
     deleteFolder,
     getFolderById,
+    refreshFolders,
     assignFolderOwner,
     unassignFolderOwner,
     updateFolderStatus,

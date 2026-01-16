@@ -19,10 +19,8 @@ interface SignalStats {
   total: number;
 }
 import { ViewMode } from '@/types/common';
-import { mockSignals } from '@/data/mock-signals';
 import { currentUser } from '@/data/mock-users';
-import { generateId, generateSignalNumber } from '@/lib/utils';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { generateId } from '@/lib/utils';
 
 interface SignalContextValue {
   signals: Signal[];
@@ -34,33 +32,35 @@ interface SignalContextValue {
   sortOption: SortOption;
   viewMode: ViewMode;
   signalStats: SignalStats;
+  isLoading: boolean;
 
   // Signal Actions
-  createSignal: (data: CreateSignalInput) => Signal;
-  updateSignal: (id: string, data: UpdateSignalInput) => void;
-  deleteSignal: (id: string) => void;
+  createSignal: (data: CreateSignalInput) => Promise<Signal>;
+  updateSignal: (id: string, data: UpdateSignalInput) => Promise<void>;
+  deleteSignal: (id: string) => Promise<void>;
   getSignalById: (id: string) => Signal | undefined;
   getSignalsByFolderId: (folderId: string) => Signal[];
+  refreshSignals: () => Promise<void>;
 
   // Notes Actions
-  addNote: (signalId: string, content: string, isPrivate?: boolean) => void;
+  addNote: (signalId: string, content: string, isPrivate?: boolean) => Promise<void>;
 
   // Photo Actions
-  addPhoto: (signalId: string, photo: Omit<SignalPhoto, 'id' | 'signalId' | 'uploadedAt'>) => void;
-  removePhoto: (signalId: string, photoId: string) => void;
+  addPhoto: (signalId: string, photo: Omit<SignalPhoto, 'id' | 'signalId' | 'uploadedAt'>) => Promise<void>;
+  removePhoto: (signalId: string, photoId: string) => Promise<void>;
 
   // Attachment Actions
-  addAttachment: (signalId: string, attachment: Omit<SignalAttachment, 'id' | 'signalId' | 'uploadedAt'>) => void;
-  removeAttachment: (signalId: string, attachmentId: string) => void;
+  addAttachment: (signalId: string, attachment: Omit<SignalAttachment, 'id' | 'signalId' | 'uploadedAt'>) => Promise<void>;
+  removeAttachment: (signalId: string, attachmentId: string) => Promise<void>;
 
   // Indicator Actions
-  updateIndicators: (signalId: string, indicators: SignalIndicator[]) => void;
+  updateIndicators: (signalId: string, indicators: SignalIndicator[]) => Promise<void>;
 
   // Folder Actions
-  addSignalToFolder: (signalId: string, folderId: string) => void;
-  removeSignalFromFolder: (signalId: string, folderId: string) => void;
-  addSignalsToFolder: (signalIds: string[], folderId: string) => void;
-  updateSignalFolderRelation: (signalId: string, folderId: string, relation: string) => void;
+  addSignalToFolder: (signalId: string, folderId: string) => Promise<void>;
+  removeSignalFromFolder: (signalId: string, folderId: string) => Promise<void>;
+  addSignalsToFolder: (signalIds: string[], folderId: string) => Promise<void>;
+  updateSignalFolderRelation: (signalId: string, folderId: string, relation: string) => Promise<void>;
   getSignalFolderRelation: (signalId: string, folderId: string) => SignalFolderRelation | undefined;
 
   // Selection Actions
@@ -91,22 +91,40 @@ const defaultSortOption: SortOption = {
 const SignalContext = createContext<SignalContextValue | null>(null);
 
 export function SignalProvider({ children }: { children: ReactNode }) {
-  const [signals, setSignals] = useLocalStorage<Signal[]>('gcmp-signals', mockSignals);
+  const [signals, setSignals] = useState<Signal[]>([]);
   const [filters, setFiltersState] = useState<SignalFilters>(defaultFilters);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>(defaultSortOption);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
   const [selectedSignalIds, setSelectedSignalIds] = useState<string[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    setIsHydrated(true);
+  // Fetch signals from API on mount
+  const fetchSignals = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/signals');
+      if (response.ok) {
+        const data = await response.json();
+        setSignals(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch signals:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const filteredSignals = useMemo(() => {
-    if (!isHydrated) return [];
+  useEffect(() => {
+    fetchSignals();
+  }, [fetchSignals]);
 
+  const refreshSignals = useCallback(async () => {
+    await fetchSignals();
+  }, [fetchSignals]);
+
+  const filteredSignals = useMemo(() => {
     let result = [...signals];
 
     // Apply search
@@ -150,83 +168,58 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     });
 
     return result;
-  }, [signals, filters, searchQuery, sortOption, isHydrated]);
+  }, [signals, filters, searchQuery, sortOption]);
 
   const signalStats = useMemo((): SignalStats => {
-    if (!isHydrated) return { total: 0 };
-
     return {
       total: signals.length,
     };
-  }, [signals, isHydrated]);
+  }, [signals]);
 
-  const createSignal = useCallback((data: CreateSignalInput): Signal => {
-    const now = new Date().toISOString();
-    const newSignal: Signal = {
-      id: generateId(),
-      signalNumber: generateSignalNumber(),
-      description: data.description,
-      types: data.types,
-      placeOfObservation: data.placeOfObservation,
-      locationDescription: data.locationDescription,
-      timeOfObservation: data.timeOfObservation,
-      receivedBy: data.receivedBy,
-      contactPerson: data.contactPerson,
-      createdById: currentUser.id,
-      createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
-      createdAt: now,
-      updatedAt: now,
-      folderRelations: (data.folderIds || []).map(folderId => ({ folderId })),
-      notes: [],
-      activities: [
-        {
-          id: generateId(),
-          signalId: '',
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'signal-created',
-          details: 'Signal created',
-          timestamp: now,
-        },
-      ],
-      photos: [],
-      attachments: [],
-      tags: [],
-      indicators: [],
-    };
-    newSignal.activities[0].signalId = newSignal.id;
+  const createSignal = useCallback(async (data: CreateSignalInput): Promise<Signal> => {
+    const response = await fetch('/api/signals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
 
+    if (!response.ok) {
+      throw new Error('Failed to create signal');
+    }
+
+    const newSignal = await response.json();
     setSignals((prev) => [newSignal, ...prev]);
     return newSignal;
-  }, [setSignals]);
+  }, []);
 
-  const updateSignal = useCallback((id: string, data: UpdateSignalInput) => {
-    const now = new Date().toISOString();
+  const updateSignal = useCallback(async (id: string, data: UpdateSignalInput) => {
+    const response = await fetch(`/api/signals/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update signal');
+    }
+
+    const updatedSignal = await response.json();
     setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s;
-
-        const updatedSignal = { ...s, ...data, updatedAt: now };
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId: id,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'signal-updated',
-          details: 'Signal details updated',
-          timestamp: now,
-        };
-        updatedSignal.activities = [activity, ...s.activities];
-
-        return updatedSignal;
-      })
+      prev.map((s) => (s.id === id ? updatedSignal : s))
     );
-  }, [setSignals]);
+  }, []);
 
-  const deleteSignal = useCallback((id: string) => {
+  const deleteSignal = useCallback(async (id: string) => {
+    const response = await fetch(`/api/signals/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete signal');
+    }
+
     setSignals((prev) => prev.filter((s) => s.id !== id));
-  }, [setSignals]);
+  }, []);
 
   const getSignalById = useCallback((id: string): Signal | undefined => {
     return signals.find((s) => s.id === id);
@@ -236,298 +229,342 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     return signals.filter((s) => s.folderRelations.some(fr => fr.folderId === folderId));
   }, [signals]);
 
-  const addNote = useCallback((signalId: string, content: string, isPrivate: boolean = false) => {
+  const addNote = useCallback(async (signalId: string, content: string, isPrivate: boolean = false) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
+
     const now = new Date().toISOString();
+    const note: SignalNote = {
+      id: generateId(),
+      signalId,
+      authorId: currentUser.id,
+      authorName: `${currentUser.firstName} ${currentUser.lastName}`,
+      content,
+      createdAt: now,
+      isPrivate,
+    };
+
+    const activity: ActivityEntry = {
+      id: generateId(),
+      signalId,
+      userId: currentUser.id,
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      action: 'note-added',
+      details: 'Added a note',
+      timestamp: now,
+    };
+
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notes: [note, ...signal.notes],
+        activities: [activity, ...signal.activities],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add note');
+    }
+
+    const updatedSignal = await response.json();
     setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
-
-        const note: SignalNote = {
-          id: generateId(),
-          signalId,
-          authorId: currentUser.id,
-          authorName: `${currentUser.firstName} ${currentUser.lastName}`,
-          content,
-          createdAt: now,
-          isPrivate,
-        };
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'note-added',
-          details: 'Added a note',
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          updatedAt: now,
-          notes: [note, ...s.notes],
-          activities: [activity, ...s.activities],
-        };
-      })
+      prev.map((s) => (s.id === signalId ? updatedSignal : s))
     );
-  }, [setSignals]);
+  }, [signals]);
 
-  const addPhoto = useCallback((
+  const addPhoto = useCallback(async (
     signalId: string,
     photo: Omit<SignalPhoto, 'id' | 'signalId' | 'uploadedAt'>
   ) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
+
     const now = new Date().toISOString();
+    const newPhoto: SignalPhoto = {
+      id: generateId(),
+      signalId,
+      uploadedAt: now,
+      ...photo,
+    };
+
+    const activity: ActivityEntry = {
+      id: generateId(),
+      signalId,
+      userId: currentUser.id,
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      action: 'photo-added',
+      details: `Added photo: ${photo.fileName}`,
+      timestamp: now,
+    };
+
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: [...signal.photos, newPhoto],
+        activities: [activity, ...signal.activities],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add photo');
+    }
+
+    const updatedSignal = await response.json();
     setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
-
-        const newPhoto: SignalPhoto = {
-          id: generateId(),
-          signalId,
-          uploadedAt: now,
-          ...photo,
-        };
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'photo-added',
-          details: `Added photo: ${photo.fileName}`,
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          updatedAt: now,
-          photos: [...s.photos, newPhoto],
-          activities: [activity, ...s.activities],
-        };
-      })
+      prev.map((s) => (s.id === signalId ? updatedSignal : s))
     );
-  }, [setSignals]);
+  }, [signals]);
 
-  const removePhoto = useCallback((signalId: string, photoId: string) => {
+  const removePhoto = useCallback(async (signalId: string, photoId: string) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
+
+    const photo = signal.photos.find(p => p.id === photoId);
+    if (!photo) return;
+
     const now = new Date().toISOString();
+    const activity: ActivityEntry = {
+      id: generateId(),
+      signalId,
+      userId: currentUser.id,
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      action: 'photo-removed',
+      details: `Removed photo: ${photo.fileName}`,
+      timestamp: now,
+    };
+
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: signal.photos.filter(p => p.id !== photoId),
+        activities: [activity, ...signal.activities],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove photo');
+    }
+
+    const updatedSignal = await response.json();
     setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
-
-        const photo = s.photos.find(p => p.id === photoId);
-        if (!photo) return s;
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'photo-removed',
-          details: `Removed photo: ${photo.fileName}`,
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          updatedAt: now,
-          photos: s.photos.filter(p => p.id !== photoId),
-          activities: [activity, ...s.activities],
-        };
-      })
+      prev.map((s) => (s.id === signalId ? updatedSignal : s))
     );
-  }, [setSignals]);
+  }, [signals]);
 
-  const addAttachment = useCallback((
+  const addAttachment = useCallback(async (
     signalId: string,
     attachment: Omit<SignalAttachment, 'id' | 'signalId' | 'uploadedAt'>
   ) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
+
     const now = new Date().toISOString();
+    const newAttachment: SignalAttachment = {
+      id: generateId(),
+      signalId,
+      uploadedAt: now,
+      ...attachment,
+    };
+
+    const activity: ActivityEntry = {
+      id: generateId(),
+      signalId,
+      userId: currentUser.id,
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      action: 'attachment-added',
+      details: `Added attachment: ${attachment.fileName}`,
+      timestamp: now,
+    };
+
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attachments: [...signal.attachments, newAttachment],
+        activities: [activity, ...signal.activities],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add attachment');
+    }
+
+    const updatedSignal = await response.json();
     setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
+      prev.map((s) => (s.id === signalId ? updatedSignal : s))
+    );
+  }, [signals]);
 
-        const newAttachment: SignalAttachment = {
-          id: generateId(),
-          signalId,
-          uploadedAt: now,
-          ...attachment,
-        };
+  const removeAttachment = useCallback(async (signalId: string, attachmentId: string) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
 
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'attachment-added',
-          details: `Added attachment: ${attachment.fileName}`,
-          timestamp: now,
-        };
+    const attachment = signal.attachments.find(a => a.id === attachmentId);
+    if (!attachment) return;
 
-        return {
-          ...s,
-          updatedAt: now,
-          attachments: [...s.attachments, newAttachment],
-          activities: [activity, ...s.activities],
-        };
+    const now = new Date().toISOString();
+    const activity: ActivityEntry = {
+      id: generateId(),
+      signalId,
+      userId: currentUser.id,
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      action: 'attachment-removed',
+      details: `Removed attachment: ${attachment.fileName}`,
+      timestamp: now,
+    };
+
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attachments: signal.attachments.filter(a => a.id !== attachmentId),
+        activities: [activity, ...signal.activities],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove attachment');
+    }
+
+    const updatedSignal = await response.json();
+    setSignals((prev) =>
+      prev.map((s) => (s.id === signalId ? updatedSignal : s))
+    );
+  }, [signals]);
+
+  const updateIndicators = useCallback(async (signalId: string, indicators: SignalIndicator[]) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
+
+    const now = new Date().toISOString();
+    const activity: ActivityEntry = {
+      id: generateId(),
+      signalId,
+      userId: currentUser.id,
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      action: 'signal-updated',
+      details: 'Updated indicators',
+      timestamp: now,
+    };
+
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        indicators,
+        activities: [activity, ...signal.activities],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update indicators');
+    }
+
+    const updatedSignal = await response.json();
+    setSignals((prev) =>
+      prev.map((s) => (s.id === signalId ? updatedSignal : s))
+    );
+  }, [signals]);
+
+  const addSignalToFolder = useCallback(async (signalId: string, folderId: string) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
+    if (signal.folderRelations.some(fr => fr.folderId === folderId)) return;
+
+    const response = await fetch(`/api/signals/${signalId}/folder-relations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add signal to folder');
+    }
+
+    const updatedSignal = await response.json();
+    setSignals((prev) =>
+      prev.map((s) => (s.id === signalId ? updatedSignal : s))
+    );
+  }, [signals]);
+
+  const removeSignalFromFolder = useCallback(async (signalId: string, folderId: string) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
+    if (!signal.folderRelations.some(fr => fr.folderId === folderId)) return;
+
+    const response = await fetch(`/api/folders/${folderId}/signals/${signalId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove signal from folder');
+    }
+
+    const data = await response.json();
+    setSignals((prev) =>
+      prev.map((s) => (s.id === signalId ? data.signal : s))
+    );
+  }, [signals]);
+
+  const addSignalsToFolder = useCallback(async (signalIds: string[], folderId: string) => {
+    const results = await Promise.all(
+      signalIds.map(async (signalId) => {
+        const signal = signals.find(s => s.id === signalId);
+        if (!signal || signal.folderRelations.some(fr => fr.folderId === folderId)) {
+          return null;
+        }
+
+        const response = await fetch(`/api/signals/${signalId}/folder-relations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderId }),
+        });
+
+        if (response.ok) {
+          return response.json();
+        }
+        return null;
       })
     );
-  }, [setSignals]);
 
-  const removeAttachment = useCallback((signalId: string, attachmentId: string) => {
-    const now = new Date().toISOString();
     setSignals((prev) =>
       prev.map((s) => {
-        if (s.id !== signalId) return s;
-
-        const attachment = s.attachments.find(a => a.id === attachmentId);
-        if (!attachment) return s;
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'attachment-removed',
-          details: `Removed attachment: ${attachment.fileName}`,
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          updatedAt: now,
-          attachments: s.attachments.filter(a => a.id !== attachmentId),
-          activities: [activity, ...s.activities],
-        };
+        const updated = results.find((r) => r && r.id === s.id);
+        return updated || s;
       })
     );
-  }, [setSignals]);
+  }, [signals]);
 
-  const updateIndicators = useCallback((signalId: string, indicators: SignalIndicator[]) => {
-    const now = new Date().toISOString();
+  const updateSignalFolderRelation = useCallback(async (signalId: string, folderId: string, relation: string) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (!signal) return;
+
+    const relationIndex = signal.folderRelations.findIndex(fr => fr.folderId === folderId);
+    if (relationIndex === -1) return;
+
+    const updatedRelations = [...signal.folderRelations];
+    updatedRelations[relationIndex] = { ...updatedRelations[relationIndex], relation };
+
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        folderRelations: updatedRelations,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update folder relation');
+    }
+
+    const updatedSignal = await response.json();
     setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'signal-updated',
-          details: 'Updated indicators',
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          indicators,
-          updatedAt: now,
-          activities: [activity, ...s.activities],
-        };
-      })
+      prev.map((s) => (s.id === signalId ? updatedSignal : s))
     );
-  }, [setSignals]);
-
-  const addSignalToFolder = useCallback((signalId: string, folderId: string) => {
-    const now = new Date().toISOString();
-    setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
-        if (s.folderRelations.some(fr => fr.folderId === folderId)) return s;
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'folder-added',
-          details: 'Added to folder',
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          folderRelations: [...s.folderRelations, { folderId }],
-          updatedAt: now,
-          activities: [activity, ...s.activities],
-        };
-      })
-    );
-  }, [setSignals]);
-
-  const removeSignalFromFolder = useCallback((signalId: string, folderId: string) => {
-    const now = new Date().toISOString();
-    setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
-        if (!s.folderRelations.some(fr => fr.folderId === folderId)) return s;
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'folder-removed',
-          details: 'Removed from folder',
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          folderRelations: s.folderRelations.filter((fr) => fr.folderId !== folderId),
-          updatedAt: now,
-          activities: [activity, ...s.activities],
-        };
-      })
-    );
-  }, [setSignals]);
-
-  const addSignalsToFolder = useCallback((signalIds: string[], folderId: string) => {
-    const now = new Date().toISOString();
-    setSignals((prev) =>
-      prev.map((s) => {
-        if (!signalIds.includes(s.id)) return s;
-        if (s.folderRelations.some(fr => fr.folderId === folderId)) return s;
-
-        const activity: ActivityEntry = {
-          id: generateId(),
-          signalId: s.id,
-          userId: currentUser.id,
-          userName: `${currentUser.firstName} ${currentUser.lastName}`,
-          action: 'folder-added',
-          details: 'Added to folder',
-          timestamp: now,
-        };
-
-        return {
-          ...s,
-          folderRelations: [...s.folderRelations, { folderId }],
-          updatedAt: now,
-          activities: [activity, ...s.activities],
-        };
-      })
-    );
-  }, [setSignals]);
-
-  const updateSignalFolderRelation = useCallback((signalId: string, folderId: string, relation: string) => {
-    const now = new Date().toISOString();
-    setSignals((prev) =>
-      prev.map((s) => {
-        if (s.id !== signalId) return s;
-        const relationIndex = s.folderRelations.findIndex(fr => fr.folderId === folderId);
-        if (relationIndex === -1) return s;
-
-        const updatedRelations = [...s.folderRelations];
-        updatedRelations[relationIndex] = { ...updatedRelations[relationIndex], relation };
-
-        return {
-          ...s,
-          folderRelations: updatedRelations,
-          updatedAt: now,
-        };
-      })
-    );
-  }, [setSignals]);
+  }, [signals]);
 
   const getSignalFolderRelation = useCallback((signalId: string, folderId: string): SignalFolderRelation | undefined => {
     const signal = signals.find(s => s.id === signalId);
@@ -570,11 +607,13 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     sortOption,
     viewMode,
     signalStats,
+    isLoading,
     createSignal,
     updateSignal,
     deleteSignal,
     getSignalById,
     getSignalsByFolderId,
+    refreshSignals,
     addNote,
     addPhoto,
     removePhoto,

@@ -47,11 +47,11 @@ export function FolderCreateDialog({ children, signalIds }: FolderCreateDialogPr
     signalIds: signalIds,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    const newFolder = createFolder({
+    const newFolder = await createFolder({
       ...formData,
       signalIds,
     });

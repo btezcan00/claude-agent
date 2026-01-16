@@ -39,9 +39,9 @@ export default function SignalDetailPage() {
     setSignal(foundSignal || null);
   }, [params.id, getSignalById, signals]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (signal) {
-      deleteSignal(signal.id);
+      await deleteSignal(signal.id);
       router.push('/signals');
     }
   };
