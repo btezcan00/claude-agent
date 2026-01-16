@@ -263,6 +263,99 @@ const tools: Anthropic.Tool[] = [
       required: [],
     },
   },
+  {
+    name: 'complete_bibob_application',
+    description: 'Complete the Bibob application for a folder. Updates the explanation, marks criteria as met with explanations, and finalizes the application to move the folder to research status.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the folder to complete the application for',
+        },
+        explanation: {
+          type: 'string',
+          description: 'Overall explanation for the Bibob application completion',
+        },
+        criteria: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', enum: ['necessary_info', 'annual_accounts', 'budgets', 'loan_agreement'] },
+              isMet: { type: 'boolean' },
+              explanation: { type: 'string' },
+            },
+            required: ['id', 'isMet', 'explanation'],
+          },
+          description: 'Array of criteria with completion status and explanations',
+        },
+      },
+      required: ['folder_id', 'explanation', 'criteria'],
+    },
+  },
+  {
+    name: 'assign_folder_owner',
+    description: 'Assign a team member as the owner of a folder. Use this when the user wants to assign someone to a folder.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the folder to assign an owner to',
+        },
+        user_id: {
+          type: 'string',
+          description: 'The ID of the team member to assign as owner',
+        },
+        user_name: {
+          type: 'string',
+          description: 'The full name of the team member to assign as owner',
+        },
+      },
+      required: ['folder_id', 'user_id', 'user_name'],
+    },
+  },
+  {
+    name: 'edit_folder',
+    description: 'Edit folder properties like name, description, status, location, color, or tags. Use this when the user wants to update folder information.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the folder to edit',
+        },
+        name: {
+          type: 'string',
+          description: 'New folder name',
+        },
+        description: {
+          type: 'string',
+          description: 'New folder description',
+        },
+        status: {
+          type: 'string',
+          enum: ['application', 'research', 'national_office', 'decision', 'archive'],
+          description: 'New folder status in the workflow',
+        },
+        location: {
+          type: 'string',
+          description: 'Geographic or organizational location',
+        },
+        color: {
+          type: 'string',
+          description: 'Folder color (e.g., #ef4444 for red, #3b82f6 for blue)',
+        },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tags to set on the folder (replaces existing tags)',
+        },
+      },
+      required: ['folder_id'],
+    },
+  },
 ];
 
 // Helper function to summarize attachments using Claude Vision
@@ -420,22 +513,27 @@ Your capabilities:
 **Folder Management:**
 6. List folders - show all folders with their signal counts
 7. Get folder stats - show folder statistics
+8. Assign folder owner - assign a team member as the owner of a folder
+9. Edit folder - update folder name, description, status, location, color, or tags
 
 **Team:**
-8. List team members - show available team members and their folder ownership
+10. List team members - show available team members and their folder ownership
 
 **Analytics & Search:**
-9. Get signal stats - show signal statistics (total count)
-10. Search signals - find signals by keyword, type, or source
+11. Get signal stats - show signal statistics (total count)
+12. Search signals - find signals by keyword, type, or source
 
 **Signal Details:**
-11. Get signal activity - view the activity history/timeline for a signal
-12. Get signal notes - view all notes for a specific signal
+13. Get signal activity - view the activity history/timeline for a signal
+14. Get signal notes - view all notes for a specific signal
 
 **Attachments:**
-13. Summarize attachments - analyze and summarize all attachments (images, documents) for a signal using AI vision
+15. Summarize attachments - analyze and summarize all attachments (images, documents) for a signal using AI vision
 
-When creating, editing, assigning, or deleting folders or signals, always confirm with the user before making changes. Be professional, concise, and helpful. Use the appropriate tools when the user wants to perform these actions.
+**Folder Application Management:**
+16. Complete Bibob application - complete the application checklist for a folder, update criteria explanations, and move folder to research phase
+
+When creating, editing, completing applications, or deleting folders or signals, always confirm with the user before making changes. Be professional, concise, and helpful. Use the appropriate tools when the user wants to perform these actions.
 
 Important: When referencing folders or signals, use their folder or signal number (e.g., GCMP-2024-000001) for clarity. When assigning folders or signals, use the team member's full name.`;
 

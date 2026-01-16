@@ -8,6 +8,7 @@ import { useSignals } from '@/context/signal-context';
 import { useFolders } from '@/context/folder-context';
 import { useUsers } from '@/context/user-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType } from '@/types/signal';
+import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus } from '@/types/folder';
 
 interface Message {
   id: string;
@@ -32,14 +33,14 @@ export function ChatBot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState<{
-    type: 'create' | 'edit' | 'add_note' | 'delete';
+    type: 'create' | 'edit' | 'add_note' | 'delete' | 'complete_application' | 'assign_folder' | 'edit_folder';
     data: Record<string, unknown>;
   }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
-  const { folders, folderStats, getSignalCountForFolder } = useFolders();
+  const { folders, folderStats, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag } = useFolders();
   const { users, getUserFullName } = useUsers();
 
   const findSignal = (identifier: string) => {
@@ -115,6 +116,77 @@ export function ChatBot() {
               results.push(`Signal ${targetSignal.signalNumber} deleted`);
             } else {
               results.push(`Signal ${signal_id} not found`);
+            }
+          } else if (pendingAction.type === 'complete_application') {
+            const { folder_id, explanation, criteria } = pendingAction.data;
+            const folder = folders.find(f =>
+              f.id === folder_id ||
+              f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+            );
+            if (folder) {
+              // Merge incoming criteria with APPLICATION_CRITERIA to include name and label
+              const incomingCriteria = criteria as Array<{id: string, isMet: boolean, explanation: string}>;
+              const fullCriteria: ApplicationCriterion[] = APPLICATION_CRITERIA.map(baseCrit => {
+                const incoming = incomingCriteria.find(c => c.id === baseCrit.id);
+                return {
+                  ...baseCrit,
+                  isMet: incoming?.isMet ?? false,
+                  explanation: incoming?.explanation ?? '',
+                };
+              });
+              updateApplicationData(folder.id, {
+                explanation: explanation as string,
+                criteria: fullCriteria
+              });
+              completeApplication(folder.id);
+              results.push(`Bibob application completed for "${folder.name}". Folder moved to research phase.`);
+            } else {
+              results.push(`Folder "${folder_id}" not found`);
+            }
+          } else if (pendingAction.type === 'assign_folder') {
+            const { folder_id, user_id, user_name } = pendingAction.data;
+            const folder = folders.find(f =>
+              f.id === folder_id ||
+              f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+            );
+            if (folder) {
+              assignFolderOwner(folder.id, user_id as string, user_name as string);
+              results.push(`${user_name} assigned as owner of "${folder.name}"`);
+            } else {
+              results.push(`Folder "${folder_id}" not found`);
+            }
+          } else if (pendingAction.type === 'edit_folder') {
+            const { folder_id, name, description, status, location, color, tags } = pendingAction.data;
+            const folder = folders.find(f =>
+              f.id === folder_id ||
+              f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+            );
+            if (folder) {
+              // Update basic folder properties
+              const updates: Record<string, unknown> = {};
+              if (name) updates.name = name;
+              if (description) updates.description = description;
+              if (color) updates.color = color;
+              if (Object.keys(updates).length > 0) {
+                updateFolder(folder.id, updates as { name?: string; description?: string; color?: string });
+              }
+              // Update status separately (uses specialized function)
+              if (status) {
+                updateFolderStatus(folder.id, status as FolderStatus);
+              }
+              // Update location separately
+              if (location) {
+                updateLocation(folder.id, location as string);
+              }
+              // Update tags (replace all)
+              if (tags && Array.isArray(tags)) {
+                // Remove existing tags, add new ones
+                folder.tags.forEach(tag => removeTag(folder.id, tag));
+                (tags as string[]).forEach(tag => addTag(folder.id, tag));
+              }
+              results.push(`Folder "${folder.name}" updated`);
+            } else {
+              results.push(`Folder "${folder_id}" not found`);
             }
           }
         }
@@ -321,6 +393,12 @@ export function ChatBot() {
               `- **With Signals:** ${folderStats.withSignals}\n` +
               `- **Empty:** ${folderStats.empty}`;
             readResults.push(statsContent);
+          } else if (name === 'complete_bibob_application') {
+            newPendingActions.push({ type: 'complete_application', data: toolInput });
+          } else if (name === 'assign_folder_owner') {
+            newPendingActions.push({ type: 'assign_folder', data: toolInput });
+          } else if (name === 'edit_folder') {
+            newPendingActions.push({ type: 'edit_folder', data: toolInput });
           }
         }
 
@@ -355,6 +433,29 @@ export function ChatBot() {
             } else if (action.type === 'delete') {
               const targetSignal = findSignal(action.data.signal_id as string);
               return `**Delete ${targetSignal?.signalNumber || action.data.signal_id}**`;
+            } else if (action.type === 'complete_application') {
+              const folder = folders.find(f =>
+                f.id === action.data.folder_id ||
+                f.name.toLowerCase().includes((action.data.folder_id as string).toLowerCase())
+              );
+              const criteriaCount = (action.data.criteria as Array<{isMet: boolean}>)?.filter(c => c.isMet).length || 0;
+              return `**Complete Bibob application for "${folder?.name || action.data.folder_id}"** (${criteriaCount}/4 criteria met)`;
+            } else if (action.type === 'assign_folder') {
+              const folder = folders.find(f =>
+                f.id === action.data.folder_id ||
+                f.name.toLowerCase().includes((action.data.folder_id as string).toLowerCase())
+              );
+              return `**Assign ${action.data.user_name} as owner of "${folder?.name || action.data.folder_id}"**`;
+            } else if (action.type === 'edit_folder') {
+              const folder = folders.find(f =>
+                f.id === action.data.folder_id ||
+                f.name.toLowerCase().includes((action.data.folder_id as string).toLowerCase())
+              );
+              const updates = Object.entries(action.data)
+                .filter(([key, value]) => key !== 'folder_id' && value !== undefined)
+                .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+                .join(', ');
+              return `**Edit folder "${folder?.name || action.data.folder_id}":** ${updates}`;
             }
             return '';
           }).filter(Boolean);
