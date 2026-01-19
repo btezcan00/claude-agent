@@ -1,0 +1,5 @@
+{
+  "disabledMcpjsonServers": [
+    "signal-folder-api"
+  ]
+}

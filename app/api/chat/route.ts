@@ -295,6 +295,40 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'save_bibob_application_draft',
+    description: 'Save progress on a Bibob application without completing it. Use this when the user wants to save their work and return later to finish.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'ID or name of the folder',
+        },
+        explanation: {
+          type: 'string',
+          description: 'Overall explanation for the application (optional)',
+        },
+        criteria: {
+          type: 'array',
+          description: 'Application criteria status (optional)',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                enum: ['necessary_info', 'annual_accounts', 'budgets', 'loan_agreement'],
+              },
+              isMet: { type: 'boolean' },
+              explanation: { type: 'string' },
+            },
+            required: ['id', 'isMet', 'explanation'],
+          },
+        },
+      },
+      required: ['folder_id'],
+    },
+  },
+  {
     name: 'assign_folder_owner',
     description: 'Assign a team member as the owner of a folder. Use this when the user wants to assign someone to a folder.',
     input_schema: {
@@ -532,6 +566,7 @@ Your capabilities:
 
 **Folder Application Management:**
 16. Complete Bibob application - complete the application checklist for a folder, update criteria explanations, and move folder to research phase
+17. Save Bibob application draft - save progress on an application without completing it, allowing users to return later to finish
 
 When creating, editing, completing applications, or deleting folders or signals, always confirm with the user before making changes. Be professional, concise, and helpful. Use the appropriate tools when the user wants to perform these actions.
 

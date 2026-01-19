@@ -33,14 +33,14 @@ export function ChatBot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState<{
-    type: 'create' | 'edit' | 'add_note' | 'delete' | 'complete_application' | 'assign_folder' | 'edit_folder';
+    type: 'create' | 'edit' | 'add_note' | 'delete' | 'complete_application' | 'save_application_draft' | 'assign_folder' | 'edit_folder' | 'summarize_signals' | 'list_team_members' | 'get_signal_stats' | 'search_signals' | 'get_signal_activity' | 'get_signal_notes' | 'summarize_attachments' | 'list_folders' | 'get_folder_stats';
     data: Record<string, unknown>;
   }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
-  const { folders, folderStats, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag } = useFolders();
+  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag } = useFolders();
   const { users, getUserFullName } = useUsers();
 
   const findSignal = (identifier: string) => {
@@ -125,7 +125,7 @@ export function ChatBot() {
             );
             if (folder) {
               // Merge incoming criteria with APPLICATION_CRITERIA to include name and label
-              const incomingCriteria = criteria as Array<{id: string, isMet: boolean, explanation: string}>;
+              const incomingCriteria = criteria as Array<{ id: string, isMet: boolean, explanation: string }>;
               const fullCriteria: ApplicationCriterion[] = APPLICATION_CRITERIA.map(baseCrit => {
                 const incoming = incomingCriteria.find(c => c.id === baseCrit.id);
                 return {
@@ -140,6 +140,36 @@ export function ChatBot() {
               });
               await completeApplication(folder.id);
               results.push(`Bibob application completed for "${folder.name}". Folder moved to research phase.`);
+            } else {
+              results.push(`Folder "${folder_id}" not found`);
+            }
+          } else if (pendingAction.type === 'save_application_draft') {
+            const { folder_id, explanation, criteria } = pendingAction.data;
+            const folder = folders.find(f =>
+              f.id === folder_id ||
+              f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+            );
+            if (folder) {
+              const updatePayload: { explanation?: string; criteria?: ApplicationCriterion[] } = {};
+
+              if (explanation) {
+                updatePayload.explanation = explanation as string;
+              }
+
+              if (criteria) {
+                const incomingCriteria = criteria as Array<{ id: string, isMet: boolean, explanation: string }>;
+                updatePayload.criteria = APPLICATION_CRITERIA.map(baseCrit => {
+                  const incoming = incomingCriteria.find(c => c.id === baseCrit.id);
+                  return {
+                    ...baseCrit,
+                    isMet: incoming?.isMet ?? false,
+                    explanation: incoming?.explanation ?? '',
+                  };
+                });
+              }
+
+              await updateApplicationData(folder.id, updatePayload);
+              results.push(`Draft saved for "${folder.name}". You can complete it later.`);
             } else {
               results.push(`Folder "${folder_id}" not found`);
             }
@@ -192,6 +222,92 @@ export function ChatBot() {
             } else {
               results.push(`Folder "${folder_id}" not found`);
             }
+          } else if (pendingAction.type === 'summarize_signals') {
+            const signalId = pendingAction.data.signal_id as string | undefined;
+            if (signalId) {
+              const targetSignal = findSignal(signalId);
+              if (!targetSignal) {
+                results.push(`Signal "${signalId}" not found. Try asking about a specific signal by name or number.`);
+              } else {
+                results.push(`**${targetSignal.signalNumber}**\n\n**Location:** ${targetSignal.placeOfObservation}\n**Type(s):** ${targetSignal.types.join(', ')}\n**Received By:** ${targetSignal.receivedBy}\n**Time of Observation:** ${new Date(targetSignal.timeOfObservation).toLocaleString()}\n**Created:** ${new Date(targetSignal.createdAt).toLocaleDateString()}\n\n**Description:**\n${targetSignal.description}`);
+              }
+            } else {
+              results.push(`**Signal Summary (${signals.length} total signals)**`);
+            }
+          } else if (pendingAction.type === 'list_team_members') {
+            const teamList = users.map(u => {
+              const ownedCount = folders.filter(f => f.ownerId === u.id).length;
+              return `- **${getUserFullName(u)}** (${u.title}): owns ${ownedCount} folder(s)`;
+            }).join('\n');
+            results.push(`**Team Members:**\n\n${teamList}`);
+          } else if (pendingAction.type === 'get_signal_stats') {
+            results.push(`**Signal Statistics:**\n\n- **Total Signals:** ${signalStats.total}`);
+          } else if (pendingAction.type === 'search_signals') {
+            let searchResults = [...signals];
+            const { keyword, type, receivedBy } = pendingAction.data;
+
+            if (keyword) {
+              const kw = (keyword as string).toLowerCase();
+              searchResults = searchResults.filter(s =>
+                s.description.toLowerCase().includes(kw) ||
+                s.signalNumber.toLowerCase().includes(kw) ||
+                s.placeOfObservation.toLowerCase().includes(kw)
+              );
+            }
+            if (type) {
+              searchResults = searchResults.filter(s => s.types.includes(type as SignalType));
+            }
+            if (receivedBy) {
+              searchResults = searchResults.filter(s => s.receivedBy === receivedBy);
+            }
+
+            const resultsList = searchResults.length > 0
+              ? searchResults.map(s =>
+                `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.types.join(', ')})`
+              ).join('\n')
+              : 'No signals found matching your criteria.';
+            results.push(`**Search Results (${searchResults.length} signals):**\n\n${resultsList}`);
+          } else if (pendingAction.type === 'get_signal_activity') {
+            const targetSignal = findSignal(pendingAction.data.signal_id as string);
+            if (!targetSignal) {
+              results.push(`Signal not found.`);
+            } else {
+              const activities = targetSignal.activities.slice(0, 10).map(a =>
+                `- **${new Date(a.timestamp).toLocaleString()}**: ${a.details} (by ${a.userName})`
+              ).join('\n');
+              results.push(`**Activity History for ${targetSignal.signalNumber}:**\n\n${activities || 'No activity recorded.'}`);
+            }
+          } else if (pendingAction.type === 'get_signal_notes') {
+            const targetSignal = findSignal(pendingAction.data.signal_id as string);
+            if (!targetSignal) {
+              results.push(`Signal not found.`);
+            } else {
+              const notes = targetSignal.notes.length > 0
+                ? targetSignal.notes.map(n =>
+                  `**${new Date(n.createdAt).toLocaleString()}** (${n.authorName})${n.isPrivate ? ' [Private]' : ''}:\n${n.content}`
+                ).join('\n\n---\n\n')
+                : 'No notes on this signal.';
+              results.push(`**Notes for ${targetSignal.signalNumber}:**\n\n${notes}`);
+            }
+          } else if (pendingAction.type === 'summarize_attachments') {
+            const result = pendingAction.data.result;
+            if (result) {
+              results.push(`**Attachment Analysis:**\n\n${result}`);
+            } else {
+              const targetSignal = findSignal(pendingAction.data.signal_id as string);
+              results.push(`Could not analyze attachments for ${targetSignal?.signalNumber || pendingAction.data.signal_id}.`);
+            }
+          } else if (pendingAction.type === 'list_folders') {
+            const folderList = folders.length > 0
+              ? folders.map(f =>
+                `- **${f.name}**: ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`
+              ).join('\n')
+              : 'No folders found.';
+            results.push(`**Folders (${folders.length}):**\n\n${folderList}`);
+          } else if (pendingAction.type === 'get_folder_stats') {
+            const response = await fetch('/api/folders/stats');
+            const stats = await response.json();
+            results.push(`**Folder Statistics:**\n- Total Folders: ${stats.total}\n- With Signals: ${stats.withSignals}\n- Empty: ${stats.empty}`);
           }
         }
 
@@ -303,14 +419,13 @@ export function ChatBot() {
       // Handle tool uses (array of tool calls)
       if (data.toolUses && data.toolUses.length > 0) {
         const newPendingActions: typeof pendingActions = [];
-        const readResults: string[] = [];
 
         // Process each tool call
         for (const toolUse of data.toolUses) {
           const { name, input: toolInput } = toolUse;
 
           if (name === 'summarize_signals') {
-            readResults.push(generateSignalSummary(toolInput.signal_id as string | undefined));
+            newPendingActions.push({ type: 'summarize_signals', data: toolInput });
           } else if (name === 'create_signal') {
             newPendingActions.push({ type: 'create', data: toolInput });
           } else if (name === 'edit_signal') {
@@ -320,85 +435,25 @@ export function ChatBot() {
           } else if (name === 'delete_signal') {
             newPendingActions.push({ type: 'delete', data: toolInput });
           } else if (name === 'list_team_members') {
-            const teamList = users.map(u => {
-              const ownedCount = folders.filter(f => f.ownerId === u.id).length;
-              return `- **${getUserFullName(u)}** (${u.title}): owns ${ownedCount} folder(s)`;
-            }).join('\n');
-            readResults.push(`**Team Members:**\n\n${teamList}`);
+            newPendingActions.push({ type: 'list_team_members', data: {} });
           } else if (name === 'get_signal_stats') {
-            const statsContent = `**Signal Statistics:**\n\n` +
-              `- **Total Signals:** ${signalStats.total}`;
-            readResults.push(statsContent);
+            newPendingActions.push({ type: 'get_signal_stats', data: {} });
           } else if (name === 'search_signals') {
-            let results = [...signals];
-            const { keyword, type, receivedBy } = toolInput;
-
-            if (keyword) {
-              const kw = (keyword as string).toLowerCase();
-              results = results.filter(s =>
-                s.description.toLowerCase().includes(kw) ||
-                s.signalNumber.toLowerCase().includes(kw) ||
-                s.placeOfObservation.toLowerCase().includes(kw)
-              );
-            }
-            if (type) {
-              results = results.filter(s => s.types.includes(type as SignalType));
-            }
-            if (receivedBy) {
-              results = results.filter(s => s.receivedBy === receivedBy);
-            }
-
-            const resultsList = results.length > 0
-              ? results.map(s =>
-                `- **${s.signalNumber}**: ${s.placeOfObservation} (${s.types.join(', ')})`
-              ).join('\n')
-              : 'No signals found matching your criteria.';
-            readResults.push(`**Search Results (${results.length} signals):**\n\n${resultsList}`);
+            newPendingActions.push({ type: 'search_signals', data: toolInput });
           } else if (name === 'get_signal_activity') {
-            const targetSignal = findSignal(toolInput.signal_id as string);
-            if (!targetSignal) {
-              readResults.push(`Signal not found.`);
-            } else {
-              const activities = targetSignal.activities.slice(0, 10).map(a =>
-                `- **${new Date(a.timestamp).toLocaleString()}**: ${a.details} (by ${a.userName})`
-              ).join('\n');
-              readResults.push(`**Activity History for ${targetSignal.signalNumber}:**\n\n${activities || 'No activity recorded.'}`);
-            }
+            newPendingActions.push({ type: 'get_signal_activity', data: toolInput });
           } else if (name === 'get_signal_notes') {
-            const targetSignal = findSignal(toolInput.signal_id as string);
-            if (!targetSignal) {
-              readResults.push(`Signal not found.`);
-            } else {
-              const notes = targetSignal.notes.length > 0
-                ? targetSignal.notes.map(n =>
-                  `**${new Date(n.createdAt).toLocaleString()}** (${n.authorName})${n.isPrivate ? ' [Private]' : ''}:\n${n.content}`
-                ).join('\n\n---\n\n')
-                : 'No notes on this signal.';
-              readResults.push(`**Notes for ${targetSignal.signalNumber}:**\n\n${notes}`);
-            }
+            newPendingActions.push({ type: 'get_signal_notes', data: toolInput });
           } else if (name === 'summarize_attachments') {
-            // The result comes from the server-side processing
-            if (toolUse.result) {
-              readResults.push(`**Attachment Analysis:**\n\n${toolUse.result}`);
-            } else {
-              const targetSignal = findSignal(toolInput.signal_id as string);
-              readResults.push(`Could not analyze attachments for ${targetSignal?.signalNumber || toolInput.signal_id}.`);
-            }
+            newPendingActions.push({ type: 'summarize_attachments', data: { ...toolInput, result: toolUse.result } });
           } else if (name === 'list_folders') {
-            const folderList = folders.length > 0
-              ? folders.map(f =>
-                `- **${f.name}**: ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`
-              ).join('\n')
-              : 'No folders found.';
-            readResults.push(`**Folders (${folders.length}):**\n\n${folderList}`);
+            newPendingActions.push({ type: 'list_folders', data: {} });
           } else if (name === 'get_folder_stats') {
-            const statsContent = `**Folder Statistics:**\n\n` +
-              `- **Total Folders:** ${folderStats.total}\n` +
-              `- **With Signals:** ${folderStats.withSignals}\n` +
-              `- **Empty:** ${folderStats.empty}`;
-            readResults.push(statsContent);
+            newPendingActions.push({ type: 'get_folder_stats', data: {} });
           } else if (name === 'complete_bibob_application') {
             newPendingActions.push({ type: 'complete_application', data: toolInput });
+          } else if (name === 'save_bibob_application_draft') {
+            newPendingActions.push({ type: 'save_application_draft', data: toolInput });
           } else if (name === 'assign_folder_owner') {
             newPendingActions.push({ type: 'assign_folder', data: toolInput });
           } else if (name === 'edit_folder') {
@@ -408,12 +463,6 @@ export function ChatBot() {
 
         // Build the response message
         let responseContent = data.content || '';
-
-        // Add read results if any
-        if (readResults.length > 0) {
-          if (responseContent) responseContent += '\n\n';
-          responseContent += readResults.join('\n\n---\n\n');
-        }
 
         // Handle pending actions
         if (newPendingActions.length > 0) {
@@ -442,8 +491,14 @@ export function ChatBot() {
                 f.id === action.data.folder_id ||
                 f.name.toLowerCase().includes((action.data.folder_id as string).toLowerCase())
               );
-              const criteriaCount = (action.data.criteria as Array<{isMet: boolean}>)?.filter(c => c.isMet).length || 0;
+              const criteriaCount = (action.data.criteria as Array<{ isMet: boolean }>)?.filter(c => c.isMet).length || 0;
               return `**Complete Bibob application for "${folder?.name || action.data.folder_id}"** (${criteriaCount}/4 criteria met)`;
+            } else if (action.type === 'save_application_draft') {
+              const folder = folders.find(f =>
+                f.id === action.data.folder_id ||
+                f.name.toLowerCase().includes((action.data.folder_id as string).toLowerCase())
+              );
+              return `**Save draft** for Bibob application on "${folder?.name || action.data.folder_id}"`;
             } else if (action.type === 'assign_folder') {
               const folder = folders.find(f =>
                 f.id === action.data.folder_id ||
@@ -460,6 +515,27 @@ export function ChatBot() {
                 .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
                 .join(', ');
               return `**Edit folder "${folder?.name || action.data.folder_id}":** ${updates}`;
+            } else if (action.type === 'summarize_signals') {
+              const signalId = action.data.signal_id;
+              return signalId
+                ? `**View signal details** for ${signalId}`
+                : `**View signal summary**`;
+            } else if (action.type === 'list_team_members') {
+              return `**List team members**`;
+            } else if (action.type === 'get_signal_stats') {
+              return `**Fetch signal statistics**`;
+            } else if (action.type === 'search_signals') {
+              return `**Search signals** with criteria: ${JSON.stringify(action.data)}`;
+            } else if (action.type === 'get_signal_activity') {
+              return `**View activity history** for signal ${action.data.signal_id}`;
+            } else if (action.type === 'get_signal_notes') {
+              return `**View notes** for signal ${action.data.signal_id}`;
+            } else if (action.type === 'summarize_attachments') {
+              return `**Analyze attachments** for signal ${action.data.signal_id}`;
+            } else if (action.type === 'list_folders') {
+              return `**List all folders**`;
+            } else if (action.type === 'get_folder_stats') {
+              return `**Fetch folder statistics**`;
             }
             return '';
           }).filter(Boolean);
@@ -502,16 +578,6 @@ export function ChatBot() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const generateSignalSummary = (signalId?: string) => {
-    if (signalId) {
-      const targetSignal = findSignal(signalId);
-      if (!targetSignal) return `Signal "${signalId}" not found. Try asking about a specific signal by name or number.`;
-      return `**${targetSignal.signalNumber}**\n\n**Location:** ${targetSignal.placeOfObservation}\n**Type(s):** ${targetSignal.types.join(', ')}\n**Received By:** ${targetSignal.receivedBy}\n**Time of Observation:** ${new Date(targetSignal.timeOfObservation).toLocaleString()}\n**Created:** ${new Date(targetSignal.createdAt).toLocaleDateString()}\n\n**Description:**\n${targetSignal.description}`;
-    }
-
-    return `**Signal Summary (${signals.length} total signals)**`;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

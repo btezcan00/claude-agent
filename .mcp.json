@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "signal-folder-api": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "env": {
+        "API_BASE_URL": "http://localhost:3000"
+      }
+    }
+  }
+}
