@@ -1,9 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { loadSkills, formatSkillsForPrompt } from '@/lib/skills/loader';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+// Load skills at module level (cached at startup)
+const skillsPromise = loadSkills();
 
 interface Message {
   role: 'user' | 'assistant';
@@ -524,6 +528,10 @@ export async function POST(request: NextRequest) {
       )
       .join('\n');
 
+    // Get cached skills
+    const skills = await skillsPromise;
+    const skillsContent = formatSkillsForPrompt(skills);
+
     const systemPrompt = `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals and folders related to human trafficking, drugs, and other criminal activities.
 
 Current Signals in the System (${(signals || []).length} total):
@@ -570,7 +578,8 @@ Your capabilities:
 
 When creating, editing, completing applications, or deleting folders or signals, always confirm with the user before making changes. Be professional, concise, and helpful. Use the appropriate tools when the user wants to perform these actions.
 
-Important: When referencing folders or signals, use their folder or signal number (e.g., GCMP-2024-000001) for clarity. When assigning folders or signals, use the team member's full name.`;
+Important: When referencing folders or signals, use their folder or signal number (e.g., GCMP-2024-000001) for clarity. When assigning folders or signals, use the team member's full name.
+${skillsContent}`;
 
     const anthropicMessages = messages.map((m) => ({
       role: m.role as 'user' | 'assistant',
