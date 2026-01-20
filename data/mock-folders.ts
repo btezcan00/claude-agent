@@ -31,6 +31,17 @@ export const mockFolders: Folder[] = [
     notes: [
       { id: 'note-001', content: 'Initial assessment completed. Multiple indicators found.', createdAt: '2024-01-12T10:00:00Z', createdBy: 'user-001', createdByName: 'Sarah Mitchell', isAdminNote: false },
     ],
+    organizations: [],
+    addresses: [],
+    peopleInvolved: [],
+    letters: [],
+    findings: [],
+    attachments: [],
+    records: [],
+    communications: [],
+    suggestions: [],
+    visualizations: [],
+    activities: [],
     applicationData: {
       explanation: 'Application reviewed and all criteria met for Bibob test.',
       criteria: [
@@ -70,6 +81,17 @@ export const mockFolders: Folder[] = [
     sharedWith: [],
     location: 'Rotterdam, Netherlands',
     notes: [],
+    organizations: [],
+    addresses: [],
+    peopleInvolved: [],
+    letters: [],
+    findings: [],
+    attachments: [],
+    records: [],
+    communications: [],
+    suggestions: [],
+    visualizations: [],
+    activities: [],
     applicationData: {
       explanation: 'Narcotics case application completed.',
       criteria: [
@@ -108,6 +130,17 @@ export const mockFolders: Folder[] = [
     ],
     location: 'The Hague, Netherlands',
     notes: [],
+    organizations: [],
+    addresses: [],
+    peopleInvolved: [],
+    letters: [],
+    findings: [],
+    attachments: [],
+    records: [],
+    communications: [],
+    suggestions: [],
+    visualizations: [],
+    activities: [],
     applicationData: {
       explanation: '',
       criteria: [

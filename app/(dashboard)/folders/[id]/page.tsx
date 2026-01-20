@@ -7,6 +7,17 @@ import { Folder } from '@/types/folder';
 import { FolderDetailHeader } from '@/components/folders/folder-detail-header';
 import { FolderStatusRoadmap } from '@/components/folders/folder-status-roadmap';
 import { FolderDetailInfo } from '@/components/folders/folder-detail-info';
+import { FolderOrganizations } from '@/components/folders/folder-organizations';
+import { FolderAddresses } from '@/components/folders/folder-addresses';
+import { FolderPeopleInvolved } from '@/components/folders/folder-people-involved';
+import { FolderLetters } from '@/components/folders/folder-letters';
+import { FolderFindings } from '@/components/folders/folder-findings';
+import { FolderAttachments } from '@/components/folders/folder-attachments';
+import { FolderRecords } from '@/components/folders/folder-records';
+import { FolderCommunications } from '@/components/folders/folder-communications';
+import { FolderSuggestions } from '@/components/folders/folder-suggestions';
+import { FolderVisualizations } from '@/components/folders/folder-visualizations';
+import { FolderActivities } from '@/components/folders/folder-activities';
 import { FolderNotes } from '@/components/folders/folder-notes';
 import { FolderSignalsList } from '@/components/folders/folder-signals-list';
 import { FolderApplicationDialog } from '@/components/folders/folder-application-dialog';
@@ -134,6 +145,19 @@ export default function FolderDetailPage() {
               </div>
               <FolderSignalsList folder={folder} />
             </div>
+
+            {/* Organizations, Addresses, People Involved, Letters */}
+            <FolderOrganizations folder={folder} />
+            <FolderAddresses folder={folder} />
+            <FolderPeopleInvolved folder={folder} />
+            <FolderLetters folder={folder} />
+            <FolderFindings folder={folder} />
+            <FolderAttachments folder={folder} />
+            <FolderRecords folder={folder} />
+            <FolderCommunications folder={folder} />
+            <FolderSuggestions folder={folder} />
+            <FolderVisualizations folder={folder} />
+            <FolderActivities folder={folder} />
           </div>
         </div>
       )}

@@ -38,6 +38,17 @@ export async function POST(request: NextRequest) {
       sharedWith: [],
       location: '',
       notes: [],
+      organizations: [],
+      addresses: [],
+      peopleInvolved: [],
+      letters: [],
+      findings: [],
+      attachments: [],
+      records: [],
+      communications: [],
+      suggestions: [],
+      visualizations: [],
+      activities: [],
       applicationData: {
         explanation: '',
         criteria: APPLICATION_CRITERIA.map((c) => ({

@@ -58,6 +58,50 @@ interface FolderContextValue {
   addTag: (folderId: string, tag: string) => Promise<void>;
   removeTag: (folderId: string, tag: string) => Promise<void>;
 
+  // Organizations
+  addOrganization: (folderId: string, organization: string) => Promise<void>;
+  removeOrganization: (folderId: string, organization: string) => Promise<void>;
+
+  // Addresses
+  addAddress: (folderId: string, address: string) => Promise<void>;
+  removeAddress: (folderId: string, address: string) => Promise<void>;
+
+  // People Involved
+  addPersonInvolved: (folderId: string, person: string) => Promise<void>;
+  removePersonInvolved: (folderId: string, person: string) => Promise<void>;
+
+  // Letters
+  addLetter: (folderId: string, letter: string) => Promise<void>;
+  removeLetter: (folderId: string, letter: string) => Promise<void>;
+
+  // Findings
+  addFinding: (folderId: string, finding: string) => Promise<void>;
+  removeFinding: (folderId: string, finding: string) => Promise<void>;
+
+  // Attachments
+  addAttachment: (folderId: string, attachment: string) => Promise<void>;
+  removeAttachment: (folderId: string, attachment: string) => Promise<void>;
+
+  // Records
+  addRecord: (folderId: string, record: string) => Promise<void>;
+  removeRecord: (folderId: string, record: string) => Promise<void>;
+
+  // Communications
+  addCommunication: (folderId: string, communication: string) => Promise<void>;
+  removeCommunication: (folderId: string, communication: string) => Promise<void>;
+
+  // Suggestions
+  addSuggestion: (folderId: string, suggestion: string) => Promise<void>;
+  removeSuggestion: (folderId: string, suggestion: string) => Promise<void>;
+
+  // Visualizations
+  addVisualization: (folderId: string, visualization: string) => Promise<void>;
+  removeVisualization: (folderId: string, visualization: string) => Promise<void>;
+
+  // Activities
+  addActivity: (folderId: string, activity: string) => Promise<void>;
+  removeActivity: (folderId: string, activity: string) => Promise<void>;
+
   // Location
   updateLocation: (folderId: string, location: string) => Promise<void>;
 
@@ -517,6 +561,512 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
+  // Organizations
+  const addOrganization = useCallback(async (folderId: string, organization: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.organizations || []).includes(organization)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        organizations: [...(folder.organizations || []), organization],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add organization');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeOrganization = useCallback(async (folderId: string, organization: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        organizations: (folder.organizations || []).filter((o) => o !== organization),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove organization');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Addresses
+  const addAddress = useCallback(async (folderId: string, address: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.addresses || []).includes(address)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        addresses: [...(folder.addresses || []), address],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add address');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeAddress = useCallback(async (folderId: string, address: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        addresses: (folder.addresses || []).filter((a) => a !== address),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove address');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // People Involved
+  const addPersonInvolved = useCallback(async (folderId: string, person: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.peopleInvolved || []).includes(person)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        peopleInvolved: [...(folder.peopleInvolved || []), person],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add person involved');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removePersonInvolved = useCallback(async (folderId: string, person: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        peopleInvolved: (folder.peopleInvolved || []).filter((p) => p !== person),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove person involved');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Letters
+  const addLetter = useCallback(async (folderId: string, letter: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.letters || []).includes(letter)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        letters: [...(folder.letters || []), letter],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add letter');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeLetter = useCallback(async (folderId: string, letter: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        letters: (folder.letters || []).filter((l) => l !== letter),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove letter');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Findings
+  const addFinding = useCallback(async (folderId: string, finding: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.findings || []).includes(finding)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        findings: [...(folder.findings || []), finding],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add finding');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeFinding = useCallback(async (folderId: string, finding: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        findings: (folder.findings || []).filter((f) => f !== finding),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove finding');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Attachments
+  const addAttachment = useCallback(async (folderId: string, attachment: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.attachments || []).includes(attachment)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attachments: [...(folder.attachments || []), attachment],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add attachment');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeAttachment = useCallback(async (folderId: string, attachment: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attachments: (folder.attachments || []).filter((a) => a !== attachment),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove attachment');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Records
+  const addRecord = useCallback(async (folderId: string, record: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.records || []).includes(record)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        records: [...(folder.records || []), record],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add record');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeRecord = useCallback(async (folderId: string, record: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        records: (folder.records || []).filter((r) => r !== record),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove record');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Communications
+  const addCommunication = useCallback(async (folderId: string, communication: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.communications || []).includes(communication)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        communications: [...(folder.communications || []), communication],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add communication');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeCommunication = useCallback(async (folderId: string, communication: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        communications: (folder.communications || []).filter((c) => c !== communication),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove communication');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Suggestions
+  const addSuggestion = useCallback(async (folderId: string, suggestion: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.suggestions || []).includes(suggestion)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        suggestions: [...(folder.suggestions || []), suggestion],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add suggestion');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeSuggestion = useCallback(async (folderId: string, suggestion: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        suggestions: (folder.suggestions || []).filter((s) => s !== suggestion),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove suggestion');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Visualizations
+  const addVisualization = useCallback(async (folderId: string, visualization: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.visualizations || []).includes(visualization)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visualizations: [...(folder.visualizations || []), visualization],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add visualization');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeVisualization = useCallback(async (folderId: string, visualization: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visualizations: (folder.visualizations || []).filter((v) => v !== visualization),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove visualization');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  // Activities
+  const addActivity = useCallback(async (folderId: string, activity: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    if ((folder.activities || []).includes(activity)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        activities: [...(folder.activities || []), activity],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add activity');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeActivity = useCallback(async (folderId: string, activity: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        activities: (folder.activities || []).filter((a) => a !== activity),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove activity');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
   // Location
   const updateLocation = useCallback(async (folderId: string, location: string) => {
     const response = await fetch(`/api/folders/${folderId}`, {
@@ -613,6 +1163,28 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     removeShare,
     addTag,
     removeTag,
+    addOrganization,
+    removeOrganization,
+    addAddress,
+    removeAddress,
+    addPersonInvolved,
+    removePersonInvolved,
+    addLetter,
+    removeLetter,
+    addFinding,
+    removeFinding,
+    addAttachment,
+    removeAttachment,
+    addRecord,
+    removeRecord,
+    addCommunication,
+    removeCommunication,
+    addSuggestion,
+    removeSuggestion,
+    addVisualization,
+    removeVisualization,
+    addActivity,
+    removeActivity,
     updateLocation,
     updateApplicationData,
     completeApplication,

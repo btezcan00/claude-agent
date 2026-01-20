@@ -82,6 +82,17 @@ export interface Folder {
   sharedWith: FolderShare[];
   location: string;
   notes: FolderNote[];
+  organizations: string[];
+  addresses: string[];
+  peopleInvolved: string[];
+  letters: string[];
+  findings: string[];
+  attachments: string[];
+  records: string[];
+  communications: string[];
+  suggestions: string[];
+  visualizations: string[];
+  activities: string[];
   // Application data
   applicationData: ApplicationData;
 }
