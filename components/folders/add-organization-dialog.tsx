@@ -88,7 +88,7 @@ export function AddOrganizationDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+        <DialogContent className="w-[80vw] max-w-none sm:max-w-none max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Add Organization to Folder</DialogTitle>
             <DialogDescription>

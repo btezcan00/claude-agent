@@ -105,13 +105,42 @@ export function ConsultBrpDialog({
     onClose();
   };
 
+  // Check what fields are filled
+  const hasBsn = bsn.length > 0;
+  const hasSurname = surname.length > 0;
+  const hasFirstName = firstName.length > 0;
+  const hasDateOfBirth = dateOfBirth.length > 0;
+  const hasStreet = street.length > 0;
+  const hasHouseNumber = houseNumber.length > 0;
+  const hasZipCode = zipCode.length > 0;
+  const hasMunicipality = municipality.length > 0;
+
+  // Determine which search track the user is on
+  const onPersonTrack = hasSurname || hasFirstName || hasDateOfBirth;
+  const onAddressTrack = hasStreet || hasHouseNumber || hasZipCode;
+
+  // Disabled states for each field based on valid combinations:
+  // 1. BSN (alone)
+  // 2. Surname + DateOfBirth
+  // 3. Surname + FirstName + Municipality
+  // 4. HouseNumber + ZipCode
+  // 5. Street + HouseNumber + Municipality
+  const isBsnDisabled = onPersonTrack || onAddressTrack || hasMunicipality;
+  const isSurnameDisabled = hasBsn || onAddressTrack;
+  const isFirstNameDisabled = hasBsn || onAddressTrack || hasDateOfBirth;
+  const isDateOfBirthDisabled = hasBsn || onAddressTrack || hasFirstName || hasMunicipality;
+  const isStreetDisabled = hasBsn || onPersonTrack || hasZipCode;
+  const isHouseNumberDisabled = hasBsn || onPersonTrack;
+  const isZipCodeDisabled = hasBsn || onPersonTrack || hasStreet || hasMunicipality;
+  const isMunicipalityDisabled = hasBsn || hasDateOfBirth || hasZipCode;
+
   // Check if a valid search combination is provided
   const isValidSearch =
-    bsn.length > 0 ||
-    (surname.length > 0 && dateOfBirth.length > 0) ||
-    (surname.length > 0 && firstName.length > 0 && municipality.length > 0) ||
-    (houseNumber.length > 0 && zipCode.length > 0) ||
-    (street.length > 0 && houseNumber.length > 0 && municipality.length > 0);
+    hasBsn ||
+    (hasSurname && hasDateOfBirth) ||
+    (hasSurname && hasFirstName && hasMunicipality) ||
+    (hasHouseNumber && hasZipCode) ||
+    (hasStreet && hasHouseNumber && hasMunicipality);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
@@ -125,7 +154,7 @@ export function ConsultBrpDialog({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="w-[80vw] max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[80vw] max-w-none sm:max-w-none max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Consult BRP</DialogTitle>
         </DialogHeader>
@@ -142,6 +171,7 @@ export function ConsultBrpDialog({
                   placeholder="Enter a BSN"
                   value={bsn}
                   onChange={(e) => setBsn(e.target.value)}
+                  disabled={isBsnDisabled}
                 />
               </div>
 
@@ -153,6 +183,7 @@ export function ConsultBrpDialog({
                   placeholder="Enter a surname"
                   value={surname}
                   onChange={(e) => setSurname(e.target.value)}
+                  disabled={isSurnameDisabled}
                 />
               </div>
 
@@ -176,6 +207,7 @@ export function ConsultBrpDialog({
                   placeholder="Enter first names"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  disabled={isFirstNameDisabled}
                 />
               </div>
 
@@ -188,6 +220,7 @@ export function ConsultBrpDialog({
                   placeholder="Enter a date of birth"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
+                  disabled={isDateOfBirthDisabled}
                 />
               </div>
 
@@ -199,6 +232,7 @@ export function ConsultBrpDialog({
                   placeholder="Enter a street name"
                   value={street}
                   onChange={(e) => setStreet(e.target.value)}
+                  disabled={isStreetDisabled}
                 />
               </div>
 
@@ -210,6 +244,7 @@ export function ConsultBrpDialog({
                   placeholder="Enter a house number"
                   value={houseNumber}
                   onChange={(e) => setHouseNumber(e.target.value)}
+                  disabled={isHouseNumberDisabled}
                 />
               </div>
 
@@ -221,13 +256,14 @@ export function ConsultBrpDialog({
                   placeholder="Enter a zip code"
                   value={zipCode}
                   onChange={(e) => setZipCode(e.target.value)}
+                  disabled={isZipCodeDisabled}
                 />
               </div>
 
               {/* Local authority */}
               <div className="space-y-2">
                 <Label htmlFor="brp-municipality">Local authority</Label>
-                <Select value={municipality} onValueChange={setMunicipality}>
+                <Select value={municipality} onValueChange={setMunicipality} disabled={isMunicipalityDisabled}>
                   <SelectTrigger id="brp-municipality">
                     <SelectValue placeholder="Select a municipality" />
                   </SelectTrigger>

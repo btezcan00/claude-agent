@@ -107,7 +107,7 @@ export function AddPersonDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="w-[80vw] max-h-[80vh] flex flex-col">
+        <DialogContent className="w-[80vw] max-w-none sm:max-w-none max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Add person</DialogTitle>
             <DialogDescription>

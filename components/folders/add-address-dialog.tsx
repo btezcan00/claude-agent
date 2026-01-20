@@ -87,7 +87,7 @@ export function AddAddressDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+        <DialogContent className="w-[80vw] max-w-none sm:max-w-none max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Add address</DialogTitle>
             <DialogDescription>
