@@ -1,6 +1,7 @@
 'use client';
 
-import { FolderAttachment, FOLDER_ALLOWED_FILE_TYPES } from '@/types/folder';
+import { FolderAttachment } from '@/types/folder';
+import { SignalAttachment } from '@/types/signal';
 import {
   Dialog,
   DialogContent,
@@ -11,8 +12,17 @@ import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
 import { formatFileSize } from '@/lib/utils';
 
+// Common attachment type that works for both folder and signal attachments
+type PreviewableAttachment = (FolderAttachment | SignalAttachment) & {
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  content?: string;
+  textContent?: string;
+};
+
 interface FolderAttachmentPreviewDialogProps {
-  attachment: FolderAttachment | null;
+  attachment: PreviewableAttachment | null;
   open: boolean;
   onClose: () => void;
 }

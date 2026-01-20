@@ -2,7 +2,10 @@
 
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { Folder, FolderAttachment, FOLDER_ALLOWED_FILE_TYPES, FOLDER_MAX_FILE_SIZE } from '@/types/folder';
+import { SignalAttachment, SignalType } from '@/types/signal';
 import { useFolders } from '@/context/folder-context';
+import { useSignals } from '@/context/signal-context';
+import { SIGNAL_TYPE_CONFIG } from '@/lib/constants';
 import { currentUser } from '@/data/mock-users';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +37,7 @@ import {
   ChevronDown,
   ChevronRight,
   FileIcon,
+  FileText,
   Filter,
   MoreHorizontal,
   Eye,
@@ -52,22 +56,37 @@ interface FolderAttachmentsProps {
 
 const ITEMS_PER_PAGE = 10;
 
+// Extended type for signal attachments with source info
+interface SignalAttachmentWithSource extends SignalAttachment {
+  signalNumber: string;
+  signalTypes: SignalType[];
+}
+
 export function FolderAttachments({ folder }: FolderAttachmentsProps) {
   const { addFileAttachment, updateFileAttachment, removeFileAttachment } = useFolders();
+  const { getSignalsByFolderId } = useSignals();
 
   // State
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [previewAttachment, setPreviewAttachment] = useState<FolderAttachment | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<FolderAttachment | SignalAttachmentWithSource | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Signal subsection state
+  const [isSignalCollapsed, setIsSignalCollapsed] = useState(false);
+  const [signalCurrentPage, setSignalCurrentPage] = useState(1);
 
   // Filters
   const [nameFilter, setNameFilter] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('');
   const [tagsFilter, setTagsFilter] = useState('');
+
+  // Signal attachment filters
+  const [signalNameFilter, setSignalNameFilter] = useState('');
+  const [signalSourceFilter, setSignalSourceFilter] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +126,55 @@ export function FolderAttachments({ folder }: FolderAttachmentsProps) {
   );
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE + 1;
   const endIndex = Math.min(currentPage * ITEMS_PER_PAGE, filteredAttachments.length);
+
+  // Get signal attachments
+  const signals = getSignalsByFolderId(folder.id);
+  const signalAttachments = useMemo((): SignalAttachmentWithSource[] => {
+    return signals.flatMap(signal =>
+      signal.attachments.map(att => ({
+        ...att,
+        signalNumber: signal.signalNumber,
+        signalTypes: signal.types,
+      }))
+    );
+  }, [signals]);
+
+  // Helper to format source text
+  const formatSource = (att: SignalAttachmentWithSource) => {
+    const typeLabels = att.signalTypes.map(t => SIGNAL_TYPE_CONFIG[t]?.label || t).join(', ');
+    return `${att.signalNumber} - ${typeLabels}`;
+  };
+
+  // Filter signal attachments
+  const filteredSignalAttachments = useMemo(() => {
+    let result = [...signalAttachments];
+
+    if (signalNameFilter) {
+      result = result.filter(a =>
+        a.fileName.toLowerCase().includes(signalNameFilter.toLowerCase())
+      );
+    }
+    if (signalSourceFilter) {
+      result = result.filter(a => {
+        const source = formatSource(a).toLowerCase();
+        return source.includes(signalSourceFilter.toLowerCase());
+      });
+    }
+
+    // Sort by upload date descending
+    result.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+
+    return result;
+  }, [signalAttachments, signalNameFilter, signalSourceFilter]);
+
+  // Signal attachments pagination
+  const signalTotalPages = Math.ceil(filteredSignalAttachments.length / ITEMS_PER_PAGE);
+  const paginatedSignalAttachments = filteredSignalAttachments.slice(
+    (signalCurrentPage - 1) * ITEMS_PER_PAGE,
+    signalCurrentPage * ITEMS_PER_PAGE
+  );
+  const signalStartIndex = (signalCurrentPage - 1) * ITEMS_PER_PAGE + 1;
+  const signalEndIndex = Math.min(signalCurrentPage * ITEMS_PER_PAGE, filteredSignalAttachments.length);
 
   // File validation
   const validateFile = (file: File): string | null => {
@@ -242,7 +310,7 @@ export function FolderAttachments({ folder }: FolderAttachmentsProps) {
   }, [folder.id]);
 
   // Download handler
-  const handleDownload = (attachment: FolderAttachment) => {
+  const handleDownload = (attachment: FolderAttachment | SignalAttachmentWithSource) => {
     if (!attachment.content) return;
     const link = document.createElement('a');
     link.href = attachment.content;
@@ -323,7 +391,7 @@ export function FolderAttachments({ folder }: FolderAttachmentsProps) {
               <ChevronDown className="w-4 h-4" />
             )}
             <Paperclip className="w-4 h-4" />
-            Case
+            Attachments
             {attachments.length > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {attachments.length}
@@ -336,7 +404,7 @@ export function FolderAttachments({ folder }: FolderAttachmentsProps) {
           <CardContent className="space-y-4">
             {/* Upload Area */}
             <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
                 isDragging
                   ? 'border-primary bg-primary/5'
                   : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -345,16 +413,11 @@ export function FolderAttachments({ folder }: FolderAttachmentsProps) {
               onDragLeave={handleDragLeave}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
             >
               <FileIcon className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                <button
-                  type="button"
-                  className="text-primary hover:underline font-medium"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Add file(s).
-                </button>
+              <p className="text-sm text-primary font-medium hover:underline">
+                Add file(s).
               </p>
               <input
                 ref={fileInputRef}
@@ -569,6 +632,143 @@ export function FolderAttachments({ folder }: FolderAttachmentsProps) {
                       </Button>
                     </div>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Signal Attachments Subsection */}
+            {signalAttachments.length > 0 && (
+              <div className="border rounded-lg">
+                <div
+                  className="flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/50"
+                  onClick={() => setIsSignalCollapsed(!isSignalCollapsed)}
+                >
+                  {isSignalCollapsed ? (
+                    <ChevronRight className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                  <FileText className="w-4 h-4" />
+                  <span className="font-medium">Signal</span>
+                  <Badge variant="secondary" className="ml-2">
+                    {signalAttachments.length}
+                  </Badge>
+                </div>
+
+                {!isSignalCollapsed && (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[250px]">
+                            <div className="flex items-center">
+                              Name
+                              <FilterPopover
+                                value={signalNameFilter}
+                                onChange={setSignalNameFilter}
+                                placeholder="Filter by name..."
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center">
+                              Source
+                              <FilterPopover
+                                value={signalSourceFilter}
+                                onChange={setSignalSourceFilter}
+                                placeholder="Filter by source..."
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[50px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedSignalAttachments.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                              No signal attachments match your filters
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          paginatedSignalAttachments.map((attachment) => (
+                            <TableRow key={attachment.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <FileIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                                  <span className="truncate" title={attachment.fileName}>
+                                    {attachment.fileName}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {formatSource(attachment)}
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setPreviewAttachment(attachment)}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDownload(attachment)}>
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Download
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+
+                    {/* Signal Attachments Pagination */}
+                    {filteredSignalAttachments.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between px-4 py-3 border-t">
+                        <span className="text-sm text-muted-foreground">
+                          {signalStartIndex} - {signalEndIndex} / {filteredSignalAttachments.length}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setSignalCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={signalCurrentPage === 1}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          {Array.from({ length: signalTotalPages }, (_, i) => i + 1).map(page => (
+                            <Button
+                              key={page}
+                              variant={signalCurrentPage === page ? 'default' : 'outline'}
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setSignalCurrentPage(page)}
+                            >
+                              {page}
+                            </Button>
+                          ))}
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setSignalCurrentPage(p => Math.min(signalTotalPages, p + 1))}
+                            disabled={signalCurrentPage === signalTotalPages}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
