@@ -2,10 +2,12 @@ import { Signal } from '@/types/signal';
 import { Folder } from '@/types/folder';
 import { Organization } from '@/types/organization';
 import { Address } from '@/types/address';
+import { Person } from '@/types/person';
 import { mockSignals } from '@/data/mock-signals';
 import { mockFolders } from '@/data/mock-folders';
 import { mockOrganizations } from '@/data/mock-organizations';
 import { mockAddresses } from '@/data/mock-addresses';
+import { mockPeople, mockBrpData } from '@/data/mock-people';
 
 // In-memory data store
 // Data persists during server runtime but resets on restart
@@ -15,6 +17,8 @@ class Store {
   private folders: Folder[] = [...mockFolders];
   private organizations: Organization[] = [...mockOrganizations];
   private addresses: Address[] = [...mockAddresses];
+  private people: Person[] = [...mockPeople];
+  private brpData: Person[] = [...mockBrpData];
 
   // Signals
   getSignals(): Signal[] {
@@ -161,6 +165,109 @@ class Store {
         a.buildingType.toLowerCase().includes(q) ||
         a.description.toLowerCase().includes(q)
     );
+  }
+
+  // People
+  getPeople(): Person[] {
+    return this.people;
+  }
+
+  getPersonById(id: string): Person | undefined {
+    return this.people.find((p) => p.id === id);
+  }
+
+  createPerson(person: Person): Person {
+    this.people.unshift(person);
+    return person;
+  }
+
+  updatePerson(id: string, data: Partial<Person>): Person | undefined {
+    const index = this.people.findIndex((p) => p.id === id);
+    if (index === -1) return undefined;
+    this.people[index] = { ...this.people[index], ...data };
+    return this.people[index];
+  }
+
+  deletePerson(id: string): boolean {
+    const index = this.people.findIndex((p) => p.id === id);
+    if (index === -1) return false;
+    this.people.splice(index, 1);
+    return true;
+  }
+
+  searchPeople(query: string): Person[] {
+    if (!query.trim()) return this.people;
+    const q = query.toLowerCase();
+    return this.people.filter(
+      (p) =>
+        p.firstName.toLowerCase().includes(q) ||
+        p.surname.toLowerCase().includes(q) ||
+        p.address.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        (p.bsn && p.bsn.includes(q))
+    );
+  }
+
+  // BRP Data (for consult BRP functionality)
+  searchBrp(params: {
+    bsn?: string;
+    surname?: string;
+    firstName?: string;
+    dateOfBirth?: string;
+    street?: string;
+    houseNumber?: string;
+    zipCode?: string;
+    municipality?: string;
+  }): Person[] {
+    const { bsn, surname, firstName, dateOfBirth, street, houseNumber, zipCode, municipality } = params;
+
+    // BSN search
+    if (bsn) {
+      return this.brpData.filter((p) => p.bsn === bsn);
+    }
+
+    // Surname + date of birth
+    if (surname && dateOfBirth) {
+      return this.brpData.filter(
+        (p) =>
+          p.surname.toLowerCase() === surname.toLowerCase() &&
+          p.dateOfBirth === dateOfBirth
+      );
+    }
+
+    // Surname + first names + municipality
+    if (surname && firstName && municipality) {
+      return this.brpData.filter(
+        (p) =>
+          p.surname.toLowerCase() === surname.toLowerCase() &&
+          p.firstName.toLowerCase().includes(firstName.toLowerCase()) &&
+          p.address.toLowerCase().includes(municipality.toLowerCase())
+      );
+    }
+
+    // House number + zip code
+    if (houseNumber && zipCode) {
+      const normalizedZip = zipCode.replace(/\s/g, '').toUpperCase();
+      return this.brpData.filter((p) => {
+        const addressParts = p.address.split(',');
+        if (addressParts.length < 2) return false;
+        const streetPart = addressParts[0];
+        const zipPart = addressParts[1].trim().split(' ').slice(0, 2).join('').toUpperCase();
+        return streetPart.includes(houseNumber) && zipPart.includes(normalizedZip.substring(0, 6));
+      });
+    }
+
+    // Street + house number + municipality
+    if (street && houseNumber && municipality) {
+      return this.brpData.filter(
+        (p) =>
+          p.address.toLowerCase().includes(street.toLowerCase()) &&
+          p.address.includes(houseNumber) &&
+          p.address.toLowerCase().includes(municipality.toLowerCase())
+      );
+    }
+
+    return [];
   }
 }
 

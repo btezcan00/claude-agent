@@ -15,6 +15,7 @@ import {
 } from '@/types/folder';
 import { Organization } from '@/types/organization';
 import { Address } from '@/types/address';
+import { Person } from '@/types/person';
 import { currentUser } from '@/data/mock-users';
 import { generateId } from '@/lib/utils';
 import { useSignals } from './signal-context';
@@ -72,8 +73,8 @@ interface FolderContextValue {
   removeAddress: (folderId: string, itemId: string) => Promise<void>;
 
   // People Involved
-  addPersonInvolved: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
-  removePersonInvolved: (folderId: string, itemId: string) => Promise<void>;
+  addPersonToFolder: (folderId: string, person: Person) => Promise<void>;
+  removePersonInvolved: (folderId: string, personId: string) => Promise<void>;
 
   // Letters
   addLetter: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
@@ -709,21 +710,23 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // People Involved
-  const addPersonInvolved = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
+  const addPersonToFolder = useCallback(async (folderId: string, person: Person) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
-    const newItem: FolderItem = { id: generateId(), ...item };
+    // Check if person is already in the folder
+    if ((folder.peopleInvolved || []).some((p) => p.id === person.id)) return;
+
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        peopleInvolved: [...(folder.peopleInvolved || []), newItem],
+        peopleInvolved: [...(folder.peopleInvolved || []), person],
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to add person involved');
+      throw new Error('Failed to add person to folder');
     }
 
     const updatedFolder = await response.json();
@@ -1228,7 +1231,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     addAddress,
     addAddressToFolder,
     removeAddress,
-    addPersonInvolved,
+    addPersonToFolder,
     removePersonInvolved,
     addLetter,
     removeLetter,

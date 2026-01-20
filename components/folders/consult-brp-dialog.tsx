@@ -1,0 +1,301 @@
+'use client';
+
+import { useState } from 'react';
+import { Person, MUNICIPALITIES } from '@/types/person';
+import { usePeople } from '@/context/person-context';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Info, ArrowRight } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+interface ConsultBrpDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onPersonSelected: (person: Person) => void;
+}
+
+export function ConsultBrpDialog({
+  open,
+  onClose,
+  onPersonSelected,
+}: ConsultBrpDialogProps) {
+  const { searchBrp } = usePeople();
+
+  // Form state
+  const [bsn, setBsn] = useState('');
+  const [surname, setSurname] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [street, setStreet] = useState('');
+  const [houseNumber, setHouseNumber] = useState('');
+  const [zipCode, setZipCode] = useState('');
+  const [municipality, setMunicipality] = useState('');
+
+  // Search state
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Person[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const handleSearch = async () => {
+    setIsSearching(true);
+    setHasSearched(true);
+    try {
+      const results = await searchBrp({
+        bsn: bsn || undefined,
+        surname: surname || undefined,
+        firstName: firstName || undefined,
+        dateOfBirth: dateOfBirth || undefined,
+        street: street || undefined,
+        houseNumber: houseNumber || undefined,
+        zipCode: zipCode || undefined,
+        municipality: municipality || undefined,
+      });
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Failed to search BRP:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectPerson = (person: Person) => {
+    onPersonSelected(person);
+    handleClose();
+  };
+
+  const handleClose = () => {
+    setBsn('');
+    setSurname('');
+    setFirstName('');
+    setDateOfBirth('');
+    setStreet('');
+    setHouseNumber('');
+    setZipCode('');
+    setMunicipality('');
+    setSearchResults([]);
+    setHasSearched(false);
+    onClose();
+  };
+
+  // Check if a valid search combination is provided
+  const isValidSearch =
+    bsn.length > 0 ||
+    (surname.length > 0 && dateOfBirth.length > 0) ||
+    (surname.length > 0 && firstName.length > 0 && municipality.length > 0) ||
+    (houseNumber.length > 0 && zipCode.length > 0) ||
+    (street.length > 0 && houseNumber.length > 0 && municipality.length > 0);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('nl-NL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="w-[80vw] max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Consult BRP</DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-[300px_1fr] gap-6">
+            {/* Left side - Form fields */}
+            <div className="space-y-4">
+              {/* BSN */}
+              <div className="space-y-2">
+                <Label htmlFor="brp-bsn">BSN</Label>
+                <Input
+                  id="brp-bsn"
+                  placeholder="Enter a BSN"
+                  value={bsn}
+                  onChange={(e) => setBsn(e.target.value)}
+                />
+              </div>
+
+              {/* Surname */}
+              <div className="space-y-2">
+                <Label htmlFor="brp-surname">Surname</Label>
+                <Input
+                  id="brp-surname"
+                  placeholder="Enter a surname"
+                  value={surname}
+                  onChange={(e) => setSurname(e.target.value)}
+                />
+              </div>
+
+              {/* First names */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="brp-firstName">First names</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Enter full first names as registered in BRP</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Input
+                  id="brp-firstName"
+                  placeholder="Enter first names"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+
+              {/* Date of birth */}
+              <div className="space-y-2">
+                <Label htmlFor="brp-dob">Date of birth</Label>
+                <Input
+                  id="brp-dob"
+                  type="date"
+                  placeholder="Enter a date of birth"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                />
+              </div>
+
+              {/* Street */}
+              <div className="space-y-2">
+                <Label htmlFor="brp-street">Street</Label>
+                <Input
+                  id="brp-street"
+                  placeholder="Enter a street name"
+                  value={street}
+                  onChange={(e) => setStreet(e.target.value)}
+                />
+              </div>
+
+              {/* House number */}
+              <div className="space-y-2">
+                <Label htmlFor="brp-houseNumber">House number</Label>
+                <Input
+                  id="brp-houseNumber"
+                  placeholder="Enter a house number"
+                  value={houseNumber}
+                  onChange={(e) => setHouseNumber(e.target.value)}
+                />
+              </div>
+
+              {/* Zip code */}
+              <div className="space-y-2">
+                <Label htmlFor="brp-zipCode">Zip code</Label>
+                <Input
+                  id="brp-zipCode"
+                  placeholder="Enter a zip code"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                />
+              </div>
+
+              {/* Local authority */}
+              <div className="space-y-2">
+                <Label htmlFor="brp-municipality">Local authority</Label>
+                <Select value={municipality} onValueChange={setMunicipality}>
+                  <SelectTrigger id="brp-municipality">
+                    <SelectValue placeholder="Select a municipality" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MUNICIPALITIES.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Right side - Results table */}
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>First name</TableHead>
+                    <TableHead>Surname</TableHead>
+                    <TableHead>BSN</TableHead>
+                    <TableHead>Gender</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {searchResults.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        {hasSearched ? 'No results found.' : 'Enter search criteria and click Search.'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    searchResults.map((person) => (
+                      <TableRow key={person.id}>
+                        <TableCell className="font-medium">{person.firstName}</TableCell>
+                        <TableCell>{person.surname}</TableCell>
+                        <TableCell>{person.bsn || '-'}</TableCell>
+                        <TableCell>{person.gender || '-'}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                            onClick={() => handleSelectPerson(person)}
+                          >
+                            <ArrowRight className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end border-t pt-4 mt-4">
+          <Button
+            onClick={handleSearch}
+            disabled={!isValidSearch || isSearching}
+          >
+            {isSearching ? 'Searching...' : 'Search'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

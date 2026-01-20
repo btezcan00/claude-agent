@@ -10,6 +10,7 @@ import { FolderProvider } from '@/context/folder-context';
 import { UserProvider } from '@/context/user-context';
 import { OrganizationProvider } from '@/context/organization-context';
 import { AddressProvider } from '@/context/address-context';
+import { PersonProvider } from '@/context/person-context';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -68,7 +69,9 @@ export default function DashboardLayout({
         <FolderProvider>
           <OrganizationProvider>
             <AddressProvider>
-              <DashboardContent>{children}</DashboardContent>
+              <PersonProvider>
+                <DashboardContent>{children}</DashboardContent>
+              </PersonProvider>
             </AddressProvider>
           </OrganizationProvider>
         </FolderProvider>

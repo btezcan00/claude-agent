@@ -1,5 +1,6 @@
 import { Organization } from './organization';
 import { Address } from './address';
+import { Person } from './person';
 
 export type FolderStatus =
   | 'application'
@@ -98,7 +99,7 @@ export interface Folder {
   notes: FolderNote[];
   organizations: Organization[];
   addresses: Address[];
-  peopleInvolved: FolderItem[];
+  peopleInvolved: Person[];
   letters: FolderItem[];
   findings: FolderItem[];
   attachments: FolderItem[];
