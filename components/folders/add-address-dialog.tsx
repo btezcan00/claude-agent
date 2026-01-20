@@ -40,6 +40,12 @@ export function AddAddressDialog({
   const { addAddressToFolder } = useFolders();
   const [searchQuery, setSearchQuery] = useState('');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+
+  const handleRowClick = (addr: Address) => {
+    setSelectedAddress(addr);
+    setFormDialogOpen(true);
+  };
 
   // Get existing address IDs in the folder
   const existingAddressIds = useMemo(() => {
@@ -124,7 +130,11 @@ export function AddAddressDialog({
                 </TableHeader>
                 <TableBody>
                   {filteredAddresses.map((addr) => (
-                    <TableRow key={addr.id}>
+                    <TableRow
+                      key={addr.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleRowClick(addr)}
+                    >
                       <TableCell className="font-medium">{addr.street}</TableCell>
                       <TableCell>{addr.buildingType}</TableCell>
                       <TableCell>{addr.isActive ? 'Yes' : 'No'}</TableCell>
@@ -135,7 +145,10 @@ export function AddAddressDialog({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleAddAddress(addr)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddAddress(addr);
+                          }}
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
@@ -151,7 +164,10 @@ export function AddAddressDialog({
           <div className="flex justify-between items-center border-t pt-4">
             <Button
               variant="outline"
-              onClick={() => setFormDialogOpen(true)}
+              onClick={() => {
+                setSelectedAddress(null);
+                setFormDialogOpen(true);
+              }}
             >
               <Plus className="w-4 h-4 mr-1" />
               Add new address
@@ -163,11 +179,15 @@ export function AddAddressDialog({
         </DialogContent>
       </Dialog>
 
-      {/* New Address Form Dialog */}
+      {/* Address Form Dialog (New or Edit) */}
       <AddressFormDialog
         open={formDialogOpen}
-        onClose={() => setFormDialogOpen(false)}
+        onClose={() => {
+          setFormDialogOpen(false);
+          setSelectedAddress(null);
+        }}
         onAddressCreated={handleNewAddressCreated}
+        initialAddress={selectedAddress || undefined}
       />
     </>
   );

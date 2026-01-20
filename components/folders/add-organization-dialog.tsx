@@ -40,6 +40,12 @@ export function AddOrganizationDialog({
   const { addOrganizationToFolder } = useFolders();
   const [searchQuery, setSearchQuery] = useState('');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
+
+  const handleRowClick = (org: Organization) => {
+    setSelectedOrganization(org);
+    setFormDialogOpen(true);
+  };
 
   // Get existing organization IDs in the folder
   const existingOrgIds = useMemo(() => {
@@ -124,7 +130,11 @@ export function AddOrganizationDialog({
                 </TableHeader>
                 <TableBody>
                   {filteredOrganizations.map((org) => (
-                    <TableRow key={org.id}>
+                    <TableRow
+                      key={org.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleRowClick(org)}
+                    >
                       <TableCell className="font-medium">{org.name}</TableCell>
                       <TableCell>{org.type}</TableCell>
                       <TableCell className="max-w-[200px] truncate">
@@ -134,7 +144,10 @@ export function AddOrganizationDialog({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleAddOrganization(org)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddOrganization(org);
+                          }}
                         >
                           <Plus className="w-4 h-4 mr-1" />
                           Add
@@ -151,7 +164,10 @@ export function AddOrganizationDialog({
           <div className="flex justify-between items-center border-t pt-4">
             <Button
               variant="outline"
-              onClick={() => setFormDialogOpen(true)}
+              onClick={() => {
+                setSelectedOrganization(null);
+                setFormDialogOpen(true);
+              }}
             >
               <Plus className="w-4 h-4 mr-1" />
               Add new organization
@@ -163,11 +179,15 @@ export function AddOrganizationDialog({
         </DialogContent>
       </Dialog>
 
-      {/* New Organization Form Dialog */}
+      {/* Organization Form Dialog (New or Edit) */}
       <OrganizationFormDialog
         open={formDialogOpen}
-        onClose={() => setFormDialogOpen(false)}
+        onClose={() => {
+          setFormDialogOpen(false);
+          setSelectedOrganization(null);
+        }}
         onOrganizationCreated={handleNewOrganizationCreated}
+        initialOrganization={selectedOrganization || undefined}
       />
     </>
   );
