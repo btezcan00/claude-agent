@@ -19,6 +19,8 @@ export interface FolderStatusDates {
 
 export type FolderAccessLevel = 'view' | 'edit' | 'admin';
 
+export type SuggestionSource = 'persons' | 'reports' | 'files';
+
 export interface FolderPractitioner {
   userId: string;
   userName: string;
@@ -74,6 +76,8 @@ export interface FolderItem {
   label: string;
   description: string;
   assignedTo?: string;
+  source?: SuggestionSource;
+  sourceTheme?: string;
 }
 
 // Alias for backwards compatibility
