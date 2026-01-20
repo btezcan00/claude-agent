@@ -91,14 +91,9 @@ export function OrganizationFormDialog({
   const handleOrganizationSelected = (selectedOrgs: Organization[]) => {
     if (selectedOrgs.length > 0) {
       const selected = selectedOrgs[0];
-      // Populate form with selected organization data (except description - user provides that)
-      setName(selected.name);
-      setType(selected.type);
-      setChamberOfCommerce(selected.chamberOfCommerce || '');
-      setAddress(selected.address || '');
-      setAddressQuery(selected.address || '');
-      setEditMode(true);
-      setEditingOrgId(selected.id);
+      // Directly add the selected organization and close
+      onOrganizationCreated(selected);
+      handleClose();
     }
     setSelectDialogOpen(false);
   };
