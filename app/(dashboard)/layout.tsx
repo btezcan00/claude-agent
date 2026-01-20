@@ -9,6 +9,7 @@ import { SignalProvider } from '@/context/signal-context';
 import { FolderProvider } from '@/context/folder-context';
 import { UserProvider } from '@/context/user-context';
 import { OrganizationProvider } from '@/context/organization-context';
+import { AddressProvider } from '@/context/address-context';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -66,7 +67,9 @@ export default function DashboardLayout({
       <SignalProvider>
         <FolderProvider>
           <OrganizationProvider>
-            <DashboardContent>{children}</DashboardContent>
+            <AddressProvider>
+              <DashboardContent>{children}</DashboardContent>
+            </AddressProvider>
           </OrganizationProvider>
         </FolderProvider>
       </SignalProvider>

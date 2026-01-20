@@ -104,7 +104,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         o.name.toLowerCase().includes(q) ||
         o.address.toLowerCase().includes(q) ||
         o.type.toLowerCase().includes(q) ||
-        o.description.toLowerCase().includes(q)
+        (o.description || '').toLowerCase().includes(q)
     );
   }, [organizations]);
 

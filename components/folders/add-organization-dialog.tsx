@@ -60,7 +60,7 @@ export function AddOrganizationDialog({
         org.name.toLowerCase().includes(query) ||
         org.address.toLowerCase().includes(query) ||
         org.type.toLowerCase().includes(query) ||
-        org.description.toLowerCase().includes(query)
+        (org.description || '').toLowerCase().includes(query)
     );
   }, [availableOrganizations, searchQuery]);
 

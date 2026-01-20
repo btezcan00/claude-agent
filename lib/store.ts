@@ -1,9 +1,11 @@
 import { Signal } from '@/types/signal';
 import { Folder } from '@/types/folder';
 import { Organization } from '@/types/organization';
+import { Address } from '@/types/address';
 import { mockSignals } from '@/data/mock-signals';
 import { mockFolders } from '@/data/mock-folders';
 import { mockOrganizations } from '@/data/mock-organizations';
+import { mockAddresses } from '@/data/mock-addresses';
 
 // In-memory data store
 // Data persists during server runtime but resets on restart
@@ -12,6 +14,7 @@ class Store {
   private signals: Signal[] = [...mockSignals];
   private folders: Folder[] = [...mockFolders];
   private organizations: Organization[] = [...mockOrganizations];
+  private addresses: Address[] = [...mockAddresses];
 
   // Signals
   getSignals(): Signal[] {
@@ -117,7 +120,46 @@ class Store {
         o.name.toLowerCase().includes(q) ||
         o.address.toLowerCase().includes(q) ||
         o.type.toLowerCase().includes(q) ||
-        o.description.toLowerCase().includes(q)
+        (o.description || '').toLowerCase().includes(q)
+    );
+  }
+
+  // Addresses
+  getAddresses(): Address[] {
+    return this.addresses;
+  }
+
+  getAddressById(id: string): Address | undefined {
+    return this.addresses.find((a) => a.id === id);
+  }
+
+  createAddress(address: Address): Address {
+    this.addresses.unshift(address);
+    return address;
+  }
+
+  updateAddress(id: string, data: Partial<Address>): Address | undefined {
+    const index = this.addresses.findIndex((a) => a.id === id);
+    if (index === -1) return undefined;
+    this.addresses[index] = { ...this.addresses[index], ...data };
+    return this.addresses[index];
+  }
+
+  deleteAddress(id: string): boolean {
+    const index = this.addresses.findIndex((a) => a.id === id);
+    if (index === -1) return false;
+    this.addresses.splice(index, 1);
+    return true;
+  }
+
+  searchAddresses(query: string): Address[] {
+    if (!query.trim()) return this.addresses;
+    const q = query.toLowerCase();
+    return this.addresses.filter(
+      (a) =>
+        a.street.toLowerCase().includes(q) ||
+        a.buildingType.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q)
     );
   }
 }

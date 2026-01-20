@@ -14,6 +14,7 @@ import {
   FolderItem,
 } from '@/types/folder';
 import { Organization } from '@/types/organization';
+import { Address } from '@/types/address';
 import { currentUser } from '@/data/mock-users';
 import { generateId } from '@/lib/utils';
 import { useSignals } from './signal-context';
@@ -67,6 +68,7 @@ interface FolderContextValue {
 
   // Addresses
   addAddress: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  addAddressToFolder: (folderId: string, address: Address) => Promise<void>;
   removeAddress: (folderId: string, itemId: string) => Promise<void>;
 
   // People Involved
@@ -659,6 +661,31 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
+  const addAddressToFolder = useCallback(async (folderId: string, address: Address) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    // Check if address is already in the folder
+    if ((folder.addresses || []).some((a) => a.id === address.id)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        addresses: [...(folder.addresses || []), address],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add address to folder');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
   const removeAddress = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
@@ -1199,6 +1226,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     addOrganizationToFolder,
     removeOrganization,
     addAddress,
+    addAddressToFolder,
     removeAddress,
     addPersonInvolved,
     removePersonInvolved,
