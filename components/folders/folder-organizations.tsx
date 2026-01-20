@@ -4,67 +4,88 @@ import { useState } from 'react';
 import { Folder } from '@/types/folder';
 import { useFolders } from '@/context/folder-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Building2, Plus, X } from 'lucide-react';
+import { AddOrganizationDialog } from './add-organization-dialog';
 
 interface FolderOrganizationsProps {
   folder: Folder;
 }
 
 export function FolderOrganizations({ folder }: FolderOrganizationsProps) {
-  const { addOrganization, removeOrganization } = useFolders();
-  const [newOrganization, setNewOrganization] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { removeOrganization } = useFolders();
 
   const organizations = folder.organizations || [];
-
-  const handleAddOrganization = () => {
-    if (newOrganization.trim()) {
-      addOrganization(folder.id, newOrganization.trim());
-      setNewOrganization('');
-    }
-  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Building2 className="w-4 h-4" />
-          Associated Organizations
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          {organizations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No organizations</p>
-          ) : (
-            organizations.map((org) => (
-              <Badge key={org} variant="secondary" className="gap-1">
-                {org}
-                <button
-                  onClick={() => removeOrganization(folder.id, org)}
-                  className="ml-1 hover:text-destructive"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            ))
-          )}
-        </div>
-        <div className="flex gap-2">
-          <Input
-            value={newOrganization}
-            onChange={(e) => setNewOrganization(e.target.value)}
-            placeholder="Add organization"
-            className="flex-1"
-            onKeyDown={(e) => e.key === 'Enter' && handleAddOrganization()}
-          />
-          <Button size="sm" variant="outline" onClick={handleAddOrganization}>
-            <Plus className="w-4 h-4" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5" />
+            <CardTitle>Associated Organizations</CardTitle>
+          </div>
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" />
+            Add
           </Button>
         </div>
+      </CardHeader>
+      <CardContent>
+        {organizations.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No organizations associated with this folder.</p>
+            <p className="text-sm mt-1">Click &quot;Add&quot; to associate organizations.</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {organizations.map((org) => (
+                <TableRow key={org.id}>
+                  <TableCell className="font-medium">{org.name}</TableCell>
+                  <TableCell>{org.type}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">
+                    {org.address || '-'}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeOrganization(folder.id, org.id)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
+
+      <AddOrganizationDialog
+        folder={folder}
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+      />
     </Card>
   );
 }

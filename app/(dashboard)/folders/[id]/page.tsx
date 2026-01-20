@@ -119,34 +119,38 @@ export default function FolderDetailPage() {
           </CardContent>
         </Card>
       ) : (
-        /* Main Content - Two Column Layout */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Details */}
-          <div className="lg:col-span-1 space-y-6">
-            <FolderDetailInfo folder={folder} />
-          </div>
-
-          {/* Right Column - Notes and Signals */}
-          <div className="lg:col-span-2 space-y-6">
-            <FolderNotes folder={folder} />
-
-            {/* Signals in Folder */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Signals</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAddSignalsDialogOpen(true)}
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-              <FolderSignalsList folder={folder} />
+        <>
+          {/* Main Content - Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Details */}
+            <div className="lg:col-span-1 space-y-6">
+              <FolderDetailInfo folder={folder} />
             </div>
 
-            {/* Organizations, Addresses, People Involved, Letters */}
+            {/* Right Column - Notes and Signals */}
+            <div className="lg:col-span-2 space-y-6">
+              <FolderNotes folder={folder} />
+
+              {/* Signals in Folder */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Signals</h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddSignalsDialogOpen(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                <FolderSignalsList folder={folder} />
+              </div>
+            </div>
+          </div>
+
+          {/* Full Width Sections */}
+          <div className="space-y-6">
             <FolderOrganizations folder={folder} />
             <FolderAddresses folder={folder} />
             <FolderPeopleInvolved folder={folder} />
@@ -159,7 +163,7 @@ export default function FolderDetailPage() {
             <FolderVisualizations folder={folder} />
             <FolderActivities folder={folder} />
           </div>
-        </div>
+        </>
       )}
 
       {/* Delete Confirmation Dialog */}

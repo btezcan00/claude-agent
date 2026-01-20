@@ -1,7 +1,9 @@
 import { Signal } from '@/types/signal';
 import { Folder } from '@/types/folder';
+import { Organization } from '@/types/organization';
 import { mockSignals } from '@/data/mock-signals';
 import { mockFolders } from '@/data/mock-folders';
+import { mockOrganizations } from '@/data/mock-organizations';
 
 // In-memory data store
 // Data persists during server runtime but resets on restart
@@ -9,6 +11,7 @@ import { mockFolders } from '@/data/mock-folders';
 class Store {
   private signals: Signal[] = [...mockSignals];
   private folders: Folder[] = [...mockFolders];
+  private organizations: Organization[] = [...mockOrganizations];
 
   // Signals
   getSignals(): Signal[] {
@@ -76,6 +79,46 @@ class Store {
       folderRelations: updatedRelations,
       updatedAt: new Date().toISOString()
     });
+  }
+
+  // Organizations
+  getOrganizations(): Organization[] {
+    return this.organizations;
+  }
+
+  getOrganizationById(id: string): Organization | undefined {
+    return this.organizations.find((o) => o.id === id);
+  }
+
+  createOrganization(organization: Organization): Organization {
+    this.organizations.unshift(organization);
+    return organization;
+  }
+
+  updateOrganization(id: string, data: Partial<Organization>): Organization | undefined {
+    const index = this.organizations.findIndex((o) => o.id === id);
+    if (index === -1) return undefined;
+    this.organizations[index] = { ...this.organizations[index], ...data };
+    return this.organizations[index];
+  }
+
+  deleteOrganization(id: string): boolean {
+    const index = this.organizations.findIndex((o) => o.id === id);
+    if (index === -1) return false;
+    this.organizations.splice(index, 1);
+    return true;
+  }
+
+  searchOrganizations(query: string): Organization[] {
+    if (!query.trim()) return this.organizations;
+    const q = query.toLowerCase();
+    return this.organizations.filter(
+      (o) =>
+        o.name.toLowerCase().includes(q) ||
+        o.address.toLowerCase().includes(q) ||
+        o.type.toLowerCase().includes(q) ||
+        o.description.toLowerCase().includes(q)
+    );
   }
 }
 

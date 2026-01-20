@@ -11,7 +11,9 @@ import {
   FolderAccessLevel,
   FolderNote,
   ApplicationData,
+  FolderItem,
 } from '@/types/folder';
+import { Organization } from '@/types/organization';
 import { currentUser } from '@/data/mock-users';
 import { generateId } from '@/lib/utils';
 import { useSignals } from './signal-context';
@@ -59,48 +61,49 @@ interface FolderContextValue {
   removeTag: (folderId: string, tag: string) => Promise<void>;
 
   // Organizations
-  addOrganization: (folderId: string, organization: string) => Promise<void>;
-  removeOrganization: (folderId: string, organization: string) => Promise<void>;
+  addOrganization: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  addOrganizationToFolder: (folderId: string, org: Organization) => Promise<void>;
+  removeOrganization: (folderId: string, itemId: string) => Promise<void>;
 
   // Addresses
-  addAddress: (folderId: string, address: string) => Promise<void>;
-  removeAddress: (folderId: string, address: string) => Promise<void>;
+  addAddress: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeAddress: (folderId: string, itemId: string) => Promise<void>;
 
   // People Involved
-  addPersonInvolved: (folderId: string, person: string) => Promise<void>;
-  removePersonInvolved: (folderId: string, person: string) => Promise<void>;
+  addPersonInvolved: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removePersonInvolved: (folderId: string, itemId: string) => Promise<void>;
 
   // Letters
-  addLetter: (folderId: string, letter: string) => Promise<void>;
-  removeLetter: (folderId: string, letter: string) => Promise<void>;
+  addLetter: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeLetter: (folderId: string, itemId: string) => Promise<void>;
 
   // Findings
-  addFinding: (folderId: string, finding: string) => Promise<void>;
-  removeFinding: (folderId: string, finding: string) => Promise<void>;
+  addFinding: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeFinding: (folderId: string, itemId: string) => Promise<void>;
 
   // Attachments
-  addAttachment: (folderId: string, attachment: string) => Promise<void>;
-  removeAttachment: (folderId: string, attachment: string) => Promise<void>;
+  addAttachment: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeAttachment: (folderId: string, itemId: string) => Promise<void>;
 
   // Records
-  addRecord: (folderId: string, record: string) => Promise<void>;
-  removeRecord: (folderId: string, record: string) => Promise<void>;
+  addRecord: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeRecord: (folderId: string, itemId: string) => Promise<void>;
 
   // Communications
-  addCommunication: (folderId: string, communication: string) => Promise<void>;
-  removeCommunication: (folderId: string, communication: string) => Promise<void>;
+  addCommunication: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeCommunication: (folderId: string, itemId: string) => Promise<void>;
 
   // Suggestions
-  addSuggestion: (folderId: string, suggestion: string) => Promise<void>;
-  removeSuggestion: (folderId: string, suggestion: string) => Promise<void>;
+  addSuggestion: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeSuggestion: (folderId: string, itemId: string) => Promise<void>;
 
   // Visualizations
-  addVisualization: (folderId: string, visualization: string) => Promise<void>;
-  removeVisualization: (folderId: string, visualization: string) => Promise<void>;
+  addVisualization: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeVisualization: (folderId: string, itemId: string) => Promise<void>;
 
   // Activities
-  addActivity: (folderId: string, activity: string) => Promise<void>;
-  removeActivity: (folderId: string, activity: string) => Promise<void>;
+  addActivity: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  removeActivity: (folderId: string, itemId: string) => Promise<void>;
 
   // Location
   updateLocation: (folderId: string, location: string) => Promise<void>;
@@ -562,16 +565,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Organizations
-  const addOrganization = useCallback(async (folderId: string, organization: string) => {
+  const addOrganization = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.organizations || []).includes(organization)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        organizations: [...(folder.organizations || []), organization],
+        organizations: [...(folder.organizations || []), newItem],
       }),
     });
 
@@ -585,7 +588,32 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeOrganization = useCallback(async (folderId: string, organization: string) => {
+  const addOrganizationToFolder = useCallback(async (folderId: string, org: Organization) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    // Check if organization is already in the folder
+    if ((folder.organizations || []).some((o) => o.id === org.id)) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        organizations: [...(folder.organizations || []), org],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add organization to folder');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeOrganization = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -593,7 +621,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        organizations: (folder.organizations || []).filter((o) => o !== organization),
+        organizations: (folder.organizations || []).filter((o) => o.id !== itemId),
       }),
     });
 
@@ -608,16 +636,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Addresses
-  const addAddress = useCallback(async (folderId: string, address: string) => {
+  const addAddress = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.addresses || []).includes(address)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        addresses: [...(folder.addresses || []), address],
+        addresses: [...(folder.addresses || []), newItem],
       }),
     });
 
@@ -631,7 +659,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeAddress = useCallback(async (folderId: string, address: string) => {
+  const removeAddress = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -639,7 +667,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        addresses: (folder.addresses || []).filter((a) => a !== address),
+        addresses: (folder.addresses || []).filter((a) => a.id !== itemId),
       }),
     });
 
@@ -654,16 +682,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // People Involved
-  const addPersonInvolved = useCallback(async (folderId: string, person: string) => {
+  const addPersonInvolved = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.peopleInvolved || []).includes(person)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        peopleInvolved: [...(folder.peopleInvolved || []), person],
+        peopleInvolved: [...(folder.peopleInvolved || []), newItem],
       }),
     });
 
@@ -677,7 +705,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removePersonInvolved = useCallback(async (folderId: string, person: string) => {
+  const removePersonInvolved = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -685,7 +713,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        peopleInvolved: (folder.peopleInvolved || []).filter((p) => p !== person),
+        peopleInvolved: (folder.peopleInvolved || []).filter((p) => p.id !== itemId),
       }),
     });
 
@@ -700,16 +728,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Letters
-  const addLetter = useCallback(async (folderId: string, letter: string) => {
+  const addLetter = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.letters || []).includes(letter)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        letters: [...(folder.letters || []), letter],
+        letters: [...(folder.letters || []), newItem],
       }),
     });
 
@@ -723,7 +751,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeLetter = useCallback(async (folderId: string, letter: string) => {
+  const removeLetter = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -731,7 +759,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        letters: (folder.letters || []).filter((l) => l !== letter),
+        letters: (folder.letters || []).filter((l) => l.id !== itemId),
       }),
     });
 
@@ -746,16 +774,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Findings
-  const addFinding = useCallback(async (folderId: string, finding: string) => {
+  const addFinding = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.findings || []).includes(finding)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        findings: [...(folder.findings || []), finding],
+        findings: [...(folder.findings || []), newItem],
       }),
     });
 
@@ -769,7 +797,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeFinding = useCallback(async (folderId: string, finding: string) => {
+  const removeFinding = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -777,7 +805,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        findings: (folder.findings || []).filter((f) => f !== finding),
+        findings: (folder.findings || []).filter((f) => f.id !== itemId),
       }),
     });
 
@@ -792,16 +820,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Attachments
-  const addAttachment = useCallback(async (folderId: string, attachment: string) => {
+  const addAttachment = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.attachments || []).includes(attachment)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        attachments: [...(folder.attachments || []), attachment],
+        attachments: [...(folder.attachments || []), newItem],
       }),
     });
 
@@ -815,7 +843,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeAttachment = useCallback(async (folderId: string, attachment: string) => {
+  const removeAttachment = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -823,7 +851,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        attachments: (folder.attachments || []).filter((a) => a !== attachment),
+        attachments: (folder.attachments || []).filter((a) => a.id !== itemId),
       }),
     });
 
@@ -838,16 +866,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Records
-  const addRecord = useCallback(async (folderId: string, record: string) => {
+  const addRecord = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.records || []).includes(record)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        records: [...(folder.records || []), record],
+        records: [...(folder.records || []), newItem],
       }),
     });
 
@@ -861,7 +889,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeRecord = useCallback(async (folderId: string, record: string) => {
+  const removeRecord = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -869,7 +897,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        records: (folder.records || []).filter((r) => r !== record),
+        records: (folder.records || []).filter((r) => r.id !== itemId),
       }),
     });
 
@@ -884,16 +912,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Communications
-  const addCommunication = useCallback(async (folderId: string, communication: string) => {
+  const addCommunication = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.communications || []).includes(communication)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        communications: [...(folder.communications || []), communication],
+        communications: [...(folder.communications || []), newItem],
       }),
     });
 
@@ -907,7 +935,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeCommunication = useCallback(async (folderId: string, communication: string) => {
+  const removeCommunication = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -915,7 +943,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        communications: (folder.communications || []).filter((c) => c !== communication),
+        communications: (folder.communications || []).filter((c) => c.id !== itemId),
       }),
     });
 
@@ -930,16 +958,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Suggestions
-  const addSuggestion = useCallback(async (folderId: string, suggestion: string) => {
+  const addSuggestion = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.suggestions || []).includes(suggestion)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        suggestions: [...(folder.suggestions || []), suggestion],
+        suggestions: [...(folder.suggestions || []), newItem],
       }),
     });
 
@@ -953,7 +981,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeSuggestion = useCallback(async (folderId: string, suggestion: string) => {
+  const removeSuggestion = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -961,7 +989,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        suggestions: (folder.suggestions || []).filter((s) => s !== suggestion),
+        suggestions: (folder.suggestions || []).filter((s) => s.id !== itemId),
       }),
     });
 
@@ -976,16 +1004,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Visualizations
-  const addVisualization = useCallback(async (folderId: string, visualization: string) => {
+  const addVisualization = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.visualizations || []).includes(visualization)) return;
 
+    const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        visualizations: [...(folder.visualizations || []), visualization],
+        visualizations: [...(folder.visualizations || []), newItem],
       }),
     });
 
@@ -999,7 +1027,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeVisualization = useCallback(async (folderId: string, visualization: string) => {
+  const removeVisualization = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -1007,7 +1035,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        visualizations: (folder.visualizations || []).filter((v) => v !== visualization),
+        visualizations: (folder.visualizations || []).filter((v) => v.id !== itemId),
       }),
     });
 
@@ -1022,16 +1050,20 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Activities
-  const addActivity = useCallback(async (folderId: string, activity: string) => {
+  const addActivity = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
-    if ((folder.activities || []).includes(activity)) return;
+
+    const newItem: FolderItem = {
+      id: generateId(),
+      ...item,
+    };
 
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        activities: [...(folder.activities || []), activity],
+        activities: [...(folder.activities || []), newItem],
       }),
     });
 
@@ -1045,7 +1077,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
-  const removeActivity = useCallback(async (folderId: string, activity: string) => {
+  const removeActivity = useCallback(async (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
@@ -1053,7 +1085,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        activities: (folder.activities || []).filter((a) => a !== activity),
+        activities: (folder.activities || []).filter((a) => a.id !== itemId),
       }),
     });
 
@@ -1164,6 +1196,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     addTag,
     removeTag,
     addOrganization,
+    addOrganizationToFolder,
     removeOrganization,
     addAddress,
     removeAddress,

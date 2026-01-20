@@ -8,6 +8,7 @@ import { ChatBot } from '@/components/chat/chat-bot';
 import { SignalProvider } from '@/context/signal-context';
 import { FolderProvider } from '@/context/folder-context';
 import { UserProvider } from '@/context/user-context';
+import { OrganizationProvider } from '@/context/organization-context';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -64,7 +65,9 @@ export default function DashboardLayout({
     <UserProvider>
       <SignalProvider>
         <FolderProvider>
-          <DashboardContent>{children}</DashboardContent>
+          <OrganizationProvider>
+            <DashboardContent>{children}</DashboardContent>
+          </OrganizationProvider>
         </FolderProvider>
       </SignalProvider>
     </UserProvider>

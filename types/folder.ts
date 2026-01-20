@@ -1,3 +1,5 @@
+import { Organization } from './organization';
+
 export type FolderStatus =
   | 'application'
   | 'research'
@@ -54,6 +56,17 @@ export interface ApplicationData {
   completedBy?: string;
 }
 
+export interface FolderItem {
+  id: string;
+  date: string;
+  phase: FolderStatus;
+  label: string;
+  description: string;
+}
+
+// Alias for backwards compatibility
+export type ActivityItem = FolderItem;
+
 export const APPLICATION_CRITERIA = [
   { id: 'necessary_info', name: 'necessary_info', label: 'Provided all necessary information?' },
   { id: 'annual_accounts', name: 'annual_accounts', label: 'Annual Accounts' },
@@ -82,17 +95,17 @@ export interface Folder {
   sharedWith: FolderShare[];
   location: string;
   notes: FolderNote[];
-  organizations: string[];
-  addresses: string[];
-  peopleInvolved: string[];
-  letters: string[];
-  findings: string[];
-  attachments: string[];
-  records: string[];
-  communications: string[];
-  suggestions: string[];
-  visualizations: string[];
-  activities: string[];
+  organizations: Organization[];
+  addresses: FolderItem[];
+  peopleInvolved: FolderItem[];
+  letters: FolderItem[];
+  findings: FolderItem[];
+  attachments: FolderItem[];
+  records: FolderItem[];
+  communications: FolderItem[];
+  suggestions: FolderItem[];
+  visualizations: FolderItem[];
+  activities: FolderItem[];
   // Application data
   applicationData: ApplicationData;
 }
