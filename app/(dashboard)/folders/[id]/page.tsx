@@ -9,7 +9,6 @@ import { FolderStatusRoadmap } from '@/components/folders/folder-status-roadmap'
 import { FolderDetailInfo } from '@/components/folders/folder-detail-info';
 import { FolderNotes } from '@/components/folders/folder-notes';
 import { FolderSignalsList } from '@/components/folders/folder-signals-list';
-import { FolderEditDialog } from '@/components/folders/folder-edit-dialog';
 import { FolderApplicationDialog } from '@/components/folders/folder-application-dialog';
 import {
   AlertDialog,
@@ -32,7 +31,6 @@ export default function FolderDetailPage() {
   const params = useParams();
   const { getFolderById, deleteFolder, folders } = useFolders();
   const [folder, setFolder] = useState<Folder | null | undefined>(undefined);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [applicationDialogOpen, setApplicationDialogOpen] = useState(false);
   const [addSignalsDialogOpen, setAddSignalsDialogOpen] = useState(false);
@@ -87,7 +85,6 @@ export default function FolderDetailPage() {
     <div className="space-y-6">
       <FolderDetailHeader
         folder={folder}
-        onEdit={() => setEditDialogOpen(true)}
         onDelete={() => setDeleteDialogOpen(true)}
       />
 
@@ -140,13 +137,6 @@ export default function FolderDetailPage() {
           </div>
         </div>
       )}
-
-      {/* Edit Dialog */}
-      <FolderEditDialog
-        folder={folder}
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -88,16 +88,6 @@ export function FolderDetailInfo({ folder }: FolderDetailInfoProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Description */}
-        <div>
-          <h4 className="text-sm font-medium mb-2">Description</h4>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {folder.description || 'No description'}
-          </p>
-        </div>
-
-        <Separator />
-
         {/* Location */}
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
