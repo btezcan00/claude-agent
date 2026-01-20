@@ -64,6 +64,7 @@ export interface FolderItem {
   phase: FolderStatus;
   label: string;
   description: string;
+  assignedTo?: string;
 }
 
 // Alias for backwards compatibility
@@ -108,6 +109,8 @@ export interface Folder {
   suggestions: FolderItem[];
   visualizations: FolderItem[];
   activities: FolderItem[];
+  // File attachments with actual file content
+  fileAttachments: FolderAttachment[];
   // Application data
   applicationData: ApplicationData;
 }
@@ -172,6 +175,37 @@ export const FOLDER_ACCESS_LEVELS: {
   { value: 'edit', label: 'Edit', description: 'Can edit folder and add signals' },
   { value: 'admin', label: 'Admin', description: 'Full access including sharing' },
 ];
+
+// File Attachment types and constants
+export interface FolderAttachment {
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedBy: string;
+  uploadedByName: string;
+  uploadedAt: string;
+  description: string;
+  tags: string[];
+  content?: string;      // Base64 encoded
+  textContent?: string;  // Extracted text for PDFs
+}
+
+export const FOLDER_ALLOWED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/csv',
+] as const;
+
+export const FOLDER_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
 
 export const FOLDER_STATUSES: {
   value: FolderStatus;

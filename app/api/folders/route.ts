@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       suggestions: [],
       visualizations: [],
       activities: [],
+      fileAttachments: [],
       applicationData: {
         explanation: '',
         criteria: APPLICATION_CRITERIA.map((c) => ({

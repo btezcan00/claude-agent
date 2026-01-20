@@ -42,6 +42,7 @@ export const mockFolders: Folder[] = [
     suggestions: [],
     visualizations: [],
     activities: [],
+    fileAttachments: [],
     applicationData: {
       explanation: 'Application reviewed and all criteria met for Bibob test.',
       criteria: [
@@ -92,6 +93,7 @@ export const mockFolders: Folder[] = [
     suggestions: [],
     visualizations: [],
     activities: [],
+    fileAttachments: [],
     applicationData: {
       explanation: 'Narcotics case application completed.',
       criteria: [
@@ -141,6 +143,7 @@ export const mockFolders: Folder[] = [
     suggestions: [],
     visualizations: [],
     activities: [],
+    fileAttachments: [],
     applicationData: {
       explanation: '',
       criteria: [

@@ -12,6 +12,7 @@ import {
   FolderNote,
   ApplicationData,
   FolderItem,
+  FolderAttachment,
 } from '@/types/folder';
 import { Organization } from '@/types/organization';
 import { Address } from '@/types/address';
@@ -84,9 +85,14 @@ interface FolderContextValue {
   addFinding: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
   removeFinding: (folderId: string, itemId: string) => Promise<void>;
 
-  // Attachments
+  // Attachments (legacy FolderItem-based)
   addAttachment: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
   removeAttachment: (folderId: string, itemId: string) => Promise<void>;
+
+  // File Attachments (new with actual file content)
+  addFileAttachment: (folderId: string, attachment: Omit<FolderAttachment, 'id' | 'uploadedAt'>) => Promise<void>;
+  updateFileAttachment: (folderId: string, attachmentId: string, data: Partial<Pick<FolderAttachment, 'description' | 'tags'>>) => Promise<void>;
+  removeFileAttachment: (folderId: string, attachmentId: string) => Promise<void>;
 
   // Records
   addRecord: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
@@ -895,6 +901,82 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
+  // File Attachments (new with actual file content)
+  const addFileAttachment = useCallback(async (folderId: string, attachment: Omit<FolderAttachment, 'id' | 'uploadedAt'>) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const now = new Date().toISOString();
+    const newAttachment: FolderAttachment = {
+      id: generateId(),
+      ...attachment,
+      uploadedAt: now,
+    };
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileAttachments: [...(folder.fileAttachments || []), newAttachment],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add file attachment');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const updateFileAttachment = useCallback(async (folderId: string, attachmentId: string, data: Partial<Pick<FolderAttachment, 'description' | 'tags'>>) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileAttachments: (folder.fileAttachments || []).map((a) =>
+          a.id === attachmentId ? { ...a, ...data } : a
+        ),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update file attachment');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const removeFileAttachment = useCallback(async (folderId: string, attachmentId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileAttachments: (folder.fileAttachments || []).filter((a) => a.id !== attachmentId),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove file attachment');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
   // Records
   const addRecord = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
@@ -1239,6 +1321,9 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     removeFinding,
     addAttachment,
     removeAttachment,
+    addFileAttachment,
+    updateFileAttachment,
+    removeFileAttachment,
     addRecord,
     removeRecord,
     addCommunication,
