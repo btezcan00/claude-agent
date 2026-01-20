@@ -142,6 +142,13 @@ export function ConsultBrpDialog({
     (hasHouseNumber && hasZipCode) ||
     (hasStreet && hasHouseNumber && hasMunicipality);
 
+  // Combination availability for the guide display
+  const isBsnComboAvailable = !onPersonTrack && !onAddressTrack && !hasMunicipality;
+  const isSurnameDobComboAvailable = !hasBsn && !onAddressTrack && !hasFirstName && !hasMunicipality;
+  const isSurnameFirstNameMunicipalityComboAvailable = !hasBsn && !onAddressTrack && !hasDateOfBirth;
+  const isHouseNumberZipCodeComboAvailable = !hasBsn && !onPersonTrack && !hasStreet && !hasMunicipality;
+  const isStreetHouseNumberMunicipalityComboAvailable = !hasBsn && !onPersonTrack && !hasZipCode;
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -278,47 +285,105 @@ export function ConsultBrpDialog({
               </div>
             </div>
 
-            {/* Right side - Results table */}
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>First name</TableHead>
-                    <TableHead>Surname</TableHead>
-                    <TableHead>BSN</TableHead>
-                    <TableHead>Gender</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {searchResults.length === 0 ? (
+            {/* Right side - Search combinations guide or Results table */}
+            {!hasSearched ? (
+              <div className="flex flex-col">
+                <p className="text-muted-foreground mb-4">
+                  Enter one of the following combinations to begin a search:
+                </p>
+                <div className="space-y-0">
+                  {/* BSN */}
+                  <div className={`py-3 transition-opacity ${!isBsnComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="font-medium pl-8">BSN</span>
+                  </div>
+
+                  {/* Divider with "or" */}
+                  <div className={`flex items-center transition-opacity ${!isBsnComboAvailable && !isSurnameDobComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="text-muted-foreground text-sm pr-2">or</span>
+                    <div className="flex-1 border-t" />
+                  </div>
+
+                  {/* Surname and date of birth */}
+                  <div className={`py-3 transition-opacity ${!isSurnameDobComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="font-medium pl-8">Surname and date of birth</span>
+                  </div>
+
+                  {/* Divider with "or" */}
+                  <div className={`flex items-center transition-opacity ${!isSurnameDobComboAvailable && !isSurnameFirstNameMunicipalityComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="text-muted-foreground text-sm pr-2">or</span>
+                    <div className="flex-1 border-t" />
+                  </div>
+
+                  {/* Surname, first names and municipality */}
+                  <div className={`py-3 transition-opacity ${!isSurnameFirstNameMunicipalityComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="font-medium pl-8">Surname, first names and municipality</span>
+                  </div>
+
+                  {/* Divider with "or" */}
+                  <div className={`flex items-center transition-opacity ${!isSurnameFirstNameMunicipalityComboAvailable && !isHouseNumberZipCodeComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="text-muted-foreground text-sm pr-2">or</span>
+                    <div className="flex-1 border-t" />
+                  </div>
+
+                  {/* House number and zip code */}
+                  <div className={`py-3 transition-opacity ${!isHouseNumberZipCodeComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="font-medium pl-8">House number and zip code</span>
+                  </div>
+
+                  {/* Divider with "or" */}
+                  <div className={`flex items-center transition-opacity ${!isHouseNumberZipCodeComboAvailable && !isStreetHouseNumberMunicipalityComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="text-muted-foreground text-sm pr-2">or</span>
+                    <div className="flex-1 border-t" />
+                  </div>
+
+                  {/* Street, house number and municipality */}
+                  <div className={`py-3 transition-opacity ${!isStreetHouseNumberMunicipalityComboAvailable ? 'opacity-30' : ''}`}>
+                    <span className="font-medium pl-8">Street, house number and municipality</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {hasSearched ? 'No results found.' : 'Enter search criteria and click Search.'}
-                      </TableCell>
+                      <TableHead>First name</TableHead>
+                      <TableHead>Surname</TableHead>
+                      <TableHead>BSN</TableHead>
+                      <TableHead>Gender</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
-                  ) : (
-                    searchResults.map((person) => (
-                      <TableRow key={person.id}>
-                        <TableCell className="font-medium">{person.firstName}</TableCell>
-                        <TableCell>{person.surname}</TableCell>
-                        <TableCell>{person.bsn || '-'}</TableCell>
-                        <TableCell>{person.gender || '-'}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="icon"
-                            className="h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-                            onClick={() => handleSelectPerson(person)}
-                          >
-                            <ArrowRight className="w-4 h-4" />
-                          </Button>
+                  </TableHeader>
+                  <TableBody>
+                    {searchResults.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          No results found.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    ) : (
+                      searchResults.map((person) => (
+                        <TableRow key={person.id}>
+                          <TableCell className="font-medium">{person.firstName}</TableCell>
+                          <TableCell>{person.surname}</TableCell>
+                          <TableCell>{person.bsn || '-'}</TableCell>
+                          <TableCell>{person.gender || '-'}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                              onClick={() => handleSelectPerson(person)}
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </div>
 
