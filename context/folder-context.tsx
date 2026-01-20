@@ -13,6 +13,7 @@ import {
   ApplicationData,
   FolderItem,
   FolderAttachment,
+  FolderChatMessage,
 } from '@/types/folder';
 import { Organization } from '@/types/organization';
 import { Address } from '@/types/address';
@@ -101,6 +102,9 @@ interface FolderContextValue {
   // Communications
   addCommunication: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
   removeCommunication: (folderId: string, itemId: string) => Promise<void>;
+
+  // Chat Messages
+  addChatMessage: (folderId: string, message: Omit<FolderChatMessage, 'id' | 'createdAt'>) => Promise<void>;
 
   // Suggestions
   addSuggestion: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
@@ -1069,6 +1073,36 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     );
   }, [folders]);
 
+  // Chat Messages
+  const addChatMessage = useCallback(async (folderId: string, message: Omit<FolderChatMessage, 'id' | 'createdAt'>) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const now = new Date().toISOString();
+    const newMessage: FolderChatMessage = {
+      id: generateId(),
+      ...message,
+      createdAt: now,
+    };
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatMessages: [...(folder.chatMessages || []), newMessage],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add chat message');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
   // Suggestions
   const addSuggestion = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
@@ -1328,6 +1362,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     removeRecord,
     addCommunication,
     removeCommunication,
+    addChatMessage,
     addSuggestion,
     removeSuggestion,
     addVisualization,

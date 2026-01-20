@@ -42,6 +42,15 @@ export interface FolderNote {
   isAdminNote: boolean;
 }
 
+export interface FolderChatMessage {
+  id: string;
+  conversationId: string;  // contactId to group messages
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface ApplicationCriterion {
   id: string;
   name: string;
@@ -111,6 +120,8 @@ export interface Folder {
   activities: FolderItem[];
   // File attachments with actual file content
   fileAttachments: FolderAttachment[];
+  // Chat messages for communication feature
+  chatMessages: FolderChatMessage[];
   // Application data
   applicationData: ApplicationData;
 }

@@ -43,6 +43,32 @@ export const mockFolders: Folder[] = [
     visualizations: [],
     activities: [],
     fileAttachments: [],
+    chatMessages: [
+      {
+        id: 'msg-001',
+        conversationId: 'practitioner-user-002',
+        senderId: 'user-001',
+        senderName: 'Sarah Mitchell',
+        content: 'Hi John, can you review the latest findings on this case?',
+        createdAt: '2024-02-15T10:00:00Z',
+      },
+      {
+        id: 'msg-002',
+        conversationId: 'practitioner-user-002',
+        senderId: 'user-002',
+        senderName: 'John Smith',
+        content: 'Sure, I will take a look today and get back to you.',
+        createdAt: '2024-02-15T10:30:00Z',
+      },
+      {
+        id: 'msg-003',
+        conversationId: 'shared-user-003',
+        senderId: 'user-001',
+        senderName: 'Sarah Mitchell',
+        content: 'Emma, please check the attached documents when you have time.',
+        createdAt: '2024-02-16T09:00:00Z',
+      },
+    ],
     applicationData: {
       explanation: 'Application reviewed and all criteria met for Bibob test.',
       criteria: [
@@ -94,6 +120,7 @@ export const mockFolders: Folder[] = [
     visualizations: [],
     activities: [],
     fileAttachments: [],
+    chatMessages: [],
     applicationData: {
       explanation: 'Narcotics case application completed.',
       criteria: [
@@ -144,6 +171,7 @@ export const mockFolders: Folder[] = [
     visualizations: [],
     activities: [],
     fileAttachments: [],
+    chatMessages: [],
     applicationData: {
       explanation: '',
       criteria: [
