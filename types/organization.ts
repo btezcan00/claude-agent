@@ -3,7 +3,7 @@ export interface Organization {
   name: string;
   type: string;
   address: string;
-  description: string;
+  description?: string;
   chamberOfCommerce?: string;
   createdAt: string;
 }

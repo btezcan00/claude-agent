@@ -116,9 +116,9 @@ export function OrganizationSelectDialog({
                       <p className="text-sm text-muted-foreground line-clamp-1">
                         {org.address || 'No address'}
                       </p>
-                      {org.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                          {org.description}
+                      {org.chamberOfCommerce && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          KvK: {org.chamberOfCommerce}
                         </p>
                       )}
                     </div>

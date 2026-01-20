@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Organization, ORGANIZATION_TYPES, MOCK_ADDRESSES } from '@/types/organization';
 import { useOrganizations } from '@/context/organization-context';
 import { OrganizationSelectDialog } from './organization-select-dialog';
@@ -30,12 +30,14 @@ interface OrganizationFormDialogProps {
   open: boolean;
   onClose: () => void;
   onOrganizationCreated: (org: Organization) => void;
+  initialOrganization?: Organization;
 }
 
 export function OrganizationFormDialog({
   open,
   onClose,
   onOrganizationCreated,
+  initialOrganization,
 }: OrganizationFormDialogProps) {
   const { organizations, createOrganization } = useOrganizations();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +54,20 @@ export function OrganizationFormDialog({
   const [address, setAddress] = useState('');
   const [addressQuery, setAddressQuery] = useState('');
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+
+  // Populate form when initialOrganization is provided
+  useEffect(() => {
+    if (initialOrganization) {
+      setName(initialOrganization.name);
+      setType(initialOrganization.type);
+      setDescription(initialOrganization.description || '');
+      setChamberOfCommerce(initialOrganization.chamberOfCommerce || '');
+      setAddress(initialOrganization.address || '');
+      setAddressQuery(initialOrganization.address || '');
+      setEditMode(true);
+      setEditingOrgId(initialOrganization.id);
+    }
+  }, [initialOrganization]);
 
   // Filter addresses based on query
   const filteredAddresses = useMemo(() => {
@@ -75,10 +91,9 @@ export function OrganizationFormDialog({
   const handleOrganizationSelected = (selectedOrgs: Organization[]) => {
     if (selectedOrgs.length > 0) {
       const selected = selectedOrgs[0];
-      // Populate form with selected organization data
+      // Populate form with selected organization data (except description - user provides that)
       setName(selected.name);
       setType(selected.type);
-      setDescription(selected.description || '');
       setChamberOfCommerce(selected.chamberOfCommerce || '');
       setAddress(selected.address || '');
       setAddressQuery(selected.address || '');

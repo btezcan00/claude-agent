@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/table';
 import { Building2, Plus, X } from 'lucide-react';
 import { AddOrganizationDialog } from './add-organization-dialog';
+import { OrganizationFormDialog } from './organization-form-dialog';
+import { Organization } from '@/types/organization';
 
 interface FolderOrganizationsProps {
   folder: Folder;
@@ -22,9 +24,16 @@ interface FolderOrganizationsProps {
 
 export function FolderOrganizations({ folder }: FolderOrganizationsProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const { removeOrganization } = useFolders();
 
   const organizations = folder.organizations || [];
+
+  const handleRowClick = (org: Organization) => {
+    setSelectedOrganization(org);
+    setEditDialogOpen(true);
+  };
 
   return (
     <Card>
@@ -59,7 +68,11 @@ export function FolderOrganizations({ folder }: FolderOrganizationsProps) {
             </TableHeader>
             <TableBody>
               {organizations.map((org) => (
-                <TableRow key={org.id}>
+                <TableRow
+                  key={org.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleRowClick(org)}
+                >
                   <TableCell className="font-medium">{org.name}</TableCell>
                   <TableCell>{org.type}</TableCell>
                   <TableCell className="max-w-[200px] truncate">
@@ -69,7 +82,10 @@ export function FolderOrganizations({ folder }: FolderOrganizationsProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeOrganization(folder.id, org.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeOrganization(folder.id, org.id);
+                      }}
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -86,6 +102,21 @@ export function FolderOrganizations({ folder }: FolderOrganizationsProps) {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
       />
+
+      {selectedOrganization && (
+        <OrganizationFormDialog
+          open={editDialogOpen}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setSelectedOrganization(null);
+          }}
+          onOrganizationCreated={() => {
+            setEditDialogOpen(false);
+            setSelectedOrganization(null);
+          }}
+          initialOrganization={selectedOrganization}
+        />
+      )}
     </Card>
   );
 }
