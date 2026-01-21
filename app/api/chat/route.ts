@@ -400,7 +400,7 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: 'create_folder',
-    description: 'Create a new folder. After creation, ask if the user wants to fill out the Bibob application form - do NOT ask about name, color, description, or signals. Default name is "New folder".',
+    description: 'Create a new folder. IMPORTANT: If user mentions a signal or is creating a folder from a signal, you MUST include that signal ID in signalIds. After creation, ask if the user wants to fill out the Bibob application form. Default name is "New folder".',
     input_schema: {
       type: 'object',
       properties: {
@@ -419,7 +419,7 @@ const tools: Anthropic.Tool[] = [
         signalIds: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Optional signal IDs to add to the folder',
+          description: 'Signal IDs to add to the folder. MUST be included when creating a folder from/for a signal.',
         },
       },
       required: [],
@@ -627,7 +627,46 @@ ${teamSummary || 'No team members available'}
 ## Guidelines
 
 - Always confirm with the user before editing, completing applications, or deleting folders or signals
-- For folder creation: First announce "I'm creating a folder with the name 'New folder'. Could you confirm?" Once confirmed, create the folder with a random color. Then ask "Would you like to fill out the Bibob application form?" If yes, guide them through all 4 criteria (necessary_info, annual_accounts, budgets, loan_agreement). IMPORTANT: After collecting all criteria, check if ALL 4 are met. If any criterion is NOT met, you MUST tell the user: "I noticed that [criterion name] is not met. All 4 criteria must be met to complete the application. I'll save this as a draft - once [criterion name] is resolved, you can complete the application." Then use save_bibob_application_draft. Only use complete_bibob_application when ALL 4 criteria are marked as met. After saving/completing, say "Great! Head to the folder details page to view your folder."
+- For folder creation: First announce "I'm creating a folder with the name 'New folder'. Could you confirm?" Once confirmed, create the folder with a random color. IMPORTANT: If the user is creating a folder from a signal or mentions a specific signal, you MUST include that signal's ID in the signalIds array when calling create_folder. Then ask "Would you like to fill out the Bibob application form?" If yes, ask ALL 4 criteria AND the explanation in ONE message like this:
+
+"Please answer the following questions for the Bibob application:
+
+1. **Necessary Information** - Do you have all the necessary information? (yes/no)
+2. **Annual Accounts** - Are the annual accounts available? (yes/no)
+3. **Budgets** - Are the budgets documented? (yes/no)
+4. **Loan Agreement** - Is there a loan agreement? (yes/no)
+5. **Explanation** - Please provide an overall explanation for this application."
+
+Wait for the user to respond with all answers. IMPORTANT: After collecting all criteria, check if ALL 4 are met. If any criterion is NOT met, you MUST tell the user: "I noticed that [criterion name] is not met. All 4 criteria must be met to complete the application. I'll save this as a draft - once [criterion name] is resolved, you can complete the application." Then use save_bibob_application_draft. Only use complete_bibob_application when ALL 4 criteria are marked as met. After saving/completing the Bibob application, ask "Would you like to fill out the rest of the folder details?" If yes, guide them through the fields as follows:
+
+Guide through the folder details step by step. Each step is SKIPPABLE - if the user says "skip", "next", "no", or similar, move to the next question without saving that field.
+
+**Step 1 - Name & Description (skippable):**
+"Please provide the folder name and description (or say 'skip' to keep defaults):
+1. **Folder Name** - What would you like to name this folder?
+2. **Description** - A brief description of the folder's purpose."
+
+**Step 2 - Tags (skippable):**
+"Would you like to add any tags to this folder? (or say 'skip' to continue without tags)"
+
+**Step 3 - Ownership (skippable):**
+"Who should be the owner of this folder? Here are the available team members: [list team members]. (or say 'skip' to keep current owner)"
+Use assign_folder_owner to set the owner.
+
+**Step 4 - Practitioners (skippable):**
+"Would you like to add any practitioners to this folder? Here are the available team members: [list team members]. (or say 'skip' to continue without adding practitioners)"
+Note: Practitioners are team members who work on the folder but are not the owner.
+
+**Step 5 - Shared With (skippable):**
+"Would you like to share this folder with anyone? Here are the available team members: [list team members]. (or say 'skip' to continue without sharing)"
+Note: Sharing gives other team members access to view or edit the folder.
+
+**Step 6 - Notes (skippable):**
+"Would you like to add any notes to this folder? (or say 'skip' to finish without adding notes)"
+
+After all steps, provide a summary: "Here's an overview of your folder: Name: [name], Description: [description], Location: [location], Tags: [tags], Owner: [owner], Practitioners: [practitioners], Shared with: [shared], Bibob Status: [complete/draft]."
+
+Note: Color is automatically assigned randomly. Location is automatically set from the signal's placeOfObservation when creating a folder from a signal.
 - Reference folders and signals by their number (e.g., GCMP-2024-000001) for clarity
 - Use team members' full names when assigning ownership
 - Be helpful and guide users through complex workflows

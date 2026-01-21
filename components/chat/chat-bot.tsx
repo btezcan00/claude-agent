@@ -267,7 +267,7 @@ function ChatBotInner() {
                 criteria: fullCriteria
               });
               await completeApplication(folder.id);
-              results.push(`Bibob application completed for "${folder.name}". Folder moved to research phase.`);
+              results.push(`Bibob application completed for "${folder.name}". Folder moved to research phase.\n\nWould you like to fill out the rest of the folder details?`);
               actionPerformed = 'folder_edited';
               triggerCelebration();
             } else {
@@ -299,7 +299,7 @@ function ChatBotInner() {
               }
 
               await updateApplicationData(folder.id, updatePayload);
-              results.push(`Draft saved for "${folder.name}". You can complete it later.`);
+              results.push(`Draft saved for "${folder.name}". You can complete it later.\n\nWould you like to fill out the rest of the folder details?`);
               actionPerformed = 'folder_edited';
             } else {
               results.push(`Folder "${folder_id}" not found`);
@@ -312,7 +312,7 @@ function ChatBotInner() {
             );
             if (folder) {
               await assignFolderOwner(folder.id, user_id as string, user_name as string);
-              results.push(`${user_name} assigned as owner of "${folder.name}"`);
+              results.push(`${user_name} assigned as owner of "${folder.name}".\n\nNow, who should be the **practitioners** for this folder? (Practitioners can work on the folder but have limited permissions)\n\nAfter practitioners, we'll set up sharing with other team members (excluding owner and practitioners) where you can specify:\n- **Permission level**: View only, Edit, or Full access\n- **Expiration**: Permanent or temporary access\n- **Notifications**: Whether to notify them`);
               actionPerformed = 'folder_assigned';
             } else {
               results.push(`Folder "${folder_id}" not found`);
@@ -345,7 +345,9 @@ function ChatBotInner() {
                   await addTag(folder.id, tag);
                 }
               }
-              results.push(`Folder "${folder.name}" updated`);
+              // Use the new name if provided, otherwise use the existing folder name
+              const displayName = (name as string) || folder.name;
+              results.push(`Folder "${displayName}" updated`);
               actionPerformed = 'folder_edited';
             } else {
               results.push(`Folder "${folder_id}" not found`);
@@ -600,35 +602,109 @@ function ChatBotInner() {
           } else if (name === 'assign_folder_owner') {
             newPendingActions.push({ type: 'assign_folder', data: toolInput });
           } else if (name === 'edit_folder') {
-            newPendingActions.push({ type: 'edit_folder', data: toolInput });
+            // Auto-execute edit_folder to allow conversational flow to continue
+            try {
+              const { folder_id, name: folderName, description, status, location, color, tags } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const updates: Record<string, unknown> = {};
+                const updatedFields: string[] = [];
+
+                if (folderName) { updates.name = folderName; updatedFields.push(`name to "${folderName}"`); }
+                if (description) { updates.description = description; updatedFields.push(`description`); }
+                if (color) { updates.color = color; updatedFields.push(`color`); }
+
+                if (Object.keys(updates).length > 0) {
+                  await updateFolder(folder.id, updates as { name?: string; description?: string; color?: string });
+                }
+                if (status) {
+                  await updateFolderStatus(folder.id, status as FolderStatus);
+                  updatedFields.push(`status to "${status}"`);
+                }
+                if (location) {
+                  await updateLocation(folder.id, location as string);
+                  updatedFields.push(`location`);
+                }
+                if (tags && Array.isArray(tags)) {
+                  for (const tag of folder.tags) {
+                    await removeTag(folder.id, tag);
+                  }
+                  for (const t of (tags as string[])) {
+                    await addTag(folder.id, t);
+                  }
+                  updatedFields.push(`tags`);
+                }
+
+                trackActionAndCheckAchievements('folder_edited');
+
+                // Determine appropriate follow-up based on what was updated
+                let followUpMessage = '';
+                const updatedTags = tags && Array.isArray(tags);
+                const updatedNameOrDesc = folderName || description;
+
+                if (updatedTags) {
+                  // Tags were updated - move to practitioners step
+                  followUpMessage = 'Who should be the **practitioners** for this folder? (Practitioners can work on the folder but have limited permissions)\n\nAfter practitioners, we\'ll set up sharing with other team members (excluding owner and practitioners) where you can specify:\n- **Permission level**: View only, Edit, or Full access\n- **Expiration**: Permanent or temporary access\n- **Notifications**: Whether to notify them';
+                } else if (updatedNameOrDesc) {
+                  // Name/description updated - ask about owner
+                  followUpMessage = 'Now let\'s set up the team for this folder.\n\nWho should be the **owner** of this folder? (The owner has full control over the folder)';
+                }
+
+                // Add feedback to autoExecuteResults
+                autoExecuteResults.push({
+                  message: `Updated folder ${updatedFields.length > 0 ? updatedFields.join(', ') : ''}`,
+                  ...(followUpMessage && { followUp: followUpMessage })
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to edit folder:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t update the folder. Please try again.',
+              });
+            }
           } else if (name === 'create_folder') {
             // Auto-execute create_folder
             try {
+              const signalIds = toolInput.signalIds as string[] | undefined;
+              // Generate a random color for the folder
+              const randomColors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899'];
+              const randomColor = randomColors[Math.floor(Math.random() * randomColors.length)];
+
+              // Get location from source signal if available
+              let location = '';
+              if (signalIds && signalIds.length > 0) {
+                const sourceSignal = signals.find(s => s.id === signalIds[0] || s.signalNumber === signalIds[0]);
+                if (sourceSignal?.placeOfObservation) {
+                  location = sourceSignal.placeOfObservation;
+                }
+              }
+
+              // Get current user for owner assignment
+              const currentUser = users[0];
+
               const folderData = {
                 name: (toolInput.name as string) || 'New folder',
                 description: (toolInput.description as string) || '',
-                color: toolInput.color as string | undefined,
-                signalIds: toolInput.signalIds as string[] | undefined,
+                color: randomColor,
+                location,
+                ownerId: currentUser?.id,
+                ownerName: currentUser ? getUserFullName(currentUser) : undefined,
+                signalIds,
               };
               const newFolder = await createFolder(folderData);
-
-              // Try to assign owner, but don't fail the whole operation if it fails
-              let ownerAssigned = false;
-              const currentUser = users[0];
-              if (currentUser) {
-                try {
-                  await assignFolderOwner(newFolder.id, currentUser.id, getUserFullName(currentUser));
-                  ownerAssigned = true;
-                } catch (ownerError) {
-                  console.error('Failed to assign folder owner:', ownerError);
-                }
-              }
 
               triggerCelebration();
               trackActionAndCheckAchievements('folder_edited');
 
               autoExecuteResults.push({
-                message: ownerAssigned
+                message: currentUser
                   ? `Folder "${newFolder.name}" created and assigned to you!`
                   : `Folder "${newFolder.name}" created! You can assign an owner from the Folders page.`,
                 followUp: 'Would you like to fill out the Bibob application form?'

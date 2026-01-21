@@ -11,6 +11,13 @@ import { mockPeople, mockBrpData } from '@/data/mock-people';
 
 // In-memory data store
 // Data persists during server runtime but resets on restart
+// Uses global variable to survive hot module reloads in development
+
+// Extend globalThis for TypeScript
+declare global {
+  // eslint-disable-next-line no-var
+  var __store: Store | undefined;
+}
 
 class Store {
   private signals: Signal[] = [...mockSignals];
@@ -271,5 +278,10 @@ class Store {
   }
 }
 
-// Export singleton instance
-export const store = new Store();
+// Export singleton instance that persists across hot module reloads
+export const store = globalThis.__store ?? new Store();
+
+// In development, preserve store across HMR
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.__store = store;
+}
