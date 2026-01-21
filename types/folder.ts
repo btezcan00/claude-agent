@@ -80,6 +80,13 @@ export interface FolderItem {
   sourceTheme?: string;
 }
 
+export interface FindingItem extends FolderItem {
+  isCompleted: boolean;
+  totalSteps?: number;
+  completedSteps?: number;
+  severity?: 'none' | 'low' | 'serious' | 'critical';
+}
+
 export interface LetterItem {
   id: string;
   name: string;
@@ -99,8 +106,19 @@ export const LETTER_TEMPLATES = [
   { value: 'bibob_7c_request', label: 'Form for requesting information from an administrative body to the Tax Authorities pursuant to Article 7c of the Bibob Act', description: '' },
 ] as const;
 
-// Alias for backwards compatibility
-export type ActivityItem = FolderItem;
+// ActivityItem with additional tracking fields
+export interface ActivityItem {
+  id: string;
+  date: string;
+  phase: FolderStatus;
+  label: string;
+  description: string;
+  assignedTo?: string;
+  source?: SuggestionSource;
+  sourceTheme?: string;
+  createdByName: string;
+  updatedAt: string;
+}
 
 export const APPLICATION_CRITERIA = [
   { id: 'necessary_info', name: 'necessary_info', label: 'Provided all necessary information?' },
@@ -134,13 +152,13 @@ export interface Folder {
   addresses: Address[];
   peopleInvolved: Person[];
   letters: LetterItem[];
-  findings: FolderItem[];
+  findings: FindingItem[];
   attachments: FolderItem[];
   records: FolderItem[];
   communications: FolderItem[];
   suggestions: FolderItem[];
   visualizations: FolderItem[];
-  activities: FolderItem[];
+  activities: ActivityItem[];
   // File attachments with actual file content
   fileAttachments: FolderAttachment[];
   // Chat messages for communication feature

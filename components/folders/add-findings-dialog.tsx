@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Folder, FolderItem } from '@/types/folder';
+import { Folder, FindingItem } from '@/types/folder';
 import { FINDING_TYPES, FindingType } from '@/data/finding-types';
 import { mockUsers, getUserFullName } from '@/data/mock-users';
 import {
@@ -26,7 +26,7 @@ interface AddFindingsDialogProps {
   folder: Folder;
   open: boolean;
   onClose: () => void;
-  onAdd: (item: Omit<FolderItem, 'id'>) => void;
+  onAdd: (item: Omit<FindingItem, 'id'>) => void;
 }
 
 export function AddFindingsDialog({
@@ -65,6 +65,10 @@ export function AddFindingsDialog({
           label: findingType.label,
           description: '',
           assignedTo: assignedTo,
+          severity: findingType.severity,
+          isCompleted: false,
+          totalSteps: 1,
+          completedSteps: 0,
         });
       }
     });

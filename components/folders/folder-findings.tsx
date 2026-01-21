@@ -1,40 +1,47 @@
 'use client';
 
 import { useState } from 'react';
-import { Folder, FOLDER_STATUSES } from '@/types/folder';
+import { Folder, FindingItem } from '@/types/folder';
 import { useFolders } from '@/context/folder-context';
-import { getUserById, getUserFullName } from '@/data/mock-users';
+import { FINDING_TYPES } from '@/data/finding-types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, X, Search } from 'lucide-react';
+import { Plus, FileText, User, UserRound } from 'lucide-react';
 import { AddFindingsDialog } from './add-findings-dialog';
 
 interface FolderFindingsProps {
   folder: Folder;
 }
 
+const getSeverityBackground = (severity?: 'none' | 'low' | 'serious' | 'critical'): string => {
+  switch (severity) {
+    case 'none':
+      return 'bg-amber-50';
+    case 'low':
+      return 'bg-amber-100';
+    case 'serious':
+      return 'bg-orange-100';
+    case 'critical':
+      return 'bg-red-100';
+    default:
+      return 'bg-amber-50';
+  }
+};
+
+const getSeverityFromLabel = (label: string): 'none' | 'low' | 'serious' | 'critical' | undefined => {
+  const findingType = FINDING_TYPES.find(ft => ft.label === label);
+  return findingType?.severity;
+};
+
 export function FolderFindings({ folder }: FolderFindingsProps) {
-  const { addFinding, removeFinding } = useFolders();
+  const { addFinding, toggleFindingCompletion } = useFolders();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const getPhaseLabel = (phase: string) => {
-    const status = FOLDER_STATUSES.find((s) => s.value === phase);
-    return status?.label || phase;
-  };
-
-  const getPhaseColor = (phase: string) => {
-    const status = FOLDER_STATUSES.find((s) => s.value === phase);
-    return status?.color || '#6b7280';
-  };
-
-  const getAssignedUserName = (userId?: string) => {
-    if (!userId) return null;
-    const user = getUserById(userId);
-    return user ? getUserFullName(user) : null;
-  };
-
   const items = folder.findings || [];
+
+  const handleToggleCompletion = async (findingId: string) => {
+    await toggleFindingCompletion(folder.id, findingId);
+  };
 
   return (
     <>
@@ -42,7 +49,7 @@ export function FolderFindings({ folder }: FolderFindingsProps) {
         <CardHeader>
           <CardTitle className="text-base flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Search className="w-4 h-4" />
+              <FileText className="w-4 h-4" />
               Findings
             </div>
             <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
@@ -50,52 +57,39 @@ export function FolderFindings({ folder }: FolderFindingsProps) {
             </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-2">
           {items.length === 0 ? (
             <p className="text-sm text-muted-foreground">No findings added</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {items.map((item) => {
-                const assignedUserName = getAssignedUserName(item.assignedTo);
+                const severity = item.severity ?? getSeverityFromLabel(item.label);
+                const bgColor = getSeverityBackground(severity);
+                const completedSteps = item.completedSteps ?? 0;
+                const totalSteps = item.totalSteps ?? 1;
+                const hasAssignedUser = !!item.assignedTo;
+
                 return (
                   <div
                     key={item.id}
-                    className="p-3 border rounded-lg space-y-2"
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg ${bgColor}`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{item.label}</span>
-                          <Badge
-                            variant="outline"
-                            style={{
-                              borderColor: getPhaseColor(item.phase),
-                              color: getPhaseColor(item.phase),
-                            }}
-                            className="text-xs"
-                          >
-                            {getPhaseLabel(item.phase)}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{item.date}</p>
-                        {assignedUserName && (
-                          <p className="text-xs text-muted-foreground">
-                            Assigned to: {assignedUserName}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 shrink-0"
-                        onClick={() => removeFinding(folder.id, item.id)}
+                    <span className="text-sm font-medium text-gray-800 flex-1">
+                      {item.label}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleToggleCompletion(item.id)}
+                        className="text-sm font-medium text-gray-600 hover:text-gray-900 cursor-pointer px-2 py-1 rounded hover:bg-black/5 transition-colors"
                       >
-                        <X className="w-3 h-3" />
-                      </Button>
+                        {completedSteps}/{totalSteps}
+                      </button>
+                      {hasAssignedUser ? (
+                        <User className="w-4 h-4 text-gray-600" />
+                      ) : (
+                        <UserRound className="w-4 h-4 text-gray-400" />
+                      )}
                     </div>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
-                    )}
                   </div>
                 );
               })}

@@ -12,9 +12,11 @@ import {
   FolderNote,
   ApplicationData,
   FolderItem,
+  FindingItem,
   FolderAttachment,
   FolderChatMessage,
   LetterItem,
+  ActivityItem,
 } from '@/types/folder';
 import { Organization } from '@/types/organization';
 import { Address } from '@/types/address';
@@ -85,8 +87,9 @@ interface FolderContextValue {
   removeLetter: (folderId: string, itemId: string) => Promise<void>;
 
   // Findings
-  addFinding: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  addFinding: (folderId: string, item: Omit<FindingItem, 'id'>) => Promise<void>;
   removeFinding: (folderId: string, itemId: string) => Promise<void>;
+  toggleFindingCompletion: (folderId: string, findingId: string) => Promise<void>;
 
   // Attachments (legacy FolderItem-based)
   addAttachment: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
@@ -117,7 +120,7 @@ interface FolderContextValue {
   removeVisualization: (folderId: string, itemId: string) => Promise<void>;
 
   // Activities
-  addActivity: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  addActivity: (folderId: string, item: Omit<ActivityItem, 'id' | 'createdByName' | 'updatedAt'>) => Promise<void>;
   removeActivity: (folderId: string, itemId: string) => Promise<void>;
 
   // Location
@@ -857,11 +860,17 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Findings
-  const addFinding = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
+  const addFinding = useCallback(async (folderId: string, item: Omit<FindingItem, 'id'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
-    const newItem: FolderItem = { id: generateId(), ...item };
+    const newItem: FindingItem = {
+      id: generateId(),
+      ...item,
+      isCompleted: item.isCompleted ?? false,
+      totalSteps: item.totalSteps ?? 1,
+      completedSteps: item.completedSteps ?? 0,
+    };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -894,6 +903,42 @@ export function FolderProvider({ children }: { children: ReactNode }) {
 
     if (!response.ok) {
       throw new Error('Failed to remove finding');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+  }, [folders]);
+
+  const toggleFindingCompletion = useCallback(async (folderId: string, findingId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const updatedFindings = (folder.findings || []).map((finding) => {
+      if (finding.id === findingId) {
+        const totalSteps = finding.totalSteps ?? 1;
+        const currentCompleted = finding.completedSteps ?? 0;
+        const newCompletedSteps = currentCompleted >= totalSteps ? 0 : totalSteps;
+        return {
+          ...finding,
+          completedSteps: newCompletedSteps,
+          isCompleted: newCompletedSteps >= totalSteps,
+        };
+      }
+      return finding;
+    });
+
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        findings: updatedFindings,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to toggle finding completion');
     }
 
     const updatedFolder = await response.json();
@@ -1239,13 +1284,16 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Activities
-  const addActivity = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
+  const addActivity = useCallback(async (folderId: string, item: Omit<ActivityItem, 'id' | 'createdByName' | 'updatedAt'>) => {
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return;
 
-    const newItem: FolderItem = {
+    const now = new Date().toISOString();
+    const newItem: ActivityItem = {
       id: generateId(),
       ...item,
+      createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
+      updatedAt: now,
     };
 
     const response = await fetch(`/api/folders/${folderId}`, {
@@ -1397,6 +1445,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     removeLetter,
     addFinding,
     removeFinding,
+    toggleFindingCompletion,
     addAttachment,
     removeAttachment,
     addFileAttachment,
