@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { MessageCircle, X, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSignals } from '@/context/signal-context';
@@ -9,6 +9,21 @@ import { useFolders } from '@/context/folder-context';
 import { useUsers } from '@/context/user-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType } from '@/types/signal';
 import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus } from '@/types/folder';
+import { MessageReaction, ReactionType, TrackedActionType } from '@/types/chat';
+
+// Chat feature components
+import { CHAT_CONFIG } from './chat-config';
+import { getInitialGreeting } from './personality/greeting-variants';
+import { GamificationProvider, useGamification } from './gamification/gamification-context';
+import { ProgressIndicator } from './gamification/progress-indicator';
+import { AchievementBadge } from './gamification/achievement-badge';
+import { QuickActionChips } from './interactive/quick-action-chips';
+import { MessageReactions } from './interactive/message-reactions';
+import { ContextualSuggestions, detectActionType } from './interactive/contextual-suggestions';
+import { AnimatedTyping } from './animations/animated-typing';
+import { MessageTransition } from './animations/message-transition';
+import { CelebrationEffect } from './animations/celebration-effect';
+import { BotIcon } from './animations/avatar-expressions';
 
 interface Message {
   id: string;
@@ -19,23 +34,23 @@ interface Message {
     input: Record<string, unknown>;
   };
   pending?: boolean;
+  reactions?: MessageReaction[];
+  isNew?: boolean;
 }
 
-export function ChatBot() {
+function ChatBotInner() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I\'m your GCMP assistant. I can help you summarize signals, create new signals, edit existing ones, assign signals to team members, and more. How can I help you today?',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState<{
     type: 'create' | 'edit' | 'add_note' | 'delete' | 'complete_application' | 'save_application_draft' | 'assign_folder' | 'edit_folder' | 'summarize_signals' | 'list_team_members' | 'get_signal_stats' | 'search_signals' | 'get_signal_activity' | 'get_signal_notes' | 'summarize_attachments' | 'list_folders' | 'get_folder_stats';
     data: Record<string, unknown>;
   }[]>([]);
+  const [lastActionType, setLastActionType] = useState<string | undefined>();
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,8 +58,34 @@ export function ChatBot() {
   const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag } = useFolders();
   const { users, getUserFullName } = useUsers();
 
+  // Gamification hooks
+  const {
+    isReturningUser,
+    trackAction,
+    checkAndUnlockAchievement,
+    newAchievement,
+    clearNewAchievement,
+  } = useGamification();
+
+  // Initialize greeting message
+  useEffect(() => {
+    if (messages.length === 0) {
+      const greeting = CHAT_CONFIG.personality.enabled && CHAT_CONFIG.personality.timeAwareGreetings
+        ? getInitialGreeting(isReturningUser)
+        : "Hello! I'm your GCMP assistant. I can help you summarize signals, create new signals, edit existing ones, assign signals to team members, and more. How can I help you today?";
+
+      setMessages([
+        {
+          id: '1',
+          role: 'assistant',
+          content: greeting,
+          isNew: true,
+        },
+      ]);
+    }
+  }, [isReturningUser, messages.length]);
+
   const findSignal = (identifier: string) => {
-    // Search by ID first, then by signal number or description
     return getSignalById(identifier) || signals.find(s =>
       s.signalNumber.toLowerCase() === identifier.toLowerCase() ||
       s.signalNumber.toLowerCase().includes(identifier.toLowerCase()) ||
@@ -67,13 +108,87 @@ export function ChatBot() {
     }
   }, [isOpen]);
 
+  const handleReactionAdd = useCallback((messageId: string, reactionType: ReactionType) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id !== messageId) return msg;
+      const existingReactions = msg.reactions || [];
+      if (existingReactions.some(r => r.type === reactionType)) return msg;
+      return {
+        ...msg,
+        reactions: [...existingReactions, { type: reactionType, addedAt: new Date().toISOString() }],
+      };
+    }));
+  }, []);
+
+  const handleReactionRemove = useCallback((messageId: string, reactionType: ReactionType) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id !== messageId) return msg;
+      return {
+        ...msg,
+        reactions: (msg.reactions || []).filter(r => r.type !== reactionType),
+      };
+    }));
+  }, []);
+
+  const triggerCelebration = useCallback(() => {
+    if (CHAT_CONFIG.animations.enabled && CHAT_CONFIG.animations.celebrationEffects) {
+      setShowCelebration(true);
+    }
+  }, []);
+
+  const trackActionAndCheckAchievements = useCallback((actionType: TrackedActionType) => {
+    if (!CHAT_CONFIG.gamification.enabled) return;
+
+    trackAction(actionType);
+
+    // Check for specific achievements based on action type
+    switch (actionType) {
+      case 'signal_created':
+        checkAndUnlockAchievement('first_signal');
+        checkAndUnlockAchievement('signal_master');
+        break;
+      case 'folder_assigned':
+        checkAndUnlockAchievement('team_player');
+        break;
+      case 'folder_edited':
+        checkAndUnlockAchievement('folder_organizer');
+        break;
+      case 'note_added':
+        checkAndUnlockAchievement('note_taker');
+        break;
+      case 'search_performed':
+        checkAndUnlockAchievement('search_expert');
+        break;
+    }
+  }, [trackAction, checkAndUnlockAchievement]);
+
+  const handleQuickAction = (prompt: string) => {
+    setInput(prompt);
+    setHasInteracted(true);
+    // Auto-submit the quick action
+    setTimeout(() => {
+      inputRef.current?.form?.requestSubmit();
+    }, 100);
+  };
+
+  const handleSuggestionSelect = (prompt: string) => {
+    setInput(prompt);
+    setTimeout(() => {
+      inputRef.current?.form?.requestSubmit();
+    }, 100);
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
+
+    setHasInteracted(true);
+    trackActionAndCheckAchievements('message_sent');
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: input,
+      isNew: true,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -85,17 +200,25 @@ export function ChatBot() {
       const lowerInput = input.toLowerCase();
       if (lowerInput.includes('yes') || lowerInput.includes('confirm') || lowerInput.includes('ok')) {
         const results: string[] = [];
+        let actionPerformed: TrackedActionType | null = null;
 
         for (const pendingAction of pendingActions) {
           if (pendingAction.type === 'create') {
-            const newSignal = await createSignal(pendingAction.data as unknown as CreateSignalInput);
+            const signalData = {
+              ...pendingAction.data,
+              timeOfObservation: pendingAction.data.timeOfObservation || new Date().toISOString(),
+            } as CreateSignalInput;
+            const newSignal = await createSignal(signalData);
             results.push(`Signal created: ${newSignal.signalNumber}`);
+            actionPerformed = 'signal_created';
+            triggerCelebration();
           } else if (pendingAction.type === 'edit') {
             const { signal_id, ...updates } = pendingAction.data;
             const targetSignal = findSignal(signal_id as string);
             if (targetSignal) {
               await updateSignal(targetSignal.id, updates as UpdateSignalInput);
               results.push(`Signal ${targetSignal.signalNumber} updated`);
+              actionPerformed = 'signal_edited';
             } else {
               results.push(`Signal ${signal_id} not found`);
             }
@@ -105,6 +228,7 @@ export function ChatBot() {
             if (targetSignal) {
               await addNote(targetSignal.id, content as string, is_private as boolean || false);
               results.push(`Note added to ${targetSignal.signalNumber}`);
+              actionPerformed = 'note_added';
             } else {
               results.push(`Signal ${signal_id} not found`);
             }
@@ -114,6 +238,7 @@ export function ChatBot() {
             if (targetSignal) {
               await deleteSignal(targetSignal.id);
               results.push(`Signal ${targetSignal.signalNumber} deleted`);
+              actionPerformed = 'signal_deleted';
             } else {
               results.push(`Signal ${signal_id} not found`);
             }
@@ -124,7 +249,6 @@ export function ChatBot() {
               f.name.toLowerCase().includes((folder_id as string).toLowerCase())
             );
             if (folder) {
-              // Merge incoming criteria with APPLICATION_CRITERIA to include name and label
               const incomingCriteria = criteria as Array<{ id: string, isMet: boolean, explanation: string }>;
               const fullCriteria: ApplicationCriterion[] = APPLICATION_CRITERIA.map(baseCrit => {
                 const incoming = incomingCriteria.find(c => c.id === baseCrit.id);
@@ -140,6 +264,8 @@ export function ChatBot() {
               });
               await completeApplication(folder.id);
               results.push(`Bibob application completed for "${folder.name}". Folder moved to research phase.`);
+              actionPerformed = 'folder_edited';
+              triggerCelebration();
             } else {
               results.push(`Folder "${folder_id}" not found`);
             }
@@ -170,6 +296,7 @@ export function ChatBot() {
 
               await updateApplicationData(folder.id, updatePayload);
               results.push(`Draft saved for "${folder.name}". You can complete it later.`);
+              actionPerformed = 'folder_edited';
             } else {
               results.push(`Folder "${folder_id}" not found`);
             }
@@ -182,6 +309,7 @@ export function ChatBot() {
             if (folder) {
               await assignFolderOwner(folder.id, user_id as string, user_name as string);
               results.push(`${user_name} assigned as owner of "${folder.name}"`);
+              actionPerformed = 'folder_assigned';
             } else {
               results.push(`Folder "${folder_id}" not found`);
             }
@@ -192,7 +320,6 @@ export function ChatBot() {
               f.name.toLowerCase().includes((folder_id as string).toLowerCase())
             );
             if (folder) {
-              // Update basic folder properties
               const updates: Record<string, unknown> = {};
               if (name) updates.name = name;
               if (description) updates.description = description;
@@ -200,17 +327,13 @@ export function ChatBot() {
               if (Object.keys(updates).length > 0) {
                 await updateFolder(folder.id, updates as { name?: string; description?: string; color?: string });
               }
-              // Update status separately (uses specialized function)
               if (status) {
                 await updateFolderStatus(folder.id, status as FolderStatus);
               }
-              // Update location separately
               if (location) {
                 await updateLocation(folder.id, location as string);
               }
-              // Update tags (replace all)
               if (tags && Array.isArray(tags)) {
-                // Remove existing tags, add new ones
                 for (const tag of folder.tags) {
                   await removeTag(folder.id, tag);
                 }
@@ -219,6 +342,7 @@ export function ChatBot() {
                 }
               }
               results.push(`Folder "${folder.name}" updated`);
+              actionPerformed = 'folder_edited';
             } else {
               results.push(`Folder "${folder_id}" not found`);
             }
@@ -267,6 +391,7 @@ export function ChatBot() {
               ).join('\n')
               : 'No signals found matching your criteria.';
             results.push(`**Search Results (${searchResults.length} signals):**\n\n${resultsList}`);
+            actionPerformed = 'search_performed';
           } else if (pendingAction.type === 'get_signal_activity') {
             const targetSignal = findSignal(pendingAction.data.signal_id as string);
             if (!targetSignal) {
@@ -311,6 +436,12 @@ export function ChatBot() {
           }
         }
 
+        // Track the action if one was performed
+        if (actionPerformed) {
+          trackActionAndCheckAchievements(actionPerformed);
+          setLastActionType(detectActionType(pendingActions[0]?.type));
+        }
+
         setMessages((prev) => [
           ...prev,
           {
@@ -319,6 +450,7 @@ export function ChatBot() {
             content: results.length === 1
               ? `${results[0]}!`
               : `**Completed ${results.length} actions:**\n\n${results.map(r => `- ${r}`).join('\n')}`,
+            isNew: true,
           },
         ]);
         setPendingActions([]);
@@ -333,6 +465,7 @@ export function ChatBot() {
             content: pendingActions.length === 1
               ? 'Action cancelled. Is there anything else I can help you with?'
               : `${pendingActions.length} actions cancelled. Is there anything else I can help you with?`,
+            isNew: true,
           },
         ]);
         setPendingActions([]);
@@ -342,7 +475,6 @@ export function ChatBot() {
     }
 
     try {
-      // Prepare signal data for the API (including attachments for AI summarization)
       const signalData = signals.map((s) => ({
         id: s.id,
         signalNumber: s.signalNumber,
@@ -367,7 +499,6 @@ export function ChatBot() {
         })),
       }));
 
-      // Prepare team members data for the API
       const teamMembersData = users.map((u) => ({
         id: u.id,
         firstName: u.firstName,
@@ -377,7 +508,6 @@ export function ChatBot() {
         ownedFolderCount: folders.filter((f) => f.ownerId === u.id).length,
       }));
 
-      // Prepare folder data for the API
       const folderData = folders.map((f) => ({
         id: f.id,
         name: f.name,
@@ -389,7 +519,6 @@ export function ChatBot() {
         tags: f.tags,
       }));
 
-      // Get conversation history (excluding system messages)
       const conversationHistory = messages
         .filter((m) => !m.pending)
         .map((m) => ({
@@ -416,11 +545,9 @@ export function ChatBot() {
 
       const data = await response.json();
 
-      // Handle tool uses (array of tool calls)
       if (data.toolUses && data.toolUses.length > 0) {
         const newPendingActions: typeof pendingActions = [];
 
-        // Process each tool call
         for (const toolUse of data.toolUses) {
           const { name, input: toolInput } = toolUse;
 
@@ -461,14 +588,11 @@ export function ChatBot() {
           }
         }
 
-        // Build the response message
         let responseContent = data.content || '';
 
-        // Handle pending actions
         if (newPendingActions.length > 0) {
           setPendingActions(newPendingActions);
 
-          // Build confirmation message for all pending actions
           const confirmationItems = newPendingActions.map(action => {
             if (action.type === 'create') {
               const types = Array.isArray(action.data.types) ? action.data.types.join(', ') : action.data.types;
@@ -552,16 +676,17 @@ export function ChatBot() {
             id: Date.now().toString(),
             role: 'assistant',
             content: responseContent || 'I apologize, but I couldn\'t process that request. Please try again.',
+            isNew: true,
           },
         ]);
       } else {
-        // Regular text response (no tool calls)
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
             role: 'assistant',
             content: data.content || 'I apologize, but I couldn\'t generate a response. Please try again.',
+            isNew: true,
           },
         ]);
       }
@@ -573,6 +698,7 @@ export function ChatBot() {
           id: Date.now().toString(),
           role: 'assistant',
           content: 'Sorry, I encountered an error. Please make sure your API key is configured in .env.local and try again.',
+          isNew: true,
         },
       ]);
     } finally {
@@ -589,6 +715,22 @@ export function ChatBot() {
 
   return (
     <>
+      {/* Celebration Effect */}
+      <CelebrationEffect
+        isActive={showCelebration}
+        onComplete={() => setShowCelebration(false)}
+        variant="sparkles"
+      />
+
+      {/* Achievement Notification */}
+      {newAchievement && (
+        <AchievementBadge
+          achievement={newAchievement}
+          isNew
+          onDismiss={clearNewAchievement}
+        />
+      )}
+
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -604,51 +746,112 @@ export function ChatBot() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-96 h-[500px] bg-card border border-border rounded-lg shadow-xl flex flex-col overflow-hidden">
+        <div className="fixed bottom-24 right-6 z-50 w-96 h-[500px] bg-card border border-border rounded-lg shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200">
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 bg-primary text-primary-foreground">
-            <MessageCircle className="w-5 h-5" />
-            <div>
-              <h3 className="font-semibold text-sm">GCMP Assistant</h3>
-              <p className="text-xs opacity-90">Powered by Claude</p>
+          <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground">
+            <div className="flex items-center gap-3">
+              <BotIcon size="sm" className="bg-primary-foreground/20" />
+              <div>
+                <h3 className="font-semibold text-sm">GCMP Assistant</h3>
+                <p className="text-xs opacity-90">Powered by Claude</p>
+              </div>
             </div>
+            {/* Progress Indicator in Header */}
+            {CHAT_CONFIG.gamification.enabled && (
+              <ProgressIndicator compact className="text-primary-foreground/80" />
+            )}
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <div
+            {messages.map((message, index) => (
+              <MessageTransition
                 key={message.id}
-                className={cn(
-                  'flex',
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                )}
+                isNew={message.isNew && index === messages.length - 1}
+                direction={message.role === 'user' ? 'right' : 'left'}
               >
                 <div
                   className={cn(
-                    'max-w-[85%] rounded-lg px-3 py-2 text-sm',
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground'
+                    'flex group',
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
+                  <div className="flex flex-col gap-1 max-w-[85%]">
+                    <div
+                      className={cn(
+                        'rounded-lg px-3 py-2 text-sm',
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-foreground'
+                      )}
+                    >
+                      <div className="whitespace-pre-wrap">{message.content}</div>
+                    </div>
+                    {/* Reactions for assistant messages */}
+                    {message.role === 'assistant' && CHAT_CONFIG.interactive.messageReactions && (
+                      <MessageReactions
+                        messageId={message.id}
+                        messageContent={message.content}
+                        reactions={message.reactions}
+                        onReactionAdd={handleReactionAdd}
+                        onReactionRemove={handleReactionRemove}
+                        showCopyButton={CHAT_CONFIG.interactive.copyButton}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
+              </MessageTransition>
             ))}
-            {isLoading && (
+
+            {/* Loading Indicator */}
+            {isLoading && CHAT_CONFIG.animations.enabled && CHAT_CONFIG.animations.typingIndicator && (
+              <AnimatedTyping showAvatar={false} />
+            )}
+            {isLoading && (!CHAT_CONFIG.animations.enabled || !CHAT_CONFIG.animations.typingIndicator) && (
               <div className="flex justify-start">
                 <div className="bg-muted rounded-lg px-3 py-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
                 </div>
               </div>
             )}
+
+            {/* Quick Action Chips (shown at start) */}
+            {!hasInteracted && CHAT_CONFIG.interactive.quickActionChips && messages.length === 1 && (
+              <div className="pt-2">
+                <p className="text-xs text-muted-foreground mb-2">Quick actions:</p>
+                <QuickActionChips
+                  onActionSelect={handleQuickAction}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
+
+            {/* Contextual Suggestions (shown after actions) */}
+            {!isLoading && lastActionType && CHAT_CONFIG.interactive.contextualSuggestions && (
+              <ContextualSuggestions
+                lastActionType={lastActionType}
+                onSuggestionSelect={handleSuggestionSelect}
+                disabled={isLoading}
+                className="pt-2"
+              />
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
           <div className="border-t border-border p-3">
-            <div className="flex items-center gap-2">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+              }}
+              className="flex items-center gap-2"
+            >
               <input
                 ref={inputRef}
                 type="text"
@@ -660,16 +863,25 @@ export function ChatBot() {
                 className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               />
               <Button
+                type="submit"
                 size="icon"
-                onClick={handleSendMessage}
                 disabled={!input.trim() || isLoading}
               >
                 <Send className="w-4 h-4" />
               </Button>
-            </div>
+            </form>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+// Export wrapped component with GamificationProvider
+export function ChatBot() {
+  return (
+    <GamificationProvider>
+      <ChatBotInner />
+    </GamificationProvider>
   );
 }
