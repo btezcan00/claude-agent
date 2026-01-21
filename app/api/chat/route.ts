@@ -273,7 +273,7 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: 'complete_bibob_application',
-    description: 'Complete the Bibob application for a folder. Updates the explanation, marks criteria as met with explanations, and finalizes the application to move the folder to research status.',
+    description: 'Complete the Bibob application for a folder. IMPORTANT: Only use this when ALL 4 criteria are met. If any criterion is not met, use save_bibob_application_draft instead and inform the user which criteria are missing.',
     input_schema: {
       type: 'object',
       properties: {
@@ -304,7 +304,7 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: 'save_bibob_application_draft',
-    description: 'Save progress on a Bibob application without completing it. Use this when the user wants to save their work and return later to finish.',
+    description: 'Save progress on a Bibob application without completing it. Use this when any criteria are not met. BEFORE using this tool, you MUST first tell the user which specific criteria are not met and explain that all 4 criteria must be met to complete the application.',
     input_schema: {
       type: 'object',
       properties: {
@@ -396,6 +396,33 @@ const tools: Anthropic.Tool[] = [
         },
       },
       required: ['folder_id'],
+    },
+  },
+  {
+    name: 'create_folder',
+    description: 'Create a new folder. After creation, ask if the user wants to fill out the Bibob application form - do NOT ask about name, color, description, or signals. Default name is "New folder".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Name of the folder (default: "New folder")',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the folder\'s purpose',
+        },
+        color: {
+          type: 'string',
+          description: 'Optional hex color for the folder',
+        },
+        signalIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional signal IDs to add to the folder',
+        },
+      },
+      required: [],
     },
   },
 ];
@@ -599,7 +626,8 @@ ${teamSummary || 'No team members available'}
 
 ## Guidelines
 
-- Always confirm with the user before creating, editing, completing applications, or deleting folders or signals
+- Always confirm with the user before editing, completing applications, or deleting folders or signals
+- For folder creation: First announce "I'm creating a folder with the name 'New folder'. Could you confirm?" Once confirmed, create the folder with a random color. Then ask "Would you like to fill out the Bibob application form?" If yes, guide them through all 4 criteria (necessary_info, annual_accounts, budgets, loan_agreement). IMPORTANT: After collecting all criteria, check if ALL 4 are met. If any criterion is NOT met, you MUST tell the user: "I noticed that [criterion name] is not met. All 4 criteria must be met to complete the application. I'll save this as a draft - once [criterion name] is resolved, you can complete the application." Then use save_bibob_application_draft. Only use complete_bibob_application when ALL 4 criteria are marked as met. After saving/completing, say "Great! Head to the folder details page to view your folder."
 - Reference folders and signals by their number (e.g., GCMP-2024-000001) for clarity
 - Use team members' full names when assigning ownership
 - Be helpful and guide users through complex workflows

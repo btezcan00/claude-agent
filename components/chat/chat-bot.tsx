@@ -25,6 +25,10 @@ import { MessageTransition } from './animations/message-transition';
 import { CelebrationEffect } from './animations/celebration-effect';
 import { BotIcon } from './animations/avatar-expressions';
 
+// Generate unique message IDs to avoid React key collisions
+let messageIdCounter = 0;
+const generateMessageId = () => `msg-${Date.now()}-${++messageIdCounter}`;
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -44,7 +48,7 @@ function ChatBotInner() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState<{
-    type: 'create' | 'edit' | 'add_note' | 'delete' | 'complete_application' | 'save_application_draft' | 'assign_folder' | 'edit_folder' | 'summarize_signals' | 'list_team_members' | 'get_signal_stats' | 'search_signals' | 'get_signal_activity' | 'get_signal_notes' | 'summarize_attachments' | 'list_folders' | 'get_folder_stats';
+    type: 'create' | 'edit' | 'add_note' | 'delete' | 'complete_application' | 'save_application_draft' | 'assign_folder' | 'edit_folder' | 'create_folder' | 'summarize_signals' | 'list_team_members' | 'get_signal_stats' | 'search_signals' | 'get_signal_activity' | 'get_signal_notes' | 'summarize_attachments' | 'list_folders' | 'get_folder_stats';
     data: Record<string, unknown>;
   }[]>([]);
   const [lastActionType, setLastActionType] = useState<string | undefined>();
@@ -55,7 +59,7 @@ function ChatBotInner() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
-  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag } = useFolders();
+  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder } = useFolders();
   const { users, getUserFullName } = useUsers();
 
   // Gamification hooks
@@ -185,7 +189,7 @@ function ChatBotInner() {
     trackActionAndCheckAchievements('message_sent');
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       role: 'user',
       content: input,
       isNew: true,
@@ -346,6 +350,17 @@ function ChatBotInner() {
             } else {
               results.push(`Folder "${folder_id}" not found`);
             }
+          } else if (pendingAction.type === 'create_folder') {
+            const folderData = {
+              name: pendingAction.data.name as string,
+              description: pendingAction.data.description as string,
+              color: pendingAction.data.color as string | undefined,
+              signalIds: pendingAction.data.signalIds as string[] | undefined,
+            };
+            const newFolder = await createFolder(folderData);
+            results.push(`Folder "${newFolder.name}" created`);
+            actionPerformed = 'folder_edited';
+            triggerCelebration();
           } else if (pendingAction.type === 'summarize_signals') {
             const signalId = pendingAction.data.signal_id as string | undefined;
             if (signalId) {
@@ -445,7 +460,7 @@ function ChatBotInner() {
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now().toString(),
+            id: generateMessageId(),
             role: 'assistant',
             content: results.length === 1
               ? `${results[0]}!`
@@ -460,7 +475,7 @@ function ChatBotInner() {
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now().toString(),
+            id: generateMessageId(),
             role: 'assistant',
             content: pendingActions.length === 1
               ? 'Action cancelled. Is there anything else I can help you with?'
@@ -547,6 +562,7 @@ function ChatBotInner() {
 
       if (data.toolUses && data.toolUses.length > 0) {
         const newPendingActions: typeof pendingActions = [];
+        const autoExecuteResults: { message: string; followUp?: string }[] = [];
 
         for (const toolUse of data.toolUses) {
           const { name, input: toolInput } = toolUse;
@@ -585,10 +601,60 @@ function ChatBotInner() {
             newPendingActions.push({ type: 'assign_folder', data: toolInput });
           } else if (name === 'edit_folder') {
             newPendingActions.push({ type: 'edit_folder', data: toolInput });
+          } else if (name === 'create_folder') {
+            // Auto-execute create_folder
+            try {
+              const folderData = {
+                name: (toolInput.name as string) || 'New folder',
+                description: (toolInput.description as string) || '',
+                color: toolInput.color as string | undefined,
+                signalIds: toolInput.signalIds as string[] | undefined,
+              };
+              const newFolder = await createFolder(folderData);
+
+              // Try to assign owner, but don't fail the whole operation if it fails
+              let ownerAssigned = false;
+              const currentUser = users[0];
+              if (currentUser) {
+                try {
+                  await assignFolderOwner(newFolder.id, currentUser.id, getUserFullName(currentUser));
+                  ownerAssigned = true;
+                } catch (ownerError) {
+                  console.error('Failed to assign folder owner:', ownerError);
+                }
+              }
+
+              triggerCelebration();
+              trackActionAndCheckAchievements('folder_edited');
+
+              autoExecuteResults.push({
+                message: ownerAssigned
+                  ? `Folder "${newFolder.name}" created and assigned to you!`
+                  : `Folder "${newFolder.name}" created! You can assign an owner from the Folders page.`,
+                followUp: 'Would you like to fill out the Bibob application form?'
+              });
+            } catch (error) {
+              console.error('Failed to create folder:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t create the folder. Please try again or create it manually from the Folders page.',
+              });
+            }
           }
         }
 
         let responseContent = data.content || '';
+
+        // Handle auto-executed actions (like create_folder)
+        if (autoExecuteResults.length > 0) {
+          const autoMessages = autoExecuteResults.map(r => r.message).join('\n\n');
+          const followUps = autoExecuteResults.filter(r => r.followUp).map(r => r.followUp);
+
+          if (responseContent) responseContent = '';  // Clear AI response for auto-executed actions
+          responseContent = autoMessages;
+          if (followUps.length > 0) {
+            responseContent += '\n\n' + followUps[0];  // Add follow-up question
+          }
+        }
 
         if (newPendingActions.length > 0) {
           setPendingActions(newPendingActions);
@@ -639,6 +705,8 @@ function ChatBotInner() {
                 .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
                 .join(', ');
               return `**Edit folder "${folder?.name || action.data.folder_id}":** ${updates}`;
+            } else if (action.type === 'create_folder') {
+              return `**Create folder "${action.data.name}"** - ${action.data.description}`;
             } else if (action.type === 'summarize_signals') {
               const signalId = action.data.signal_id;
               return signalId
@@ -673,7 +741,7 @@ function ChatBotInner() {
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now().toString(),
+            id: generateMessageId(),
             role: 'assistant',
             content: responseContent || 'I apologize, but I couldn\'t process that request. Please try again.',
             isNew: true,
@@ -683,7 +751,7 @@ function ChatBotInner() {
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now().toString(),
+            id: generateMessageId(),
             role: 'assistant',
             content: data.content || 'I apologize, but I couldn\'t generate a response. Please try again.',
             isNew: true,
@@ -695,7 +763,7 @@ function ChatBotInner() {
       setMessages((prev) => [
         ...prev,
         {
-          id: Date.now().toString(),
+          id: generateMessageId(),
           role: 'assistant',
           content: 'Sorry, I encountered an error. Please make sure your API key is configured in .env.local and try again.',
           isNew: true,
