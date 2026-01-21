@@ -660,16 +660,17 @@ function ChatBotInner() {
                 trackActionAndCheckAchievements('folder_edited');
 
                 // Determine appropriate follow-up based on what was updated
+                // Flow: Name/Description → Tags → Owner → Practitioners → Sharing
                 let followUpMessage = '';
                 const updatedTags = tags && Array.isArray(tags);
                 const updatedNameOrDesc = folderName || description;
 
                 if (updatedTags) {
-                  // Tags were updated - move to practitioners step
-                  followUpMessage = 'Who should be the **practitioners** for this folder? (Practitioners can work on the folder but have limited permissions)\n\nAfter practitioners, we\'ll set up sharing with other team members (excluding owner and practitioners) where you can specify:\n- **Permission level**: View only, Edit, or Full access\n- **Expiration**: Permanent or temporary access\n- **Notifications**: Whether to notify them';
-                } else if (updatedNameOrDesc) {
-                  // Name/description updated - ask about owner
+                  // Tags were updated - move to owner step
                   followUpMessage = 'Now let\'s set up the team for this folder.\n\nWho should be the **owner** of this folder? (The owner has full control over the folder)';
+                } else if (updatedNameOrDesc) {
+                  // Name/description updated - ask about tags first
+                  followUpMessage = 'Would you like to add any **tags** to this folder? (e.g., "urgent", "priority", "test")\n\nOr say "skip" to continue without tags.';
                 }
 
                 // Add feedback to autoExecuteResults

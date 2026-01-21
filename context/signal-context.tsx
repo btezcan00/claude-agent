@@ -470,10 +470,8 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   }, [signals]);
 
   const addSignalToFolder = useCallback(async (signalId: string, folderId: string) => {
-    const signal = signals.find(s => s.id === signalId);
-    if (!signal) return;
-    if (signal.folderRelations.some(fr => fr.folderId === folderId)) return;
-
+    // Don't check local state - let the API handle validation
+    // This fixes race conditions where newly created signals aren't in local state yet
     const response = await fetch(`/api/signals/${signalId}/folder-relations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -481,14 +479,23 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to add signal to folder');
+      // 400 means already linked, which is fine
+      if (response.status !== 400) {
+        throw new Error('Failed to add signal to folder');
+      }
+      return;
     }
 
     const updatedSignal = await response.json();
-    setSignals((prev) =>
-      prev.map((s) => (s.id === signalId ? updatedSignal : s))
-    );
-  }, [signals]);
+    setSignals((prev) => {
+      const exists = prev.some(s => s.id === signalId);
+      if (exists) {
+        return prev.map((s) => (s.id === signalId ? updatedSignal : s));
+      }
+      // If signal doesn't exist in local state, add it
+      return [updatedSignal, ...prev];
+    });
+  }, []);
 
   const removeSignalFromFolder = useCallback(async (signalId: string, folderId: string) => {
     const signal = signals.find(s => s.id === signalId);
@@ -510,33 +517,27 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   }, [signals]);
 
   const addSignalsToFolder = useCallback(async (signalIds: string[], folderId: string) => {
-    const results = await Promise.all(
+    // Don't check local state - let the API handle validation
+    // This fixes race conditions where newly created signals aren't in local state yet
+    await Promise.all(
       signalIds.map(async (signalId) => {
-        const signal = signals.find(s => s.id === signalId);
-        if (!signal || signal.folderRelations.some(fr => fr.folderId === folderId)) {
-          return null;
-        }
-
         const response = await fetch(`/api/signals/${signalId}/folder-relations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ folderId }),
         });
-
-        if (response.ok) {
-          return response.json();
-        }
-        return null;
+        // API returns 400 if already linked, 404 if not found - both are handled gracefully
+        return response.ok ? response.json() : null;
       })
     );
 
-    setSignals((prev) =>
-      prev.map((s) => {
-        const updated = results.find((r) => r && r.id === s.id);
-        return updated || s;
-      })
-    );
-  }, [signals]);
+    // Refresh signals to get updated folder relations
+    const refreshResponse = await fetch('/api/signals');
+    if (refreshResponse.ok) {
+      const updatedSignals = await refreshResponse.json();
+      setSignals(updatedSignals);
+    }
+  }, []);
 
   const updateSignalFolderRelation = useCallback(async (signalId: string, folderId: string, relation: string) => {
     const signal = signals.find(s => s.id === signalId);
