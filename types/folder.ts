@@ -80,6 +80,25 @@ export interface FolderItem {
   sourceTheme?: string;
 }
 
+export interface LetterItem {
+  id: string;
+  name: string;
+  template: string;
+  description: string;
+  tags: string[];
+  createdBy: string;
+  createdByFirstName: string;
+  createdBySurname: string;
+  createdAt: string;
+  updatedAt: string;
+  fieldData: Record<string, string | boolean>;
+}
+
+export const LETTER_TEMPLATES = [
+  { value: 'lbb_notification', label: 'LBB notification letter', description: '' },
+  { value: 'bibob_7c_request', label: 'Form for requesting information from an administrative body to the Tax Authorities pursuant to Article 7c of the Bibob Act', description: '' },
+] as const;
+
 // Alias for backwards compatibility
 export type ActivityItem = FolderItem;
 
@@ -114,7 +133,7 @@ export interface Folder {
   organizations: Organization[];
   addresses: Address[];
   peopleInvolved: Person[];
-  letters: FolderItem[];
+  letters: LetterItem[];
   findings: FolderItem[];
   attachments: FolderItem[];
   records: FolderItem[];

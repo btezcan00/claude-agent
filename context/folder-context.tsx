@@ -14,6 +14,7 @@ import {
   FolderItem,
   FolderAttachment,
   FolderChatMessage,
+  LetterItem,
 } from '@/types/folder';
 import { Organization } from '@/types/organization';
 import { Address } from '@/types/address';
@@ -79,7 +80,8 @@ interface FolderContextValue {
   removePersonInvolved: (folderId: string, personId: string) => Promise<void>;
 
   // Letters
-  addLetter: (folderId: string, item: Omit<FolderItem, 'id'>) => Promise<void>;
+  addLetter: (folderId: string, item: Pick<LetterItem, 'name' | 'template' | 'description' | 'tags'>) => Promise<LetterItem | undefined>;
+  updateLetter: (folderId: string, letterId: string, data: Partial<Pick<LetterItem, 'description' | 'tags' | 'fieldData'>>) => Promise<void>;
   removeLetter: (folderId: string, itemId: string) => Promise<void>;
 
   // Findings
@@ -768,21 +770,62 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   // Letters
-  const addLetter = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
+  const addLetter = useCallback(async (folderId: string, item: Pick<LetterItem, 'name' | 'template' | 'description' | 'tags'>): Promise<LetterItem | undefined> => {
     const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
+    if (!folder) return undefined;
 
-    const newItem: FolderItem = { id: generateId(), ...item };
+    const now = new Date().toISOString();
+    const newLetter: LetterItem = {
+      id: generateId(),
+      name: item.name,
+      template: item.template,
+      description: item.description,
+      tags: item.tags,
+      createdBy: currentUser.id,
+      createdByFirstName: currentUser.firstName,
+      createdBySurname: currentUser.lastName,
+      createdAt: now,
+      updatedAt: now,
+      fieldData: {},
+    };
+
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        letters: [...(folder.letters || []), newItem],
+        letters: [...(folder.letters || []), newLetter],
       }),
     });
 
     if (!response.ok) {
       throw new Error('Failed to add letter');
+    }
+
+    const updatedFolder = await response.json();
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? updatedFolder : f))
+    );
+
+    return newLetter;
+  }, [folders]);
+
+  const updateLetter = useCallback(async (folderId: string, letterId: string, data: Partial<Pick<LetterItem, 'description' | 'tags' | 'fieldData'>>) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const now = new Date().toISOString();
+    const response = await fetch(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        letters: (folder.letters || []).map((l) =>
+          l.id === letterId ? { ...l, ...data, updatedAt: now } : l
+        ),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update letter');
     }
 
     const updatedFolder = await response.json();
@@ -1350,6 +1393,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     addPersonToFolder,
     removePersonInvolved,
     addLetter,
+    updateLetter,
     removeLetter,
     addFinding,
     removeFinding,
