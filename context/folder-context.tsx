@@ -411,16 +411,22 @@ export function FolderProvider({ children }: { children: ReactNode }) {
 
   // Practitioners
   const addPractitioner = useCallback(async (folderId: string, userId: string, userName: string) => {
-    const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
-    if ((folder.practitioners || []).some((p) => p.userId === userId)) return;
+    // Fetch the latest folder state from the API to avoid race conditions
+    const getResponse = await fetch(`/api/folders/${folderId}`);
+    if (!getResponse.ok) {
+      throw new Error('Failed to fetch folder');
+    }
+    const latestFolder = await getResponse.json();
+
+    // Check if practitioner already exists
+    if ((latestFolder.practitioners || []).some((p: { userId: string }) => p.userId === userId)) return;
 
     const now = new Date().toISOString();
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        practitioners: [...(folder.practitioners || []), { userId, userName, addedAt: now }],
+        practitioners: [...(latestFolder.practitioners || []), { userId, userName, addedAt: now }],
       }),
     });
 
@@ -432,17 +438,21 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     setFolders((prev) =>
       prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [folders]);
+  }, []);
 
   const removePractitioner = useCallback(async (folderId: string, userId: string) => {
-    const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
+    // Fetch the latest folder state from the API to avoid race conditions
+    const getResponse = await fetch(`/api/folders/${folderId}`);
+    if (!getResponse.ok) {
+      throw new Error('Failed to fetch folder');
+    }
+    const latestFolder = await getResponse.json();
 
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        practitioners: (folder.practitioners || []).filter((p) => p.userId !== userId),
+        practitioners: (latestFolder.practitioners || []).filter((p: { userId: string }) => p.userId !== userId),
       }),
     });
 
@@ -454,13 +464,19 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     setFolders((prev) =>
       prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [folders]);
+  }, []);
 
   // Sharing
   const shareFolder = useCallback(async (folderId: string, userId: string, userName: string, accessLevel: FolderAccessLevel) => {
-    const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
-    if ((folder.sharedWith || []).some((s) => s.userId === userId)) return;
+    // Fetch the latest folder state from the API to avoid race conditions
+    const getResponse = await fetch(`/api/folders/${folderId}`);
+    if (!getResponse.ok) {
+      throw new Error('Failed to fetch folder');
+    }
+    const latestFolder = await getResponse.json();
+
+    // Check if already shared with this user
+    if ((latestFolder.sharedWith || []).some((s: { userId: string }) => s.userId === userId)) return;
 
     const now = new Date().toISOString();
     const response = await fetch(`/api/folders/${folderId}`, {
@@ -468,7 +484,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sharedWith: [
-          ...(folder.sharedWith || []),
+          ...(latestFolder.sharedWith || []),
           {
             userId,
             userName,
@@ -488,7 +504,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     setFolders((prev) =>
       prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [folders]);
+  }, [currentUser]);
 
   const updateShareAccess = useCallback(async (folderId: string, userId: string, accessLevel: FolderAccessLevel) => {
     const folder = folders.find(f => f.id === folderId);

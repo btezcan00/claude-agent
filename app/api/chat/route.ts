@@ -54,10 +54,13 @@ interface FolderData {
   name: string;
   description: string;
   status: string;
+  ownerId: string | null;
   ownerName: string | null;
   signalCount: number;
   createdAt: string;
   tags: string[];
+  practitioners: { userId: string; userName: string }[];
+  sharedWith: { userId: string; userName: string; accessLevel: string }[];
 }
 
 const tools: Anthropic.Tool[] = [
@@ -425,6 +428,55 @@ const tools: Anthropic.Tool[] = [
       required: [],
     },
   },
+  {
+    name: 'add_folder_practitioner',
+    description: 'Add a team member as a practitioner to a folder. Practitioners can work on the folder but have limited permissions compared to the owner.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the folder',
+        },
+        user_id: {
+          type: 'string',
+          description: 'The ID of the team member to add as practitioner',
+        },
+        user_name: {
+          type: 'string',
+          description: 'The full name of the team member to add as practitioner',
+        },
+      },
+      required: ['folder_id', 'user_id', 'user_name'],
+    },
+  },
+  {
+    name: 'share_folder',
+    description: 'Share a folder with a team member. Sharing gives them access to view or edit the folder based on the access level specified.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the folder to share',
+        },
+        user_id: {
+          type: 'string',
+          description: 'The ID of the team member to share with',
+        },
+        user_name: {
+          type: 'string',
+          description: 'The full name of the team member to share with',
+        },
+        access_level: {
+          type: 'string',
+          enum: ['view', 'edit', 'admin'],
+          description: 'The access level to grant: view (read-only), edit (can modify), admin (full access)',
+        },
+      },
+      required: ['folder_id', 'user_id', 'user_name', 'access_level'],
+    },
+  },
 ];
 
 // Helper function to summarize attachments using Claude Vision
@@ -529,7 +581,13 @@ async function summarizeAttachmentsForSignal(
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, signals, folders, teamMembers }: { messages: Message[]; signals: SignalData[]; folders: FolderData[]; teamMembers: TeamMember[] } = await request.json();
+    const { messages, signals, folders, teamMembers, currentUser }: {
+      messages: Message[];
+      signals: SignalData[];
+      folders: FolderData[];
+      teamMembers: TeamMember[];
+      currentUser?: { id: string; firstName: string; lastName: string; fullName: string; title: string; role: string } | null;
+    } = await request.json();
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
@@ -547,8 +605,11 @@ export async function POST(request: NextRequest) {
 
     const folderSummary = (folders || [])
       .map(
-        (f) =>
-          `- ${f.name}: ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (status: ${f.status}, ${f.signalCount} signals)`
+        (f) => {
+          const practitionerNames = (f.practitioners || []).map(p => p.userName).join(', ');
+          const sharedNames = (f.sharedWith || []).map(s => `${s.userName} (${s.accessLevel})`).join(', ');
+          return `- ${f.name} (${f.id}): ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (status: ${f.status}, ${f.signalCount} signals, owner: ${f.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'})`;
+        }
       )
       .join('\n');
 
@@ -591,6 +652,10 @@ ${folderSummary || 'No folders available'}
 **Team Members:**
 ${teamSummary || 'No team members available'}
 
+**Current User (You are talking to):**
+${currentUser ? `${currentUser.fullName} (${currentUser.id}) - ${currentUser.title}
+IMPORTANT: When the user says "me", "I", "myself", or refers to themselves, they mean ${currentUser.fullName}. Use their ID "${currentUser.id}" and name "${currentUser.fullName}" for any tool calls that require user identification.` : 'Unknown user'}
+
 ## Your Capabilities
 
 **Signal Management:**
@@ -625,6 +690,12 @@ ${teamSummary || 'No team members available'}
 17. Save Bibob application draft - save progress on an application without completing it, allowing users to return later to finish
 
 ## Guidelines
+
+- When showing team member options for practitioners or sharing, ALWAYS filter out:
+  1. The folder owner (they already have full access)
+  2. Existing practitioners (they're already practitioners)
+  3. Users the folder is already shared with (they already have access)
+  Only show team members who are NOT already assigned to the folder in any capacity.
 
 - Always confirm with the user before editing, completing applications, or deleting folders or signals
 - For folder creation: First announce "I'm creating a folder with the name 'New folder'. Could you confirm?" Once confirmed, create the folder with a random color. IMPORTANT: If the user is creating a folder from a signal or mentions a specific signal, you MUST include that signal's ID in the signalIds array when calling create_folder. Then ask "Would you like to fill out the Bibob application form?" If yes, ask ALL 4 criteria AND the explanation in ONE message like this:

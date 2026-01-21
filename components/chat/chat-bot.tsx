@@ -59,7 +59,7 @@ function ChatBotInner() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
-  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder } = useFolders();
+  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, addPractitioner, shareFolder } = useFolders();
   const { users, getUserFullName } = useUsers();
 
   // Gamification hooks
@@ -530,10 +530,13 @@ function ChatBotInner() {
         name: f.name,
         description: f.description,
         status: f.status,
+        ownerId: f.ownerId,
         ownerName: f.ownerName,
         signalCount: getSignalCountForFolder(f.id),
         createdAt: f.createdAt,
         tags: f.tags,
+        practitioners: (f.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
+        sharedWith: (f.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
       }));
 
       const conversationHistory = messages
@@ -545,6 +548,17 @@ function ChatBotInner() {
 
       conversationHistory.push({ role: 'user', content: input });
 
+      // Get current user info
+      const currentUser = users[0];
+      const currentUserData = currentUser ? {
+        id: currentUser.id,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
+        fullName: getUserFullName(currentUser),
+        title: currentUser.title,
+        role: currentUser.role,
+      } : null;
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -553,6 +567,7 @@ function ChatBotInner() {
           signals: signalData,
           folders: folderData,
           teamMembers: teamMembersData,
+          currentUser: currentUserData,
         }),
       });
 
@@ -713,6 +728,59 @@ function ChatBotInner() {
               console.error('Failed to create folder:', error);
               autoExecuteResults.push({
                 message: 'Sorry, I couldn\'t create the folder. Please try again or create it manually from the Folders page.',
+              });
+            }
+          } else if (name === 'add_folder_practitioner') {
+            // Auto-execute add_folder_practitioner
+            try {
+              const { folder_id, user_id, user_name } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                await addPractitioner(folder.id, user_id as string, user_name as string);
+                trackActionAndCheckAchievements('folder_edited');
+                autoExecuteResults.push({
+                  message: `Added ${user_name} as a practitioner to "${folder.name}".`,
+                  followUp: 'Would you like to add more practitioners, or shall we move on to sharing the folder with other team members?'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add practitioner:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the practitioner. Please try again.',
+              });
+            }
+          } else if (name === 'share_folder') {
+            // Auto-execute share_folder
+            try {
+              const { folder_id, user_id, user_name, access_level } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                await shareFolder(folder.id, user_id as string, user_name as string, (access_level as 'view' | 'edit' | 'admin') || 'view');
+                trackActionAndCheckAchievements('folder_edited');
+                const accessLabels: Record<string, string> = { view: 'View only', edit: 'Edit', admin: 'Full access' };
+                autoExecuteResults.push({
+                  message: `Shared "${folder.name}" with ${user_name} (${accessLabels[access_level as string] || 'View only'}).`,
+                  followUp: 'Would you like to share with anyone else, or is the folder setup complete?'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to share folder:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t share the folder. Please try again.',
               });
             }
           }
