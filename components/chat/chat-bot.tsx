@@ -54,6 +54,7 @@ function ChatBotInner() {
   const [lastActionType, setLastActionType] = useState<string | undefined>();
   const [showCelebration, setShowCelebration] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [lastCreatedSignalId, setLastCreatedSignalId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -213,7 +214,9 @@ function ChatBotInner() {
               timeOfObservation: pendingAction.data.timeOfObservation || new Date().toISOString(),
             } as CreateSignalInput;
             const newSignal = await createSignal(signalData);
-            results.push(`Signal created: ${newSignal.signalNumber}`);
+            results.push(`Signal created: ${newSignal.signalNumber}\n\nWould you like to create a folder from this signal? This will help you organize and track the investigation.`);
+            // Store the signal ID for potential folder creation
+            setLastCreatedSignalId(newSignal.id);
             actionPerformed = 'signal_created';
             triggerCelebration();
           } else if (pendingAction.type === 'edit') {
@@ -568,6 +571,7 @@ function ChatBotInner() {
           folders: folderData,
           teamMembers: teamMembersData,
           currentUser: currentUserData,
+          lastCreatedSignalId: lastCreatedSignalId,
         }),
       });
 
@@ -687,15 +691,21 @@ function ChatBotInner() {
           } else if (name === 'create_folder') {
             // Auto-execute create_folder
             try {
-              const signalIds = toolInput.signalIds as string[] | undefined;
+              const rawSignalIds = toolInput.signalIds as string[] | undefined;
               // Generate a random color for the folder
               const randomColors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899'];
               const randomColor = randomColors[Math.floor(Math.random() * randomColors.length)];
 
+              // Convert signal numbers to actual IDs if needed
+              const signalIds = rawSignalIds?.map(id => {
+                const signal = signals.find(s => s.id === id || s.signalNumber === id);
+                return signal?.id || id;
+              }).filter(Boolean);
+
               // Get location from source signal if available
               let location = '';
               if (signalIds && signalIds.length > 0) {
-                const sourceSignal = signals.find(s => s.id === signalIds[0] || s.signalNumber === signalIds[0]);
+                const sourceSignal = signals.find(s => s.id === signalIds[0]);
                 if (sourceSignal?.placeOfObservation) {
                   location = sourceSignal.placeOfObservation;
                 }
@@ -715,13 +725,21 @@ function ChatBotInner() {
               };
               const newFolder = await createFolder(folderData);
 
+              // Clear the lastCreatedSignalId after folder is created
+              setLastCreatedSignalId(null);
+
               triggerCelebration();
               trackActionAndCheckAchievements('folder_edited');
 
+              // Customize message if signals were added
+              const signalAddedMessage = signalIds && signalIds.length > 0
+                ? ` The signal has been added to this folder.`
+                : '';
+
               autoExecuteResults.push({
                 message: currentUser
-                  ? `Folder "${newFolder.name}" created and assigned to you!`
-                  : `Folder "${newFolder.name}" created! You can assign an owner from the Folders page.`,
+                  ? `Folder "${newFolder.name}" created and assigned to you!${signalAddedMessage}`
+                  : `Folder "${newFolder.name}" created!${signalAddedMessage} You can assign an owner from the Folders page.`,
                 followUp: 'Would you like to fill out the Bibob application form?'
               });
             } catch (error) {

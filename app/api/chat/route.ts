@@ -581,12 +581,13 @@ async function summarizeAttachmentsForSignal(
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, signals, folders, teamMembers, currentUser }: {
+    const { messages, signals, folders, teamMembers, currentUser, lastCreatedSignalId }: {
       messages: Message[];
       signals: SignalData[];
       folders: FolderData[];
       teamMembers: TeamMember[];
       currentUser?: { id: string; firstName: string; lastName: string; fullName: string; title: string; role: string } | null;
+      lastCreatedSignalId?: string | null;
     } = await request.json();
 
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -655,6 +656,10 @@ ${teamSummary || 'No team members available'}
 **Current User (You are talking to):**
 ${currentUser ? `${currentUser.fullName} (${currentUser.id}) - ${currentUser.title}
 IMPORTANT: When the user says "me", "I", "myself", or refers to themselves, they mean ${currentUser.fullName}. Use their ID "${currentUser.id}" and name "${currentUser.fullName}" for any tool calls that require user identification.` : 'Unknown user'}
+
+${lastCreatedSignalId ? `**Last Created Signal:**
+Signal ID: ${lastCreatedSignalId}
+IMPORTANT: If the user wants to create a folder (says "yes", "sure", "create folder", etc.), AUTOMATICALLY include this signal ID in the signalIds array when calling create_folder. This connects the newly created signal to the new folder.` : ''}
 
 ## Your Capabilities
 

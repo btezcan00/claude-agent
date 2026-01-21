@@ -554,15 +554,21 @@ export function FolderProvider({ children }: { children: ReactNode }) {
 
   // Tags
   const addTag = useCallback(async (folderId: string, tag: string) => {
-    const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
-    if ((folder.tags || []).includes(tag)) return;
+    // Fetch the latest folder state from the API to avoid race conditions
+    const getResponse = await fetch(`/api/folders/${folderId}`);
+    if (!getResponse.ok) {
+      throw new Error('Failed to fetch folder');
+    }
+    const latestFolder = await getResponse.json();
+
+    // Check if tag already exists
+    if ((latestFolder.tags || []).includes(tag)) return;
 
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tags: [...(folder.tags || []), tag],
+        tags: [...(latestFolder.tags || []), tag],
       }),
     });
 
@@ -574,17 +580,21 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     setFolders((prev) =>
       prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [folders]);
+  }, []);
 
   const removeTag = useCallback(async (folderId: string, tag: string) => {
-    const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
+    // Fetch the latest folder state from the API to avoid race conditions
+    const getResponse = await fetch(`/api/folders/${folderId}`);
+    if (!getResponse.ok) {
+      throw new Error('Failed to fetch folder');
+    }
+    const latestFolder = await getResponse.json();
 
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tags: (folder.tags || []).filter((t) => t !== tag),
+        tags: (latestFolder.tags || []).filter((t: string) => t !== tag),
       }),
     });
 
@@ -596,7 +606,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
     setFolders((prev) =>
       prev.map((f) => (f.id === folderId ? updatedFolder : f))
     );
-  }, [folders]);
+  }, []);
 
   // Organizations
   const addOrganization = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
