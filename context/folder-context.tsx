@@ -839,15 +839,19 @@ export function FolderProvider({ children }: { children: ReactNode }) {
   }, [folders]);
 
   const updateLetter = useCallback(async (folderId: string, letterId: string, data: Partial<Pick<LetterItem, 'description' | 'tags' | 'fieldData'>>) => {
-    const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
+    // Fetch the latest folder state from the API to avoid race conditions
+    const getResponse = await fetch(`/api/folders/${folderId}`);
+    if (!getResponse.ok) {
+      throw new Error('Failed to fetch folder');
+    }
+    const latestFolder = await getResponse.json();
 
     const now = new Date().toISOString();
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        letters: (folder.letters || []).map((l) =>
+        letters: (latestFolder.letters || []).map((l: LetterItem) =>
           l.id === letterId ? { ...l, ...data, updatedAt: now } : l
         ),
       }),

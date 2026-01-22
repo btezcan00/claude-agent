@@ -1029,10 +1029,17 @@ function ChatBotInner() {
                   tags: [] as string[],
                 };
 
+                console.log('Creating letter for folder:', folder.id, 'with template:', templateType);
                 const newLetter = await addLetter(folder.id, letter);
+                console.log('addLetter result:', newLetter);
 
-                // Build fieldData based on template type
-                if (newLetter) {
+                if (!newLetter) {
+                  console.error('Failed to create letter - addLetter returned undefined');
+                  autoExecuteResults.push({
+                    message: 'Sorry, I couldn\'t create the letter. Please try refreshing and try again.',
+                  });
+                } else {
+                  // Build fieldData based on template type
                   const fieldData: Record<string, string | boolean> = {
                     date: (date as string) || '',
                     municipal_province: (municipal_province as string) || '',
@@ -1079,15 +1086,16 @@ function ChatBotInner() {
                   }
 
                   // Update the letter with field data
+                  console.log('Updating letter with fieldData:', fieldData);
                   await updateLetter(folder.id, newLetter.id, { fieldData });
-                }
 
-                trackActionAndCheckAchievements('folder_edited');
-                const templateLabel = templateType === 'lbb_notification' ? 'LBB Notification' : 'Bibob 7c Request';
-                autoExecuteResults.push({
-                  message: `Added ${templateLabel} letter to "${folder.name}".`,
-                  followUp: 'Would you like to add more letters, or move on to **communications**? (Track calls, emails, meetings)'
-                });
+                  trackActionAndCheckAchievements('folder_edited');
+                  const templateLabel = templateType === 'lbb_notification' ? 'LBB Notification' : 'Bibob 7c Request';
+                  autoExecuteResults.push({
+                    message: `Added ${templateLabel} letter "${letterName}" to "${folder.name}".`,
+                    followUp: 'Would you like to add more letters, or move on to **communications**? (Track calls, emails, meetings)'
+                  });
+                }
               } else {
                 autoExecuteResults.push({
                   message: `Folder "${folder_id}" not found.`,
