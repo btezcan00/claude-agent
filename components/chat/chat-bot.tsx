@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils';
 import { useSignals } from '@/context/signal-context';
 import { useFolders } from '@/context/folder-context';
 import { useUsers } from '@/context/user-context';
+import { useOrganizations } from '@/context/organization-context';
+import { useAddresses } from '@/context/address-context';
+import { usePeople } from '@/context/person-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType } from '@/types/signal';
 import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus } from '@/types/folder';
 import { MessageReaction, ReactionType, TrackedActionType } from '@/types/chat';
@@ -60,8 +63,11 @@ function ChatBotInner() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
-  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, addPractitioner, shareFolder } = useFolders();
+  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addVisualization, addActivity } = useFolders();
   const { users, getUserFullName } = useUsers();
+  const { organizations } = useOrganizations();
+  const { addresses } = useAddresses();
+  const { people } = usePeople();
 
   // Gamification hooks
   const {
@@ -562,6 +568,36 @@ function ChatBotInner() {
         role: currentUser.role,
       } : null;
 
+      // Prepare organizations data
+      const organizationsData = organizations.map((o) => ({
+        id: o.id,
+        name: o.name,
+        type: o.type,
+        address: o.address,
+        description: o.description,
+        chamberOfCommerce: o.chamberOfCommerce,
+      }));
+
+      // Prepare addresses data
+      const addressesData = addresses.map((a) => ({
+        id: a.id,
+        street: a.street,
+        buildingType: a.buildingType,
+        isActive: a.isActive,
+        description: a.description,
+      }));
+
+      // Prepare people data
+      const peopleData = people.map((p) => ({
+        id: p.id,
+        firstName: p.firstName,
+        surname: p.surname,
+        dateOfBirth: p.dateOfBirth,
+        address: p.address,
+        description: p.description,
+        bsn: p.bsn,
+      }));
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -572,6 +608,9 @@ function ChatBotInner() {
           teamMembers: teamMembersData,
           currentUser: currentUserData,
           lastCreatedSignalId: lastCreatedSignalId,
+          organizations: organizationsData,
+          addresses: addressesData,
+          people: peopleData,
         }),
       });
 
@@ -660,14 +699,15 @@ function ChatBotInner() {
                 trackActionAndCheckAchievements('folder_edited');
 
                 // Determine appropriate follow-up based on what was updated
-                // Flow: Name/Description → Tags → Owner → Practitioners → Sharing
+                // Flow: Name/Description → Tags → Owner → Practitioners → Sharing → Organizations → Addresses → People → Findings → Letters → Communications → Visualizations → Activities
                 let followUpMessage = '';
                 const updatedTags = tags && Array.isArray(tags);
                 const updatedNameOrDesc = folderName || description;
 
                 if (updatedTags) {
-                  // Tags were updated - move to owner step
-                  followUpMessage = 'Now let\'s set up the team for this folder.\n\nWho should be the **owner** of this folder? (The owner has full control over the folder)';
+                  // Tags were updated - move to ownership step
+                  const availableOwners = users.map(u => `- ${getUserFullName(u)} (${u.title})`).join('\n');
+                  followUpMessage = `Who should be the **owner** of this folder?\n\nAvailable team members:\n${availableOwners}\n\nOr say "skip" to keep current owner.`;
                 } else if (updatedNameOrDesc) {
                   // Name/description updated - ask about tags first
                   followUpMessage = 'Would you like to add any **tags** to this folder? (e.g., "urgent", "priority", "test")\n\nOr say "skip" to continue without tags.';
@@ -789,7 +829,7 @@ function ChatBotInner() {
                 const accessLabels: Record<string, string> = { view: 'View only', edit: 'Edit', admin: 'Full access' };
                 autoExecuteResults.push({
                   message: `Shared "${folder.name}" with ${user_name} (${accessLabels[access_level as string] || 'View only'}).`,
-                  followUp: 'Would you like to share with anyone else, or is the folder setup complete?'
+                  followUp: 'Would you like to share with anyone else, or shall we move on to **organizations**? (Companies, businesses associated with this folder)'
                 });
               } else {
                 autoExecuteResults.push({
@@ -800,6 +840,360 @@ function ChatBotInner() {
               console.error('Failed to share folder:', error);
               autoExecuteResults.push({
                 message: 'Sorry, I couldn\'t share the folder. Please try again.',
+              });
+            }
+          } else if (name === 'add_folder_organization') {
+            // Auto-execute add_folder_organization
+            try {
+              const { folder_id, name: orgName, kvk_number, address, type } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const org = {
+                  id: `org-${Date.now()}`,
+                  name: orgName as string,
+                  kvkNumber: (kvk_number as string) || '',
+                  address: (address as string) || '',
+                  type: (type as string) || 'company',
+                  createdAt: new Date().toISOString(),
+                };
+                await addOrganizationToFolder(folder.id, org);
+                trackActionAndCheckAchievements('folder_edited');
+                autoExecuteResults.push({
+                  message: `Added organization "${orgName}" to "${folder.name}".`,
+                  followUp: 'Would you like to add more organizations, or move on to known addresses?'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add organization:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the organization. Please try again.',
+              });
+            }
+          } else if (name === 'add_folder_address') {
+            // Auto-execute add_folder_address
+            try {
+              const { folder_id, street, city, postal_code, country, description } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const fullAddress = `${street}, ${postal_code ? postal_code + ' ' : ''}${city}, ${country || 'Netherlands'}`;
+                const addr = {
+                  id: `addr-${Date.now()}`,
+                  street: fullAddress,
+                  buildingType: 'Commercial',
+                  isActive: true,
+                  description: (description as string) || '',
+                  createdAt: new Date().toISOString(),
+                };
+                await addAddressToFolder(folder.id, addr);
+                trackActionAndCheckAchievements('folder_edited');
+                autoExecuteResults.push({
+                  message: `Added address "${street}, ${city}" to "${folder.name}".`,
+                  followUp: 'Would you like to add more addresses, or move on to people involved?'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add address:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the address. Please try again.',
+              });
+            }
+          } else if (name === 'add_folder_person') {
+            // Auto-execute add_folder_person
+            try {
+              const { folder_id, first_name, last_name, date_of_birth, role, notes } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const person = {
+                  id: `person-${Date.now()}`,
+                  firstName: first_name as string,
+                  surname: last_name as string,
+                  dateOfBirth: (date_of_birth as string) || '',
+                  address: '',
+                  description: `${(role as string) || ''} ${(notes as string) || ''}`.trim() || '',
+                  createdAt: new Date().toISOString(),
+                };
+                await addPersonToFolder(folder.id, person);
+                trackActionAndCheckAchievements('folder_edited');
+                autoExecuteResults.push({
+                  message: `Added "${first_name} ${last_name}" to people involved in "${folder.name}".`,
+                  followUp: 'Would you like to add more people, or move on to **findings**? (Findings are important discoveries during the investigation)'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add person:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the person. Please try again.',
+              });
+            }
+          } else if (name === 'add_folder_finding') {
+            // Auto-execute add_folder_finding
+            try {
+              const { folder_id, label, severity, assigned_to } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const finding = {
+                  date: new Date().toISOString(),
+                  phase: folder.status,
+                  label: label as string,
+                  description: '',
+                  isCompleted: false,
+                  severity: (severity as 'none' | 'low' | 'serious' | 'critical') || 'none',
+                  assignedTo: (assigned_to as string) || '',
+                };
+                await addFinding(folder.id, finding);
+                trackActionAndCheckAchievements('folder_edited');
+                const assigneeMsg = assigned_to ? ` (assigned to ${assigned_to})` : '';
+                autoExecuteResults.push({
+                  message: `Added finding "${label}"${assigneeMsg} to "${folder.name}".`,
+                  followUp: 'Would you like to add more findings, or move on to letters/documents?'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add finding:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the finding. Please try again.',
+              });
+            }
+          } else if (name === 'add_folder_letter') {
+            // Auto-execute add_folder_letter
+            try {
+              const {
+                folder_id,
+                letter_name,
+                template,
+                date,
+                municipal_province,
+                // LBB Notification fields
+                reference_number,
+                recipient_name,
+                recipient_address,
+                recipient_postal_code,
+                subject,
+                notification_content,
+                sender_name,
+                sender_title,
+                // Bibob 7c Request fields
+                applicant_name,
+                applicant_phone,
+                recipient_email,
+                legal_provisions,
+                fine_information,
+                license_types,
+                additional_remarks,
+              } = toolInput;
+
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const templateType = (template as string) || 'lbb_notification';
+                // Use custom letter_name if provided, otherwise generate from template fields
+                const generatedName = templateType === 'lbb_notification'
+                  ? `LBB Notification - ${subject || date || 'New'}`
+                  : `Bibob 7c Request - ${applicant_name || date || 'New'}`;
+                const letterName = (letter_name as string) || generatedName;
+
+                const letter = {
+                  name: letterName,
+                  template: templateType,
+                  description: '',
+                  tags: [] as string[],
+                };
+
+                const newLetter = await addLetter(folder.id, letter);
+
+                // Build fieldData based on template type
+                if (newLetter) {
+                  const fieldData: Record<string, string | boolean> = {
+                    date: (date as string) || '',
+                    municipal_province: (municipal_province as string) || '',
+                  };
+
+                  if (templateType === 'lbb_notification') {
+                    fieldData.reference_number = (reference_number as string) || '';
+                    fieldData.recipient_name = (recipient_name as string) || '';
+                    fieldData.recipient_address = (recipient_address as string) || '';
+                    fieldData.recipient_postal_code = (recipient_postal_code as string) || '';
+                    fieldData.subject = (subject as string) || '';
+                    fieldData.notification_text = (notification_content as string) || '';
+                    fieldData.sender_name = (sender_name as string) || '';
+                    fieldData.sender_title = (sender_title as string) || '';
+                  } else if (templateType === 'bibob_7c_request') {
+                    fieldData.applicant_name = (applicant_name as string) || '';
+                    fieldData.applicant_phone = (applicant_phone as string) || '';
+                    fieldData.recipient_email = (recipient_email as string) || '';
+                    fieldData.additional_remarks = (additional_remarks as string) || '';
+
+                    // Legal provisions (checkboxes)
+                    const provisions = (legal_provisions as string[]) || [];
+                    fieldData.article_10x = provisions.includes('article_10x');
+                    fieldData.awr_incorrect = provisions.includes('awr_incorrect');
+                    fieldData.general_tax_act = provisions.includes('general_tax_act');
+                    fieldData.article_67e = provisions.includes('article_67e');
+                    fieldData.article_67f = provisions.includes('article_67f');
+
+                    // Fine information (checkboxes)
+                    const fines = (fine_information as string[]) || [];
+                    fieldData.irrevocable_fines = fines.includes('irrevocable_fines');
+                    fieldData.fines_court_ruled = fines.includes('fines_court_ruled');
+                    fieldData.fines_no_ruling = fines.includes('fines_no_ruling');
+
+                    // License types (checkboxes)
+                    const licenses = (license_types as string[]) || [];
+                    fieldData.alcohol_act = licenses.includes('alcohol_act');
+                    fieldData.wabo_building = licenses.includes('wabo_building');
+                    fieldData.wabo_environmental = licenses.includes('wabo_environmental');
+                    fieldData.wabo_usage = licenses.includes('wabo_usage');
+                    fieldData.operating_establishment = licenses.includes('operating_establishment');
+                    fieldData.sex_establishment = licenses.includes('sex_establishment');
+                    fieldData.license_other = licenses.includes('license_other');
+                  }
+
+                  // Update the letter with field data
+                  await updateLetter(folder.id, newLetter.id, { fieldData });
+                }
+
+                trackActionAndCheckAchievements('folder_edited');
+                const templateLabel = templateType === 'lbb_notification' ? 'LBB Notification' : 'Bibob 7c Request';
+                autoExecuteResults.push({
+                  message: `Added ${templateLabel} letter to "${folder.name}".`,
+                  followUp: 'Would you like to add more letters, or move on to **communications**? (Track calls, emails, meetings)'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add letter:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the letter. Please try again.',
+              });
+            }
+          } else if (name === 'add_folder_communication') {
+            // Auto-execute add_folder_communication
+            try {
+              const { folder_id, label, description: commDesc, date } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const communication = {
+                  date: (date as string) || new Date().toISOString(),
+                  phase: folder.status,
+                  label: label as string,
+                  description: (commDesc as string) || '',
+                };
+                await addCommunication(folder.id, communication);
+                trackActionAndCheckAchievements('folder_edited');
+                autoExecuteResults.push({
+                  message: `Added communication "${label}" to "${folder.name}".`,
+                  followUp: 'Would you like to add more communications, or move on to **visualizations**? (Diagrams, charts, relationship maps)'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add communication:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the communication. Please try again.',
+              });
+            }
+          } else if (name === 'add_folder_visualization') {
+            // Auto-execute add_folder_visualization
+            try {
+              const { folder_id, label, description: vizDesc } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const visualization = {
+                  date: new Date().toISOString(),
+                  phase: folder.status,
+                  label: label as string,
+                  description: (vizDesc as string) || '',
+                };
+                await addVisualization(folder.id, visualization);
+                trackActionAndCheckAchievements('folder_edited');
+                autoExecuteResults.push({
+                  message: `Added visualization "${label}" to "${folder.name}".`,
+                  followUp: 'Would you like to add more visualizations, or move on to **activities**? (Tasks, work items to track)'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add visualization:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the visualization. Please try again.',
+              });
+            }
+          } else if (name === 'add_folder_activity') {
+            // Auto-execute add_folder_activity
+            try {
+              const { folder_id, label, description: actDesc, assigned_to, date } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                const activity = {
+                  date: (date as string) || new Date().toISOString(),
+                  phase: folder.status,
+                  label: label as string,
+                  description: (actDesc as string) || '',
+                  assignedTo: (assigned_to as string) || '',
+                };
+                await addActivity(folder.id, activity);
+                trackActionAndCheckAchievements('folder_edited');
+                autoExecuteResults.push({
+                  message: `Added activity "${label}" to "${folder.name}".`,
+                  followUp: 'Would you like to add more activities, or is the folder setup complete?'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to add activity:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t add the activity. Please try again.',
               });
             }
           }
