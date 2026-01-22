@@ -61,6 +61,8 @@ interface FolderData {
   tags: string[];
   practitioners: { userId: string; userName: string }[];
   sharedWith: { userId: string; userName: string; accessLevel: string }[];
+  organizations: { id: string; name: string }[];
+  peopleInvolved: { id: string; firstName: string; surname: string }[];
 }
 
 interface OrganizationData {
@@ -753,6 +755,68 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'get_folder_messages',
+    description: 'Get the chat messages for a specific contact in a folder. Returns the last messages in the conversation.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the folder',
+        },
+        contact_id: {
+          type: 'string',
+          description: 'The ID of the contact (user ID for practitioners/shared users, org ID for organizations, person ID for people involved)',
+        },
+        contact_name: {
+          type: 'string',
+          description: 'The name of the contact (for display purposes)',
+        },
+        contact_type: {
+          type: 'string',
+          enum: ['practitioner', 'shared', 'organization', 'person'],
+          description: 'The type of contact: practitioner, shared (shared user), organization, or person (person involved)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of messages to return (default: 5)',
+        },
+      },
+      required: ['folder_id', 'contact_id', 'contact_name', 'contact_type'],
+    },
+  },
+  {
+    name: 'send_folder_message',
+    description: 'Send a chat message to a contact in a folder.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the folder',
+        },
+        contact_id: {
+          type: 'string',
+          description: 'The ID of the contact (user ID for practitioners/shared users, org ID for organizations, person ID for people involved)',
+        },
+        contact_name: {
+          type: 'string',
+          description: 'The name of the contact',
+        },
+        contact_type: {
+          type: 'string',
+          enum: ['practitioner', 'shared', 'organization', 'person'],
+          description: 'The type of contact: practitioner, shared (shared user), organization, or person (person involved)',
+        },
+        message: {
+          type: 'string',
+          description: 'The message content to send',
+        },
+      },
+      required: ['folder_id', 'contact_id', 'contact_name', 'contact_type', 'message'],
+    },
+  },
+  {
     name: 'add_folder_visualization',
     description: 'Add a visualization to a folder. Visualizations are diagrams, charts, relationship maps, or other visual representations of case data.',
     input_schema: {
@@ -939,7 +1003,9 @@ export async function POST(request: NextRequest) {
         (f) => {
           const practitionerNames = (f.practitioners || []).map(p => p.userName).join(', ');
           const sharedNames = (f.sharedWith || []).map(s => `${s.userName} (${s.accessLevel})`).join(', ');
-          return `- ${f.name} (${f.id}): ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (status: ${f.status}, ${f.signalCount} signals, owner: ${f.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'})`;
+          const orgNames = (f.organizations || []).map(o => o.name).join(', ');
+          const peopleNames = (f.peopleInvolved || []).map(p => `${p.firstName} ${p.surname}`).join(', ');
+          return `- ${f.name} (${f.id}): ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (status: ${f.status}, ${f.signalCount} signals, owner: ${f.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'}, organizations: ${orgNames || 'none'}, people involved: ${peopleNames || 'none'})`;
         }
       )
       .join('\n');
@@ -1250,12 +1316,64 @@ IMPORTANT: When user provides all the information, call add_folder_letter with A
 - License types: alcohol_act, wabo_building, wabo_environmental, wabo_usage, operating_establishment, sex_establishment, license_other
 
 **Step 11 - Communications (skippable):**
-"Would you like to add any communications? (calls, emails, meetings)
-Provide: label (e.g., 'Phone call with witness'), description, and date"
+"Would you like to communicate with someone about this folder?"
+
+IMPORTANT: Follow this messaging flow:
+1. First, show ALL contacts associated with THIS FOLDER:
+   "Here are the contacts you can message for this folder:
+
+   **Organizations:**
+   [List organizations added to this folder - e.g., Tech Solutions BV]
+
+   **Practitioners:**
+   [List practitioners assigned to this folder - e.g., James Rodriguez, Lisa Patel]
+
+   **Shared With:**
+   [List users the folder is shared with]
+
+   **People Involved:**
+   [List people involved added to this folder]
+
+   Who would you like to message? (or say 'skip' to continue)"
+
+   NOTE: Show all categories that have entries. If a category is empty, don't show it. If NO contacts exist at all, say "No contacts have been added to this folder yet."
+
+2. When user selects a contact, use get_folder_messages to retrieve the last 5 messages with that contact, then show them:
+   "Here are the last messages with [Contact Name]:
+   [Show messages or 'No previous messages']
+
+   Would you like to send a message to [Contact Name]?"
+
+3. If user wants to send a message, ask:
+   "What message would you like to send to [Contact Name]?"
+
+4. Use send_folder_message to send the message, then confirm:
+   "Message sent to [Contact Name]!
+
+   Would you like to send another message or message someone else? (or say 'done' to continue)"
 
 **Step 12 - Visualizations (skippable):**
-"Would you like to add any visualizations? (diagrams, charts, relationship maps)
-Provide: label and description"
+Follow this flow for visualizations:
+
+1. First, ask about importing entities:
+   "Do you want to import entities for **[Folder Name]**?
+
+   This will create a visualization from the organizations, people, and addresses linked to this folder.
+
+   - **Yes** - Import entities and create visualization
+   - **Skip** - Skip visualization and move to activities"
+
+2. If user says YES to import entities:
+   - IMMEDIATELY call add_folder_visualization with:
+     - label: "Entity Map - [Folder Name]"
+     - description: List all the organizations, people involved, and addresses from the folder
+   - Confirm: "Entity map visualization created! It includes [list entities]. Moving on to activities..."
+   - Then proceed to Step 13 (Activities)
+
+3. If user says SKIP:
+   - Do NOT create any visualization
+   - Do NOT ask more questions about visualizations
+   - IMMEDIATELY move to Step 13 (Activities)
 
 **Step 13 - Activities (skippable):**
 "Would you like to add any activities/tasks to track?

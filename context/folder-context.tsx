@@ -1193,8 +1193,12 @@ export function FolderProvider({ children }: { children: ReactNode }) {
 
   // Chat Messages
   const addChatMessage = useCallback(async (folderId: string, message: Omit<FolderChatMessage, 'id' | 'createdAt'>) => {
-    const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
+    // Fetch the latest folder state from the API to avoid race conditions
+    const getResponse = await fetch(`/api/folders/${folderId}`);
+    if (!getResponse.ok) {
+      throw new Error('Failed to fetch folder');
+    }
+    const latestFolder = await getResponse.json();
 
     const now = new Date().toISOString();
     const newMessage: FolderChatMessage = {
@@ -1207,7 +1211,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chatMessages: [...(folder.chatMessages || []), newMessage],
+        chatMessages: [...(latestFolder.chatMessages || []), newMessage],
       }),
     });
 
@@ -1269,15 +1273,19 @@ export function FolderProvider({ children }: { children: ReactNode }) {
 
   // Visualizations
   const addVisualization = useCallback(async (folderId: string, item: Omit<FolderItem, 'id'>) => {
-    const folder = folders.find(f => f.id === folderId);
-    if (!folder) return;
+    // Fetch the latest folder state from the API to avoid race conditions
+    const getResponse = await fetch(`/api/folders/${folderId}`);
+    if (!getResponse.ok) {
+      throw new Error('Failed to fetch folder');
+    }
+    const latestFolder = await getResponse.json();
 
     const newItem: FolderItem = { id: generateId(), ...item };
     const response = await fetch(`/api/folders/${folderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        visualizations: [...(folder.visualizations || []), newItem],
+        visualizations: [...(latestFolder.visualizations || []), newItem],
       }),
     });
 

@@ -63,7 +63,7 @@ function ChatBotInner() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
-  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addVisualization, addActivity } = useFolders();
+  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity } = useFolders();
   const { users, getUserFullName } = useUsers();
   const { organizations } = useOrganizations();
   const { addresses } = useAddresses();
@@ -546,6 +546,8 @@ function ChatBotInner() {
         tags: f.tags,
         practitioners: (f.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
         sharedWith: (f.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
+        organizations: (f.organizations || []).map(o => ({ id: o.id, name: o.name })),
+        peopleInvolved: (f.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
       }));
 
       const conversationHistory = messages
@@ -1137,6 +1139,115 @@ function ChatBotInner() {
               console.error('Failed to add communication:', error);
               autoExecuteResults.push({
                 message: 'Sorry, I couldn\'t add the communication. Please try again.',
+              });
+            }
+          } else if (name === 'get_folder_messages') {
+            // Auto-execute get_folder_messages
+            try {
+              const { folder_id, contact_id, contact_name, contact_type, limit: msgLimit } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                // Format conversation ID to match UI format
+                let conversationId = contact_id as string;
+                switch (contact_type) {
+                  case 'practitioner':
+                    conversationId = `practitioner-${contact_id}`;
+                    break;
+                  case 'shared':
+                    conversationId = `shared-${contact_id}`;
+                    break;
+                  case 'organization':
+                    conversationId = `org-${contact_id}`;
+                    break;
+                  case 'person':
+                    conversationId = `person-${contact_id}`;
+                    break;
+                }
+
+                const contactMessages = (folder.chatMessages || [])
+                  .filter(m => m.conversationId === conversationId)
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .slice(0, (msgLimit as number) || 5);
+
+                const displayName = (contact_name as string) || (contact_id as string);
+
+                if (contactMessages.length === 0) {
+                  autoExecuteResults.push({
+                    message: `No previous messages with ${displayName}.`,
+                    followUp: `Would you like to send a message to ${displayName}?`
+                  });
+                } else {
+                  const messagesText = contactMessages
+                    .reverse()
+                    .map(m => `**${m.senderName}** (${new Date(m.createdAt).toLocaleDateString()}): ${m.content}`)
+                    .join('\n');
+                  autoExecuteResults.push({
+                    message: `Last messages with ${displayName}:\n\n${messagesText}`,
+                    followUp: `Would you like to send a message to ${displayName}?`
+                  });
+                }
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to get messages:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t retrieve the messages. Please try again.',
+              });
+            }
+          } else if (name === 'send_folder_message') {
+            // Auto-execute send_folder_message
+            try {
+              const { folder_id, contact_id, contact_name, contact_type, message: msgContent } = toolInput;
+              const folder = folders.find(f =>
+                f.id === folder_id ||
+                f.name.toLowerCase().includes((folder_id as string).toLowerCase())
+              );
+              if (folder) {
+                // Format conversation ID to match UI format
+                let conversationId = contact_id as string;
+                switch (contact_type) {
+                  case 'practitioner':
+                    conversationId = `practitioner-${contact_id}`;
+                    break;
+                  case 'shared':
+                    conversationId = `shared-${contact_id}`;
+                    break;
+                  case 'organization':
+                    conversationId = `org-${contact_id}`;
+                    break;
+                  case 'person':
+                    conversationId = `person-${contact_id}`;
+                    break;
+                }
+
+                const currentUser = users[0];
+                const chatMessage = {
+                  conversationId: conversationId,
+                  senderId: currentUser?.id || 'unknown',
+                  senderName: currentUser ? getUserFullName(currentUser) : 'Unknown',
+                  content: msgContent as string,
+                };
+                await addChatMessage(folder.id, chatMessage);
+                trackActionAndCheckAchievements('folder_edited');
+                autoExecuteResults.push({
+                  message: `Message sent to ${contact_name}!`,
+                  followUp: 'Would you like to send another message or message someone else? (or say "done" to move on to visualizations)'
+                });
+              } else {
+                autoExecuteResults.push({
+                  message: `Folder "${folder_id}" not found.`,
+                });
+              }
+            } catch (error) {
+              console.error('Failed to send message:', error);
+              autoExecuteResults.push({
+                message: 'Sorry, I couldn\'t send the message. Please try again.',
               });
             }
           } else if (name === 'add_folder_visualization') {
