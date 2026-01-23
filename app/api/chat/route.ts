@@ -952,7 +952,7 @@ async function summarizeAttachmentsForSignal(
   try {
     // Make vision-capable API call
     const summaryResponse = await anthropic.messages.create({
-      model: 'claude-opus-4-5-20251101',
+      model: 'claude-3-haiku-20240307',
       max_tokens: 2048,
       messages: [{ role: 'user', content }],
     });
@@ -1393,7 +1393,7 @@ ${skillsContent}`;
     }));
 
     const response = await anthropic.messages.create({
-      model: 'claude-opus-4-5-20251101',
+      model: 'claude-3-haiku-20240307',
       max_tokens: 1024,
       system: systemPrompt,
       tools,
