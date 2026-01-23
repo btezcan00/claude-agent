@@ -36,6 +36,14 @@ export interface ChatFeatureConfig {
     celebrationEffects: boolean;
     avatarExpressions: boolean;
   };
+
+  // Workflow features
+  workflow: {
+    enabled: boolean;
+    autoDetectComplexRequests: boolean;
+    showPhaseStepper: boolean;
+    persistToSession: boolean;
+  };
 }
 
 // Default configuration - all features enabled
@@ -65,6 +73,12 @@ export const DEFAULT_CHAT_CONFIG: ChatFeatureConfig = {
     celebrationEffects: true,
     avatarExpressions: true,
   },
+  workflow: {
+    enabled: true,
+    autoDetectComplexRequests: true,
+    showPhaseStepper: true,
+    persistToSession: true,
+  },
 };
 
 // Minimal configuration - for performance-sensitive environments
@@ -93,6 +107,12 @@ export const MINIMAL_CHAT_CONFIG: ChatFeatureConfig = {
     messageTransitions: false,
     celebrationEffects: false,
     avatarExpressions: false,
+  },
+  workflow: {
+    enabled: false,
+    autoDetectComplexRequests: false,
+    showPhaseStepper: false,
+    persistToSession: false,
   },
 };
 

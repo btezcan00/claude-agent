@@ -868,6 +868,104 @@ const tools: Anthropic.Tool[] = [
       required: ['folder_id', 'label'],
     },
   },
+  // Workflow-specific tools
+  {
+    name: 'analyze_request_complexity',
+    description: 'Analyze a user request to determine if it requires a multi-step workflow. Returns whether the request is complex and suggests clarification questions if needed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        request: {
+          type: 'string',
+          description: 'The user request to analyze',
+        },
+        context: {
+          type: 'object',
+          description: 'Additional context about the current state (available signals, folders, etc.)',
+        },
+      },
+      required: ['request'],
+    },
+  },
+  {
+    name: 'generate_clarification_questions',
+    description: 'Generate clarification questions for a complex user request. Use this to gather missing information before creating an execution plan.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        request: {
+          type: 'string',
+          description: 'The original user request',
+        },
+        missing_info: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of information that needs to be clarified',
+        },
+      },
+      required: ['request'],
+    },
+  },
+  {
+    name: 'generate_execution_plan',
+    description: 'Generate a step-by-step execution plan for a complex task. Returns a list of tasks with their dependencies and required tools.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        request: {
+          type: 'string',
+          description: 'The user request to plan for',
+        },
+        clarified_requirements: {
+          type: 'object',
+          description: 'Requirements gathered from clarification questions',
+        },
+      },
+      required: ['request'],
+    },
+  },
+  {
+    name: 'revise_plan',
+    description: 'Revise an existing execution plan based on user feedback.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        current_plan: {
+          type: 'object',
+          description: 'The current execution plan to revise',
+        },
+        feedback: {
+          type: 'string',
+          description: 'User feedback on what to change',
+        },
+      },
+      required: ['current_plan', 'feedback'],
+    },
+  },
+  {
+    name: 'generate_review_summary',
+    description: 'Generate a summary of completed workflow execution, including success/failure status and recommendations for next steps.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        executed_tasks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              task_id: { type: 'string' },
+              title: { type: 'string' },
+              status: { type: 'string', enum: ['completed', 'failed', 'skipped'] },
+              result: { type: 'string' },
+              error: { type: 'string' },
+            },
+          },
+          description: 'List of executed tasks with their results',
+        },
+      },
+      required: ['executed_tasks'],
+    },
+  },
 ];
 
 // Helper function to summarize attachments using Claude Vision
@@ -1119,6 +1217,22 @@ IMPORTANT: If the user wants to create a folder (says "yes", "sure", "create fol
 **Folder Application Management:**
 16. Complete Bibob application - complete the application checklist for a folder, update criteria explanations, and move folder to research phase
 17. Save Bibob application draft - save progress on an application without completing it, allowing users to return later to finish
+
+**Workflow Management (for complex multi-step tasks):**
+18. Analyze request complexity - determine if a user request requires a structured workflow
+19. Generate clarification questions - create questions to gather missing requirements
+20. Generate execution plan - create a step-by-step plan for complex tasks
+21. Revise plan - modify an execution plan based on user feedback
+22. Generate review summary - summarize the results of completed workflow tasks
+
+## Workflow Guidelines
+
+For complex requests that involve multiple steps or require coordination:
+1. **Detect Complexity**: If the user asks for something that requires multiple actions (e.g., "create a folder for this signal and complete the application"), consider using the structured workflow approach
+2. **Clarify Requirements**: When requirements are unclear, generate clarification questions to gather needed information
+3. **Plan Before Acting**: For multi-step tasks, generate an execution plan and confirm with the user before proceeding
+4. **Track Progress**: During execution, provide clear progress updates on which tasks are completed
+5. **Review Results**: After completing tasks, provide a summary of what was accomplished and suggest next steps
 
 ## Guidelines
 
