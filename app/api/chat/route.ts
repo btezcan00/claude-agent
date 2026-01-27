@@ -109,7 +109,7 @@ const tools: Anthropic.Tool[] = [
               tool: { type: 'string', description: 'Name of the tool to be used' },
               details: {
                 type: 'object',
-                description: 'Key parameters for this action (e.g., description, location, types)',
+                description: 'Key parameters for this action. For parameters that depend on outputs from previous steps, use reference syntax: "$stepN.fieldName" (e.g., "$step1.folderId" to reference the folder ID created in step 1). Available output fields: step with create_signal returns signalId, signalNumber; step with create_folder returns folderId, folderName.',
               },
             },
             required: ['step', 'action', 'tool'],
@@ -1133,6 +1133,93 @@ Your response MUST be to call plan_proposal:
 DO NOT call create_signal until user approves!
 
 **VIOLATION WARNING: Calling a write tool without first calling plan_proposal is a critical error.**
+
+## Multi-Step Plans with Dependencies
+
+When a later step needs to use output from an earlier step, use reference syntax in the details:
+- $step1.folderId - The folder ID created in step 1
+- $step1.folderName - The folder name created in step 1
+- $step1.signalId - The signal ID created in step 1
+- $step1.signalNumber - The signal number created in step 1
+
+## EXAMPLE - Creating a folder and completing Bibob application
+
+User: "Create a folder called 'Test' and complete its Bibob application"
+
+Your response MUST be to call plan_proposal:
+{
+  "summary": "Create folder 'Test' and complete its Bibob application",
+  "actions": [
+    {
+      "step": 1,
+      "action": "Create folder named 'Test'",
+      "tool": "create_folder",
+      "details": { "name": "Test" }
+    },
+    {
+      "step": 2,
+      "action": "Complete Bibob application for the created folder",
+      "tool": "complete_bibob_application",
+      "details": {
+        "folder_id": "$step1.folderId",
+        "explanation": "Application completed with all criteria met",
+        "criteria": [
+          { "id": "necessary_info", "isMet": true, "explanation": "All necessary information provided" },
+          { "id": "annual_accounts", "isMet": true, "explanation": "Annual accounts verified" },
+          { "id": "budgets", "isMet": true, "explanation": "Budgets reviewed" },
+          { "id": "loan_agreement", "isMet": true, "explanation": "Loan agreement verified" }
+        ]
+      }
+    }
+  ]
+}
+
+## EXAMPLE - Creating signal, folder from signal, and completing Bibob
+
+User: "Create a signal about fraud at Main Street, create a folder from it, then complete the Bibob application"
+
+{
+  "summary": "Create signal, folder from signal, and complete Bibob application",
+  "actions": [
+    {
+      "step": 1,
+      "action": "Create signal about fraud at Main Street",
+      "tool": "create_signal",
+      "details": {
+        "description": "Fraud activity reported",
+        "types": ["fraud"],
+        "placeOfObservation": "Main Street",
+        "receivedBy": "municipal-department"
+      }
+    },
+    {
+      "step": 2,
+      "action": "Create folder from the signal",
+      "tool": "create_folder",
+      "details": {
+        "name": "Fraud Investigation - Main Street",
+        "signalIds": ["$step1.signalId"]
+      }
+    },
+    {
+      "step": 3,
+      "action": "Complete Bibob application for the folder",
+      "tool": "complete_bibob_application",
+      "details": {
+        "folder_id": "$step2.folderId",
+        "explanation": "Application completed",
+        "criteria": [
+          { "id": "necessary_info", "isMet": true, "explanation": "Provided" },
+          { "id": "annual_accounts", "isMet": true, "explanation": "Verified" },
+          { "id": "budgets", "isMet": true, "explanation": "Reviewed" },
+          { "id": "loan_agreement", "isMet": true, "explanation": "Verified" }
+        ]
+      }
+    }
+  ]
+}
+
+IMPORTANT: Always use $stepN.fieldName syntax when referencing outputs from previous steps. Never hardcode IDs for entities that will be created in earlier steps.
 
 ## Current Data
 

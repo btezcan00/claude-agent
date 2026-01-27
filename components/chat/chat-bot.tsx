@@ -47,6 +47,8 @@ function ChatBotInner() {
   // Track folders created during the current execution cycle to handle race conditions
   // when subsequent tools reference folders before React state updates
   const pendingFoldersRef = useRef<Map<string, Folder>>(new Map());
+  // Track step outputs for resolving $stepN.fieldName references
+  const stepOutputsRef = useRef<Map<number, Record<string, unknown>>>(new Map());
 
   const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
   const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity } = useFolders();
@@ -116,6 +118,55 @@ function ChatBotInner() {
     return undefined;
   }, [folders]);
 
+  // Function to resolve $stepN.fieldName references in tool inputs
+  const resolveStepReferences = useCallback((input: Record<string, unknown>, stepOutputs: Map<number, Record<string, unknown>>): Record<string, unknown> => {
+    const resolved: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(input)) {
+      if (typeof value === 'string' && value.startsWith('$step')) {
+        // Parse $stepN.fieldName
+        const match = value.match(/^\$step(\d+)\.(\w+)$/);
+        if (match) {
+          const stepNum = parseInt(match[1], 10);
+          const fieldName = match[2];
+          const stepOutput = stepOutputs.get(stepNum);
+          if (stepOutput && stepOutput[fieldName] !== undefined) {
+            resolved[key] = stepOutput[fieldName];
+          } else {
+            console.warn(`Reference ${value} could not be resolved`);
+            resolved[key] = value; // Keep original if not found
+          }
+        } else {
+          resolved[key] = value;
+        }
+      } else if (Array.isArray(value)) {
+        resolved[key] = value.map(item => {
+          if (typeof item === 'string' && item.startsWith('$step')) {
+            const match = item.match(/^\$step(\d+)\.(\w+)$/);
+            if (match) {
+              const stepNum = parseInt(match[1], 10);
+              const fieldName = match[2];
+              const stepOutput = stepOutputs.get(stepNum);
+              if (stepOutput && stepOutput[fieldName] !== undefined) {
+                return stepOutput[fieldName];
+              }
+            }
+            return item;
+          } else if (typeof item === 'object' && item !== null) {
+            return resolveStepReferences(item as Record<string, unknown>, stepOutputs);
+          }
+          return item;
+        });
+      } else if (typeof value === 'object' && value !== null) {
+        resolved[key] = resolveStepReferences(value as Record<string, unknown>, stepOutputs);
+      } else {
+        resolved[key] = value;
+      }
+    }
+
+    return resolved;
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -146,8 +197,14 @@ function ChatBotInner() {
     setPendingPlan(null);
   }, []);
 
-  // Execute a tool and return the result
-  const executeTool = useCallback(async (toolName: string, input: Record<string, unknown>): Promise<string> => {
+  // Tool execution result with optional structured output
+  interface ToolResult {
+    message: string;
+    output?: Record<string, unknown>;
+  }
+
+  // Execute a tool and return the result with optional structured output
+  const executeTool = useCallback(async (toolName: string, input: Record<string, unknown>): Promise<ToolResult> => {
     try {
       switch (toolName) {
         case 'create_signal': {
@@ -161,7 +218,10 @@ function ChatBotInner() {
           } as CreateSignalInput;
           const newSignal = await createSignal(signalData);
           setLastCreatedSignalId(newSignal.id);
-          return `Signal created: ${newSignal.signalNumber}`;
+          return {
+            message: `Signal created: ${newSignal.signalNumber}`,
+            output: { signalId: newSignal.id, signalNumber: newSignal.signalNumber }
+          };
         }
 
         case 'edit_signal': {
@@ -169,9 +229,9 @@ function ChatBotInner() {
           const targetSignal = findSignal(signal_id as string);
           if (targetSignal) {
             await updateSignal(targetSignal.id, updates as UpdateSignalInput);
-            return `Signal ${targetSignal.signalNumber} updated`;
+            return { message: `Signal ${targetSignal.signalNumber} updated` };
           }
-          return `Signal ${signal_id} not found`;
+          return { message: `Signal ${signal_id} not found` };
         }
 
         case 'add_note': {
@@ -179,9 +239,9 @@ function ChatBotInner() {
           const targetSignal = findSignal(signal_id as string);
           if (targetSignal) {
             await addNote(targetSignal.id, content as string, is_private as boolean || false);
-            return `Note added to ${targetSignal.signalNumber}`;
+            return { message: `Note added to ${targetSignal.signalNumber}` };
           }
-          return `Signal ${signal_id} not found`;
+          return { message: `Signal ${signal_id} not found` };
         }
 
         case 'delete_signal': {
@@ -189,9 +249,9 @@ function ChatBotInner() {
           const targetSignal = findSignal(signal_id as string);
           if (targetSignal) {
             await deleteSignal(targetSignal.id);
-            return `Signal ${targetSignal.signalNumber} deleted`;
+            return { message: `Signal ${targetSignal.signalNumber} deleted` };
           }
-          return `Signal ${signal_id} not found`;
+          return { message: `Signal ${signal_id} not found` };
         }
 
         case 'create_folder': {
@@ -227,7 +287,10 @@ function ChatBotInner() {
           pendingFoldersRef.current.set(newFolder.name.toLowerCase(), newFolder);
           pendingFoldersRef.current.set(newFolder.id, newFolder);
           setLastCreatedSignalId(null);
-          return `Folder "${newFolder.name}" created with ID: ${newFolder.id}`;
+          return {
+            message: `Folder "${newFolder.name}" created with ID: ${newFolder.id}`,
+            output: { folderId: newFolder.id, folderName: newFolder.name }
+          };
         }
 
         case 'edit_folder': {
@@ -255,9 +318,9 @@ function ChatBotInner() {
                 await addTag(folder.id, tag);
               }
             }
-            return `Folder "${name || folder.name}" updated`;
+            return { message: `Folder "${name || folder.name}" updated` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'assign_folder_owner': {
@@ -265,9 +328,9 @@ function ChatBotInner() {
           const folder = findFolder(folder_id as string);
           if (folder) {
             await assignFolderOwner(folder.id, user_id as string, user_name as string);
-            return `${user_name} assigned as owner of "${folder.name}"`;
+            return { message: `${user_name} assigned as owner of "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_practitioner': {
@@ -275,9 +338,9 @@ function ChatBotInner() {
           const folder = findFolder(folder_id as string);
           if (folder) {
             await addPractitioner(folder.id, user_id as string, user_name as string);
-            return `Added ${user_name} as practitioner to "${folder.name}"`;
+            return { message: `Added ${user_name} as practitioner to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'share_folder': {
@@ -285,9 +348,9 @@ function ChatBotInner() {
           const folder = findFolder(folder_id as string);
           if (folder) {
             await shareFolder(folder.id, user_id as string, user_name as string, (access_level as 'view' | 'edit' | 'admin') || 'view');
-            return `Shared "${folder.name}" with ${user_name}`;
+            return { message: `Shared "${folder.name}" with ${user_name}` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'complete_bibob_application': {
@@ -306,9 +369,9 @@ function ChatBotInner() {
             });
             await updateApplicationData(folder.id, { explanation: explanation as string, criteria: fullCriteria });
             await completeApplication(folder.id);
-            return `Bibob application completed for "${folder.name}"`;
+            return { message: `Bibob application completed for "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'save_bibob_application_draft': {
@@ -330,9 +393,9 @@ function ChatBotInner() {
               });
             }
             await updateApplicationData(folder.id, updatePayload);
-            return `Draft saved for "${folder.name}"`;
+            return { message: `Draft saved for "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_organization': {
@@ -348,9 +411,9 @@ function ChatBotInner() {
               createdAt: new Date().toISOString(),
             };
             await addOrganizationToFolder(folder.id, org);
-            return `Added organization "${orgName}" to "${folder.name}"`;
+            return { message: `Added organization "${orgName}" to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_address': {
@@ -367,9 +430,9 @@ function ChatBotInner() {
               createdAt: new Date().toISOString(),
             };
             await addAddressToFolder(folder.id, addr);
-            return `Added address "${street}, ${city}" to "${folder.name}"`;
+            return { message: `Added address "${street}, ${city}" to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_person': {
@@ -386,9 +449,9 @@ function ChatBotInner() {
               createdAt: new Date().toISOString(),
             };
             await addPersonToFolder(folder.id, person);
-            return `Added "${first_name} ${last_name}" to "${folder.name}"`;
+            return { message: `Added "${first_name} ${last_name}" to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_finding': {
@@ -405,9 +468,9 @@ function ChatBotInner() {
               assignedTo: (assigned_to as string) || '',
             };
             await addFinding(folder.id, finding);
-            return `Added finding "${label}" to "${folder.name}"`;
+            return { message: `Added finding "${label}" to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_letter': {
@@ -431,9 +494,9 @@ function ChatBotInner() {
               };
               await updateLetter(folder.id, newLetter.id, { fieldData });
             }
-            return `Added letter "${letterName}" to "${folder.name}"`;
+            return { message: `Added letter "${letterName}" to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_communication': {
@@ -447,9 +510,9 @@ function ChatBotInner() {
               description: (commDesc as string) || '',
             };
             await addCommunication(folder.id, communication);
-            return `Added communication "${label}" to "${folder.name}"`;
+            return { message: `Added communication "${label}" to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_visualization': {
@@ -463,9 +526,9 @@ function ChatBotInner() {
               description: (vizDesc as string) || '',
             };
             await addVisualization(folder.id, visualization);
-            return `Added visualization "${label}" to "${folder.name}"`;
+            return { message: `Added visualization "${label}" to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'add_folder_activity': {
@@ -480,9 +543,9 @@ function ChatBotInner() {
               assignedTo: (assigned_to as string) || '',
             };
             await addActivity(folder.id, activity);
-            return `Added activity "${label}" to "${folder.name}"`;
+            return { message: `Added activity "${label}" to "${folder.name}"` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'get_folder_messages': {
@@ -501,11 +564,11 @@ function ChatBotInner() {
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .slice(0, (msgLimit as number) || 5);
             if (msgs.length === 0) {
-              return `No messages with ${contact_name}`;
+              return { message: `No messages with ${contact_name}` };
             }
-            return `Messages with ${contact_name}: ${msgs.map(m => `${m.senderName}: ${m.content}`).join('; ')}`;
+            return { message: `Messages with ${contact_name}: ${msgs.map(m => `${m.senderName}: ${m.content}`).join('; ')}` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         case 'send_folder_message': {
@@ -527,9 +590,9 @@ function ChatBotInner() {
               content: message as string,
             };
             await addChatMessage(folder.id, chatMessage);
-            return `Message sent to ${contact_name}`;
+            return { message: `Message sent to ${contact_name}` };
           }
-          return `Folder "${folder_id}" not found`;
+          return { message: `Folder "${folder_id}" not found` };
         }
 
         // Read-only tools return data summaries
@@ -538,26 +601,26 @@ function ChatBotInner() {
           if (signalId) {
             const s = findSignal(signalId);
             if (s) {
-              return `${s.signalNumber}: ${s.description.substring(0, 100)}... at ${s.placeOfObservation}`;
+              return { message: `${s.signalNumber}: ${s.description.substring(0, 100)}... at ${s.placeOfObservation}` };
             }
-            return `Signal ${signalId} not found`;
+            return { message: `Signal ${signalId} not found` };
           }
-          return `${signals.length} signals in system`;
+          return { message: `${signals.length} signals in system` };
         }
 
         case 'list_folders':
-          return folders.length > 0
+          return { message: folders.length > 0
             ? folders.map(f => `${f.name} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`).join('; ')
-            : 'No folders';
+            : 'No folders' };
 
         case 'list_team_members':
-          return users.map(u => `${getUserFullName(u)} (${u.title})`).join('; ');
+          return { message: users.map(u => `${getUserFullName(u)} (${u.title})`).join('; ') };
 
         case 'get_signal_stats':
-          return `Total signals: ${signalStats.total}`;
+          return { message: `Total signals: ${signalStats.total}` };
 
         case 'get_folder_stats':
-          return `Total folders: ${folders.length}`;
+          return { message: `Total folders: ${folders.length}` };
 
         case 'search_signals': {
           let results = [...signals];
@@ -572,46 +635,47 @@ function ChatBotInner() {
           }
           if (type) results = results.filter(s => s.types.includes(type as SignalType));
           if (receivedBy) results = results.filter(s => s.receivedBy === receivedBy);
-          return results.length > 0
+          return { message: results.length > 0
             ? `Found ${results.length}: ${results.map(s => s.signalNumber).join(', ')}`
-            : 'No signals found';
+            : 'No signals found' };
         }
 
         case 'get_signal_activity': {
           const s = findSignal(input.signal_id as string);
           if (s) {
             const activities = s.activities.slice(0, 5);
-            return activities.length > 0
+            return { message: activities.length > 0
               ? activities.map(a => `${a.details} by ${a.userName}`).join('; ')
-              : 'No activity';
+              : 'No activity' };
           }
-          return 'Signal not found';
+          return { message: 'Signal not found' };
         }
 
         case 'get_signal_notes': {
           const s = findSignal(input.signal_id as string);
           if (s) {
-            return s.notes.length > 0
+            return { message: s.notes.length > 0
               ? s.notes.map(n => `${n.authorName}: ${n.content.substring(0, 50)}`).join('; ')
-              : 'No notes';
+              : 'No notes' };
           }
-          return 'Signal not found';
+          return { message: 'Signal not found' };
         }
 
         default:
-          return `Tool ${toolName} executed`;
+          return { message: `Tool ${toolName} executed` };
       }
     } catch (error) {
       console.error(`Tool ${toolName} error:`, error);
-      return `Error executing ${toolName}`;
+      return { message: `Error executing ${toolName}` };
     }
-  }, [signals, folders, users, findSignal, findFolder, createSignal, updateSignal, addNote, deleteSignal, createFolder, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, assignFolderOwner, addPractitioner, shareFolder, updateApplicationData, completeApplication, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForFolder, getUserFullName, signalStats]);
+  }, [signals, folders, users, findSignal, findFolder, findFolderAsync, createSignal, updateSignal, addNote, deleteSignal, createFolder, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, assignFolderOwner, addPractitioner, shareFolder, updateApplicationData, completeApplication, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForFolder, getUserFullName, signalStats]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    // Clear pending folders from previous execution cycle
+    // Clear pending folders and step outputs from previous execution cycle
     pendingFoldersRef.current.clear();
+    stepOutputsRef.current.clear();
 
     const userMessage: Message = {
       id: generateMessageId(),
@@ -732,6 +796,7 @@ function ChatBotInner() {
       let buffer = '';
       let finalResponse = '';
       const executedTools: string[] = [];
+      let currentStep = 0;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -764,16 +829,24 @@ function ChatBotInner() {
                     addLogEntry(createLogEntry('plan', `Planning: ${event.tool}`, { status: 'success', toolName: event.tool }));
                     break;
                   }
+                  // Increment step counter for each tool call
+                  currentStep++;
+                  // Resolve any step references in the input
+                  const resolvedInput = resolveStepReferences(event.input, stepOutputsRef.current);
                   // Create the tool_call entry and store its ID
-                  const toolCallEntry = createLogEntry('tool_call', `Calling ${event.tool}...`, { status: 'pending', toolName: event.tool, toolInput: event.input });
+                  const toolCallEntry = createLogEntry('tool_call', `Calling ${event.tool}...`, { status: 'pending', toolName: event.tool, toolInput: resolvedInput });
                   addLogEntry(toolCallEntry);
-                  // Execute the tool
-                  const result = await executeTool(event.tool, event.input);
-                  executedTools.push(`${event.tool}: ${result}`);
+                  // Execute the tool with resolved input
+                  const result = await executeTool(event.tool, resolvedInput);
+                  executedTools.push(`${event.tool}: ${result.message}`);
+                  // Track output for this step
+                  if (result.output) {
+                    stepOutputsRef.current.set(currentStep, result.output);
+                  }
                   // Update the tool_call entry status to success (stop spinner)
                   updateLogEntry(toolCallEntry.id, { status: 'success' });
                   // Add the result entry
-                  addLogEntry(createLogEntry('tool_result', result, { status: 'success', toolName: event.tool }));
+                  addLogEntry(createLogEntry('tool_result', result.message, { status: 'success', toolName: event.tool }));
                   break;
 
                 case 'tool_result':
@@ -841,8 +914,9 @@ function ChatBotInner() {
   const handleApprovePlan = useCallback(async () => {
     if (!pendingPlan) return;
 
-    // Clear pending folders from previous execution cycle
+    // Clear pending folders and step outputs from previous execution cycle
     pendingFoldersRef.current.clear();
+    stepOutputsRef.current.clear();
 
     // Store the plan before clearing it
     const planToExecute = pendingPlan;
@@ -973,6 +1047,7 @@ function ChatBotInner() {
       let buffer = '';
       let finalResponse = '';
       const executedTools: string[] = [];
+      let currentStep = 0;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1005,16 +1080,24 @@ function ChatBotInner() {
                     addLogEntry(createLogEntry('plan', `Planning: ${event.tool}`, { status: 'success', toolName: event.tool }));
                     break;
                   }
+                  // Increment step counter for each tool call
+                  currentStep++;
+                  // Resolve any step references in the input
+                  const resolvedInput2 = resolveStepReferences(event.input, stepOutputsRef.current);
                   // Create the tool_call entry and store its ID
-                  const toolCallEntry2 = createLogEntry('tool_call', `Calling ${event.tool}...`, { status: 'pending', toolName: event.tool, toolInput: event.input });
+                  const toolCallEntry2 = createLogEntry('tool_call', `Calling ${event.tool}...`, { status: 'pending', toolName: event.tool, toolInput: resolvedInput2 });
                   addLogEntry(toolCallEntry2);
-                  // Execute the tool
-                  const result = await executeTool(event.tool, event.input);
-                  executedTools.push(`${event.tool}: ${result}`);
+                  // Execute the tool with resolved input
+                  const result = await executeTool(event.tool, resolvedInput2);
+                  executedTools.push(`${event.tool}: ${result.message}`);
+                  // Track output for this step
+                  if (result.output) {
+                    stepOutputsRef.current.set(currentStep, result.output);
+                  }
                   // Update the tool_call entry status to success (stop spinner)
                   updateLogEntry(toolCallEntry2.id, { status: 'success' });
                   // Add the result entry
-                  addLogEntry(createLogEntry('tool_result', result, { status: 'success', toolName: event.tool }));
+                  addLogEntry(createLogEntry('tool_result', result.message, { status: 'success', toolName: event.tool }));
                   break;
 
                 case 'tool_result':
@@ -1063,7 +1146,7 @@ function ChatBotInner() {
     } finally {
       setIsLoading(false);
     }
-  }, [pendingPlan, messages, signals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName]);
+  }, [pendingPlan, messages, signals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences]);
 
   const handleRejectPlan = useCallback(() => {
     setPendingPlan(null);
