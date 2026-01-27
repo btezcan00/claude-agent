@@ -1,13 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
-import { loadSkills, formatSkillsForPrompt } from '@/lib/skills/loader';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
-
-// Load skills at module level (cached at startup)
-const skillsPromise = loadSkills();
 
 interface Message {
   role: 'user' | 'assistant';
@@ -93,6 +89,37 @@ interface PersonData {
 }
 
 const tools: Anthropic.Tool[] = [
+  {
+    name: 'plan_proposal',
+    description: 'Present a structured execution plan to the user for approval before executing write operations. Use this tool BEFORE any create, edit, delete, or other write operations.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        summary: {
+          type: 'string',
+          description: 'Brief summary of what will be done (1-2 sentences)',
+        },
+        actions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              step: { type: 'number', description: 'Step number (starting from 1)' },
+              action: { type: 'string', description: 'Human-readable description of the action' },
+              tool: { type: 'string', description: 'Name of the tool to be used' },
+              details: {
+                type: 'object',
+                description: 'Key parameters for this action (e.g., description, location, types)',
+              },
+            },
+            required: ['step', 'action', 'tool'],
+          },
+          description: 'List of planned actions in execution order',
+        },
+      },
+      required: ['summary', 'actions'],
+    },
+  },
   {
     name: 'summarize_signals',
     description: 'Summarize all signals or a specific signal by ID. Use this when the user wants an overview of signals.',
@@ -868,104 +895,6 @@ const tools: Anthropic.Tool[] = [
       required: ['folder_id', 'label'],
     },
   },
-  // Workflow-specific tools
-  {
-    name: 'analyze_request_complexity',
-    description: 'Analyze a user request to determine if it requires a multi-step workflow. Returns whether the request is complex and suggests clarification questions if needed.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        request: {
-          type: 'string',
-          description: 'The user request to analyze',
-        },
-        context: {
-          type: 'object',
-          description: 'Additional context about the current state (available signals, folders, etc.)',
-        },
-      },
-      required: ['request'],
-    },
-  },
-  {
-    name: 'generate_clarification_questions',
-    description: 'Generate clarification questions for a complex user request. Use this to gather missing information before creating an execution plan.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        request: {
-          type: 'string',
-          description: 'The original user request',
-        },
-        missing_info: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'List of information that needs to be clarified',
-        },
-      },
-      required: ['request'],
-    },
-  },
-  {
-    name: 'generate_execution_plan',
-    description: 'Generate a step-by-step execution plan for a complex task. Returns a list of tasks with their dependencies and required tools.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        request: {
-          type: 'string',
-          description: 'The user request to plan for',
-        },
-        clarified_requirements: {
-          type: 'object',
-          description: 'Requirements gathered from clarification questions',
-        },
-      },
-      required: ['request'],
-    },
-  },
-  {
-    name: 'revise_plan',
-    description: 'Revise an existing execution plan based on user feedback.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        current_plan: {
-          type: 'object',
-          description: 'The current execution plan to revise',
-        },
-        feedback: {
-          type: 'string',
-          description: 'User feedback on what to change',
-        },
-      },
-      required: ['current_plan', 'feedback'],
-    },
-  },
-  {
-    name: 'generate_review_summary',
-    description: 'Generate a summary of completed workflow execution, including success/failure status and recommendations for next steps.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        executed_tasks: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              task_id: { type: 'string' },
-              title: { type: 'string' },
-              status: { type: 'string', enum: ['completed', 'failed', 'skipped'] },
-              result: { type: 'string' },
-              error: { type: 'string' },
-            },
-          },
-          description: 'List of executed tasks with their results',
-        },
-      },
-      required: ['executed_tasks'],
-    },
-  },
 ];
 
 // Helper function to summarize attachments using Claude Vision
@@ -1070,7 +999,7 @@ async function summarizeAttachmentsForSignal(
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, signals, folders, teamMembers, currentUser, lastCreatedSignalId, organizations, addresses, people }: {
+    const { messages, signals, folders, teamMembers, currentUser, lastCreatedSignalId, organizations, addresses, people, stream: enableStreaming, approvedPlan }: {
       messages: Message[];
       signals: SignalData[];
       folders: FolderData[];
@@ -1080,6 +1009,11 @@ export async function POST(request: NextRequest) {
       organizations?: OrganizationData[];
       addresses?: AddressData[];
       people?: PersonData[];
+      stream?: boolean;
+      approvedPlan?: {
+        summary: string;
+        actions: Array<{ step: number; action: string; tool: string; details?: Record<string, unknown> }>;
+      } | null;
     } = await request.json();
 
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -1136,382 +1070,288 @@ export async function POST(request: NextRequest) {
       )
       .join('\n');
 
-    // Get cached skills
-    const skills = await skillsPromise;
-    const skillsContent = formatSkillsForPrompt(skills);
+    // Build system prompt - modify if we have an approved plan
+    const systemPrompt = `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals and folders related to investigations.
 
-    const systemPrompt = `You are the GCMP Assistant - a friendly and efficient AI helper for the Government Case Management Platform. You help government employees manage signals and folders related to human trafficking, drugs, and other criminal activities.
+## MANDATORY PLAN-FIRST BEHAVIOR
 
-## Your Personality
+${approvedPlan ? `**PLAN ALREADY APPROVED - PROCEED WITH EXECUTION**
 
-You are:
-- Warm and approachable, but always professional
-- Helpful and encouraging - celebrate successes with phrases like "Nice!", "Got it!", "All set!", or "Perfect!"
-- Efficient - you get things done quickly and clearly
-- Supportive - you guide users through complex tasks step by step
+The user has approved the following plan. Execute the tools immediately without calling plan_proposal again:
 
-Communication style:
-- Be concise but friendly - avoid being robotic or overly formal
-- Use varied acknowledgments instead of repetitive "I'll do that for you" responses
-- When users complete tasks, give brief positive feedback
-- Keep responses focused and actionable
-- Light humor is okay when appropriate, but stay professional
+Summary: ${approvedPlan.summary}
+Actions:
+${approvedPlan.actions.map(a => `${a.step}. ${a.action} (${a.tool})`).join('\n')}
+
+DO NOT call plan_proposal. The plan is approved. Execute the write tools now.` : `**ABSOLUTE RULE: You MUST use the plan_proposal tool BEFORE any write operation.**`}
+
+WRITE TOOLS (REQUIRE plan_proposal FIRST):
+- create_signal, edit_signal, add_note, delete_signal
+- create_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder
+- add_folder_organization, add_folder_address, add_folder_person, add_folder_finding
+- add_folder_letter, add_folder_communication, add_folder_visualization, add_folder_activity
+- send_folder_message, complete_bibob_application, save_bibob_application_draft
+
+READ TOOLS (Execute immediately):
+- summarize_signals, search_signals, get_signal_activity, get_signal_notes, get_signal_stats
+- summarize_attachments, list_folders, get_folder_stats, list_team_members, get_folder_messages
+
+## WORKFLOW
+
+1. **User requests a WRITE operation** (create, edit, delete, add, etc.)
+   → You MUST call plan_proposal tool with summary and actions
+   → DO NOT call any write tools yet
+   → STOP and wait for approval
+
+2. **User approves** (says "yes", "approve", "go ahead", "proceed", etc.)
+   → NOW execute the write tools
+
+3. **User requests a READ operation** (list, search, summarize, etc.)
+   → Execute immediately, no plan needed
+
+## EXAMPLE - Creating a Signal
+
+User: "Create a signal about suspicious activity at Main Street"
+
+Your response MUST be to call plan_proposal:
+{
+  "summary": "Create a new signal for suspicious activity at Main Street",
+  "actions": [
+    {
+      "step": 1,
+      "action": "Create signal with type 'bogus-scheme', location 'Main Street'",
+      "tool": "create_signal",
+      "details": {
+        "description": "Suspicious activity reported",
+        "types": ["bogus-scheme"],
+        "placeOfObservation": "Main Street"
+      }
+    }
+  ]
+}
+
+DO NOT call create_signal until user approves!
+
+**VIOLATION WARNING: Calling a write tool without first calling plan_proposal is a critical error.**
 
 ## Current Data
 
-**Signals in System (${(signals || []).length} total):**
-${signalSummary || 'No signals available'}
+**Signals (${(signals || []).length}):** ${signalSummary || 'None'}
 
-**Folders in System (${(folders || []).length} total):**
-${folderSummary || 'No folders available'}
+**Folders (${(folders || []).length}):** ${folderSummary || 'None'}
 
-**Team Members:**
-${teamSummary || 'No team members available'}
+**Team:** ${teamSummary || 'None'}
 
-**Organizations in System (${(organizations || []).length} total):**
-${organizationsSummary || 'No organizations available'}
+**Organizations:** ${organizationsSummary || 'None'}
 
-**Known Addresses (${(addresses || []).length} total):**
-${addressesSummary || 'No addresses available'}
+**Addresses:** ${addressesSummary || 'None'}
 
-**Known People (${(people || []).length} total):**
-${peopleSummary || 'No people available'}
+**People:** ${peopleSummary || 'None'}
 
-**Current User (You are talking to):**
-${currentUser ? `${currentUser.fullName} (${currentUser.id}) - ${currentUser.title}
-IMPORTANT: When the user says "me", "I", "myself", or refers to themselves, they mean ${currentUser.fullName}. Use their ID "${currentUser.id}" and name "${currentUser.fullName}" for any tool calls that require user identification.` : 'Unknown user'}
+**Current User:** ${currentUser ? `${currentUser.fullName} (${currentUser.id}) - "${currentUser.id}" and "${currentUser.fullName}" for tool calls` : 'Unknown'}
 
-${lastCreatedSignalId ? `**Last Created Signal:**
-Signal ID: ${lastCreatedSignalId}
-IMPORTANT: If the user wants to create a folder (says "yes", "sure", "create folder", etc.), AUTOMATICALLY include this signal ID in the signalIds array when calling create_folder. This connects the newly created signal to the new folder.` : ''}
+${lastCreatedSignalId ? `**Last Created Signal ID:** ${lastCreatedSignalId} - Auto-include in folder creation` : ''}
 
-## Your Capabilities
+## Available Tools
 
-**Signal Management:**
-1. Summarize signals - provide overviews of all signals or specific signal details
-2. Create new signals - help users create signals by gathering required information
-3. Edit existing signals - help users update signal details
-4. Add notes to signals - add comments, observations, or updates to existing signals
-5. Delete signals - remove a signal from the system (always confirm first)
+**Signals:** summarize_signals, create_signal, edit_signal, add_note, delete_signal, search_signals, get_signal_activity, get_signal_notes, get_signal_stats, summarize_attachments
 
-**Folder Management:**
-6. List folders - show all folders with their signal counts
-7. Get folder stats - show folder statistics
-8. Assign folder owner - assign a team member as the owner of a folder
-9. Edit folder - update folder name, description, status, location, color, or tags
+**Folders:** list_folders, get_folder_stats, create_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder, complete_bibob_application, save_bibob_application_draft
 
-**Team:**
-10. List team members - show available team members and their folder ownership
+**Folder Content:** add_folder_organization, add_folder_address, add_folder_person, add_folder_finding, add_folder_letter, add_folder_communication, add_folder_visualization, add_folder_activity, get_folder_messages, send_folder_message
 
-**Analytics & Search:**
-11. Get signal stats - show signal statistics (total count)
-12. Search signals - find signals by keyword, type, or source
+**Team:** list_team_members
 
-**Signal Details:**
-13. Get signal activity - view the activity history/timeline for a signal
-14. Get signal notes - view all notes for a specific signal
+## Defaults & Assumptions
 
-**Attachments:**
-15. Summarize attachments - analyze and summarize all attachments (images, documents) for a signal using AI vision
+When information is missing:
+- **Signal time**: Use current time
+- **Signal receivedBy**: Use "municipal-department"
+- **Folder name**: Use "New Folder" or derive from context
+- **Folder color**: Pick randomly from: #ef4444, #f97316, #22c55e, #3b82f6, #8b5cf6
+- **Owner**: Assign to current user if not specified
+- **Bibob criteria**: If not all met, save as draft automatically
 
-**Folder Application Management:**
-16. Complete Bibob application - complete the application checklist for a folder, update criteria explanations, and move folder to research phase
-17. Save Bibob application draft - save progress on an application without completing it, allowing users to return later to finish
+## Response Style
 
-**Workflow Management (for complex multi-step tasks):**
-18. Analyze request complexity - determine if a user request requires a structured workflow
-19. Generate clarification questions - create questions to gather missing requirements
-20. Generate execution plan - create a step-by-step plan for complex tasks
-21. Revise plan - modify an execution plan based on user feedback
-22. Generate review summary - summarize the results of completed workflow tasks
+- Be concise and action-oriented
+- After completing actions, summarize what was done
+- Suggest logical next steps when appropriate`;
 
-## Workflow Guidelines
-
-For complex requests that involve multiple steps or require coordination:
-1. **Detect Complexity**: If the user asks for something that requires multiple actions (e.g., "create a folder for this signal and complete the application"), consider using the structured workflow approach
-2. **Clarify Requirements**: When requirements are unclear, generate clarification questions to gather needed information
-3. **Plan Before Acting**: For multi-step tasks, generate an execution plan and confirm with the user before proceeding
-4. **Track Progress**: During execution, provide clear progress updates on which tasks are completed
-5. **Review Results**: After completing tasks, provide a summary of what was accomplished and suggest next steps
-
-## Guidelines
-
-- When showing team member options for practitioners or sharing, ALWAYS filter out:
-  1. The folder owner (they already have full access)
-  2. Existing practitioners (they're already practitioners)
-  3. Users the folder is already shared with (they already have access)
-  Only show team members who are NOT already assigned to the folder in any capacity.
-
-- Always confirm with the user before editing, completing applications, or deleting folders or signals
-- For folder creation: First announce "I'm creating a folder with the name 'New folder'. Could you confirm?" Once confirmed, create the folder with a random color. IMPORTANT: If the user is creating a folder from a signal or mentions a specific signal, you MUST include that signal's ID in the signalIds array when calling create_folder. Then ask "Would you like to fill out the Bibob application form?" If yes, ask ALL 4 criteria AND the explanation in ONE message like this:
-
-"Please answer the following questions for the Bibob application:
-
-1. **Necessary Information** - Do you have all the necessary information? (yes/no)
-2. **Annual Accounts** - Are the annual accounts available? (yes/no)
-3. **Budgets** - Are the budgets documented? (yes/no)
-4. **Loan Agreement** - Is there a loan agreement? (yes/no)
-5. **Explanation** - Please provide an overall explanation for this application."
-
-Wait for the user to respond with all answers. IMPORTANT: After collecting all criteria, check if ALL 4 are met. If any criterion is NOT met, you MUST tell the user: "I noticed that [criterion name] is not met. All 4 criteria must be met to complete the application. I'll save this as a draft - once [criterion name] is resolved, you can complete the application." Then use save_bibob_application_draft. Only use complete_bibob_application when ALL 4 criteria are marked as met. After saving/completing the Bibob application, ask "Would you like to fill out the rest of the folder details?" If yes, guide them through the fields as follows:
-
-Guide through the folder details step by step. Each step is SKIPPABLE - if the user says "skip", "next", "no", or similar, move to the next question without saving that field.
-
-**Step 1 - Name & Description (skippable):**
-"Please provide the folder name and description (or say 'skip' to keep defaults):
-1. **Folder Name** - What would you like to name this folder?
-2. **Description** - A brief description of the folder's purpose."
-
-**Step 2 - Tags (skippable):**
-"Would you like to add any tags to this folder? (or say 'skip' to continue without tags)"
-
-**Step 3 - Ownership (skippable):**
-"Who should be the owner of this folder? Here are the available team members: [list team members]. (or say 'skip' to keep current owner)"
-Use assign_folder_owner to set the owner.
-
-**Step 4 - Practitioners (skippable):**
-"Would you like to add any practitioners to this folder? Here are the available team members: [list team members]. (or say 'skip' to continue without adding practitioners)"
-Note: Practitioners are team members who work on the folder but are not the owner.
-
-**Step 5 - Shared With (skippable):**
-"Would you like to share this folder with anyone? Here are the available team members: [list team members]. (or say 'skip' to continue without sharing)"
-Note: Sharing gives other team members access to view or edit the folder.
-
-**Step 6 - Organizations (skippable):**
-IMPORTANT: When asking about organizations, follow this flow:
-1. First, show the list of existing organizations from the system:
-   "Here are the organizations in our system:
-   [Show organization list with name, type, address, KVK]
-
-   Would you like to:
-   - **Select** an existing organization from this list, OR
-   - **Add a new** organization?"
-
-2. If user wants to ADD a new organization, offer two options:
-   "How would you like to add the organization?
-
-   **Option A - Manual entry:** Provide the organization details directly:
-   - Name (required)
-   - Type (company, foundation, association, etc.)
-   - Address
-   - Chamber of Commerce (KVK) number
-
-   **Option B - Lookup by address:** Provide an address and I'll help you find companies registered at that location through our resources."
-
-3. If user selects from existing list, use add_folder_organization with that organization's details.
-4. If user chooses manual entry, collect the details and use add_folder_organization.
-5. After adding, ask "Would you like to add more organizations, or move on to addresses?"
-
-**Step 7 - Addresses (skippable):**
-IMPORTANT: When asking about addresses, follow this flow:
-1. First, show the list of existing addresses from the system:
-   "Here are the known addresses in our system:
-   [Show address list with street, building type, status (active/inactive), description]
-
-   Would you like to:
-   - **Select** an existing address from this list, OR
-   - **Add a new** address?"
-
-2. If user wants to ADD a new address, offer two options:
-   "How would you like to add the address?
-
-   **Option A - Manual entry:** Provide the address details directly:
-   - Street and house number (required)
-   - City (required)
-   - Postal code
-   - Building type (Commercial, Private, etc.)
-   - Description
-
-   **Option B - Lookup address:** Provide an address and I'll help you find information about that location through our resources (registered businesses, residents, building details)."
-
-3. If user selects from existing list, use add_folder_address with that address's details.
-4. If user chooses manual entry, collect the details and use add_folder_address.
-5. After adding, ask "Would you like to add more addresses, or move on to people involved?"
-
-**Step 8 - People Involved (skippable):**
-IMPORTANT: When asking about people, follow this flow:
-1. First, show the list of known people from the system:
-   "Here are the known people in our system:
-   [Show people list with name, address, description/role]
-
-   Would you like to:
-   - **Select** an existing person from this list, OR
-   - **Add a new** person?"
-
-2. If user wants to ADD a new person, offer two options:
-   "How would you like to add the person?
-
-   **Option A - Manual entry:** Provide the person details directly:
-   - First name (required)
-   - Last name (required)
-   - Date of birth
-   - Role (suspect, witness, owner, employee, etc.)
-   - Notes
-
-   **Option B - BRP Lookup:** Search the population register using one of these options:
-   - **BSN** (Burgerservicenummer)
-   - **Surname + date of birth** (e.g., 'de Vries' + '1985-03-15')
-   - **Surname + first names + municipality** (e.g., 'de Vries' + 'Jan' + 'Amsterdam')
-   - **House number + zip code** (e.g., '50' + '1012 LN')
-   - **Street + house number + municipality** (e.g., 'Damrak' + '50' + 'Amsterdam')"
-
-3. If user selects from existing list, use add_folder_person with that person's details.
-4. If user chooses manual entry or BRP lookup, collect/retrieve the details and use add_folder_person.
-5. After adding, ask "Would you like to add more people, or move on to findings?"
-
-**Step 9 - Findings (skippable):**
-"Would you like to add a finding to this folder? Please select from the following options:
-
-1. **LBB - no serious degree of danger** (severity: none)
-2. **LBB - a lower level of danger** (severity: low)
-3. **LBB - serious level of danger** (severity: serious)
-4. **Serious danger - investing criminal assets (A)** (severity: critical)
-5. **Serious danger - committing criminal offences (B)** (severity: critical)
-6. **No serious level of danger** (severity: none)
-
-Or say **skip** to move on."
-
-After user selects a finding type, ask: "Who should this finding be assigned to?" and show available team members.
-Use add_folder_finding with the selected finding's label and severity, plus the assignee.
-
-**Step 10 - Letters (skippable):**
-"Would you like to add a letter/document to this folder? Choose a template:
-
-1. **LBB Notification Letter** - Standard notification letter
-2. **Article 7c Bibob Act Request** - Request information from Tax Authorities
-
-Or say **skip** to move on."
-
-IMPORTANT: After user selects a template, FIRST ask for the **Letter Name** (a custom title for identifying this letter), THEN ask for ALL the template-specific fields in ONE message.
-
-**If user selects LBB Notification Letter**, ask for these fields in ONE message:
-1. **Letter Name** - A title for this letter (e.g., "LBB Notification - ABC Company")
-2. **Date** (required) - Date of the letter
-3. **Reference number**
-4. **Municipal/Province** (required)
-5. **Recipient name** (required)
-6. **Recipient address**
-7. **Recipient postal code and city**
-8. **Subject** (required)
-9. **Notification content** (required)
-10. **Sender name**
-11. **Sender title/function**
-
-**If user selects Article 7c Bibob Act Request**, ask for these fields in ONE message:
-1. **Letter Name** - A title for this letter (e.g., "Bibob 7c Request - XYZ BV")
-2. **Date** (required)
-3. **Municipal/Province** (required)
-4. **Name of applicant** (required)
-5. **Applicant telephone number**
-6. **Recipient's email address**
-7. **Legal provisions** - Select all that apply (a-e):
-   a. Article 10x AWR - intentional/gross negligent inaccuracies in tax return
-   b. AWR - intentional provision of incorrect/incomplete info for provisional assessment
-   c. General Tax Act - intentional failure to file or incorrect/incomplete filing
-   d. Article 67e AWR - additional assessment tax due to intent/gross negligence
-   e. Article 67f AWR - tax not paid or partially paid due to intent/gross negligence
-8. **Fine information** - Select all that apply (a-c):
-   a. Irrevocable fines
-   b. Fines for violations on which court has ruled
-   c. Fines for violations on which court has not yet ruled
-9. **License types** - Select all that apply:
-   - Alcohol Act
-   - Wabo building permit
-   - Wabo environmental permit
-   - Wabo usage permit
-   - Operating an establishment/publicity
-   - Sex establishment license
-   - License Other
-10. **Additional remarks**
-
-IMPORTANT: When user provides all the information, call add_folder_letter with ALL the collected fields. Map the user's selections to the correct field IDs:
-- Legal provisions: article_10x, awr_incorrect, general_tax_act, article_67e, article_67f
-- Fine info: irrevocable_fines, fines_court_ruled, fines_no_ruling
-- License types: alcohol_act, wabo_building, wabo_environmental, wabo_usage, operating_establishment, sex_establishment, license_other
-
-**Step 11 - Communications (skippable):**
-"Would you like to communicate with someone about this folder?"
-
-IMPORTANT: Follow this messaging flow:
-1. First, show ALL contacts associated with THIS FOLDER:
-   "Here are the contacts you can message for this folder:
-
-   **Organizations:**
-   [List organizations added to this folder - e.g., Tech Solutions BV]
-
-   **Practitioners:**
-   [List practitioners assigned to this folder - e.g., James Rodriguez, Lisa Patel]
-
-   **Shared With:**
-   [List users the folder is shared with]
-
-   **People Involved:**
-   [List people involved added to this folder]
-
-   Who would you like to message? (or say 'skip' to continue)"
-
-   NOTE: Show all categories that have entries. If a category is empty, don't show it. If NO contacts exist at all, say "No contacts have been added to this folder yet."
-
-2. When user selects a contact, use get_folder_messages to retrieve the last 5 messages with that contact, then show them:
-   "Here are the last messages with [Contact Name]:
-   [Show messages or 'No previous messages']
-
-   Would you like to send a message to [Contact Name]?"
-
-3. If user wants to send a message, ask:
-   "What message would you like to send to [Contact Name]?"
-
-4. Use send_folder_message to send the message, then confirm:
-   "Message sent to [Contact Name]!
-
-   Would you like to send another message or message someone else? (or say 'done' to continue)"
-
-**Step 12 - Visualizations (skippable):**
-Follow this flow for visualizations:
-
-1. First, ask about importing entities:
-   "Do you want to import entities for **[Folder Name]**?
-
-   This will create a visualization from the organizations, people, and addresses linked to this folder.
-
-   - **Yes** - Import entities and create visualization
-   - **Skip** - Skip visualization and move to activities"
-
-2. If user says YES to import entities:
-   - IMMEDIATELY call add_folder_visualization with:
-     - label: "Entity Map - [Folder Name]"
-     - description: List all the organizations, people involved, and addresses from the folder
-   - Confirm: "Entity map visualization created! It includes [list entities]. Moving on to activities..."
-   - Then proceed to Step 13 (Activities)
-
-3. If user says SKIP:
-   - Do NOT create any visualization
-   - Do NOT ask more questions about visualizations
-   - IMMEDIATELY move to Step 13 (Activities)
-
-**Step 13 - Activities (skippable):**
-"Would you like to add any activities/tasks to track?
-Provide: label, description, assigned to, and due date"
-
-After all steps, provide a summary of what was added to the folder.
-
-Note: Color is automatically assigned randomly. Location is automatically set from the signal's placeOfObservation when creating a folder from a signal.
-- Reference folders and signals by their number (e.g., GCMP-2024-000001) for clarity
-- Use team members' full names when assigning ownership
-- Be helpful and guide users through complex workflows
-${skillsContent}`;
-
-    const anthropicMessages = messages.map((m) => ({
+    const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     }));
 
+    // Detect if this is a write operation request vs approval vs read operation
+    const lastUserMessage = messages[messages.length - 1]?.content.toLowerCase() || '';
+    const isApprovalMessage = /\b(approved?|yes|proceed|go ahead|do it|confirm|execute|ok|okay)\b/i.test(lastUserMessage);
+    const isWriteRequest = /\b(create|add|edit|update|delete|remove|assign|share|complete|save|send)\b/i.test(lastUserMessage);
+    // Don't force plan_proposal if we have an approved plan
+    const shouldForcePlanProposal = isWriteRequest && !isApprovalMessage && !approvedPlan;
+
+    // Streaming mode
+    if (enableStreaming) {
+      const encoder = new TextEncoder();
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          const sendEvent = (type: string, data: unknown) => {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type, ...data as object })}\n\n`));
+          };
+
+          let currentMessages: Anthropic.MessageParam[] = [...anthropicMessages];
+          let iterations = 0;
+          const maxIterations = 3;
+          const allToolResults: { name: string; input: Record<string, unknown>; result?: string }[] = [];
+
+          while (iterations < maxIterations) {
+            iterations++;
+
+            // Send phase indicator - skip 'planning' if we have an approved plan
+            if (iterations === 1) {
+              sendEvent('phase', { phase: approvedPlan ? 'executing' : 'planning' });
+            }
+
+            // Force plan_proposal on first iteration for write requests
+            const useToolChoice = shouldForcePlanProposal && iterations === 1;
+
+            const response = await anthropic.messages.create({
+              model: 'claude-3-haiku-20240307',
+              max_tokens: 2048,
+              system: systemPrompt,
+              tools,
+              messages: currentMessages,
+              ...(useToolChoice && { tool_choice: { type: 'tool' as const, name: 'plan_proposal' } }),
+            });
+
+            let textContent = '';
+            const toolUses: Anthropic.ToolUseBlock[] = [];
+
+            for (const block of response.content) {
+              if (block.type === 'text') {
+                textContent += block.text;
+                // Stream text as thinking if we have tool calls pending
+                if (response.stop_reason === 'tool_use') {
+                  sendEvent('thinking', { text: block.text });
+                }
+              } else if (block.type === 'tool_use') {
+                toolUses.push(block);
+              }
+            }
+
+            // If no tool use, we're done - send the final response
+            if (response.stop_reason !== 'tool_use' || toolUses.length === 0) {
+              sendEvent('phase', { phase: 'complete' });
+              sendEvent('response', { text: textContent, toolResults: allToolResults });
+              break;
+            }
+
+            // Execute tools
+            sendEvent('phase', { phase: 'executing' });
+
+            const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+            for (const toolUse of toolUses) {
+              // Handle plan_proposal specially
+              if (toolUse.name === 'plan_proposal') {
+                // If we have an approved plan, skip plan_proposal entirely
+                if (approvedPlan) {
+                  // Return a dummy result so the AI can continue
+                  toolResults.push({
+                    type: 'tool_result',
+                    tool_use_id: toolUse.id,
+                    content: 'Plan already approved. Proceeding with execution.',
+                  });
+                  continue;
+                }
+
+                // No approved plan - send plan to client for approval
+                const planInput = toolUse.input as {
+                  summary: string;
+                  actions: Array<{ step: number; action: string; tool: string; details?: Record<string, unknown> }>
+                };
+
+                sendEvent('plan_proposal', {
+                  summary: planInput.summary,
+                  actions: planInput.actions,
+                });
+                sendEvent('phase', { phase: 'awaiting_approval' });
+
+                // Return early - don't execute further until approval
+                sendEvent('response', {
+                  text: '',
+                  toolResults: allToolResults,
+                  awaitingApproval: true,
+                  plan: planInput,
+                });
+
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.close();
+                return;
+              }
+
+              sendEvent('tool_call', { tool: toolUse.name, input: toolUse.input });
+
+              let result = '';
+
+              // Handle summarize_attachments server-side
+              if (toolUse.name === 'summarize_attachments') {
+                const signalId = (toolUse.input as { signal_id: string }).signal_id;
+                result = await summarizeAttachmentsForSignal(signalId, signals);
+              } else {
+                // For other tools, return success - client will execute
+                result = JSON.stringify({ success: true, tool: toolUse.name, input: toolUse.input });
+              }
+
+              allToolResults.push({
+                name: toolUse.name,
+                input: toolUse.input as Record<string, unknown>,
+                result,
+              });
+
+              sendEvent('tool_result', { tool: toolUse.name, result, status: 'success' });
+
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: toolUse.id,
+                content: result,
+              });
+            }
+
+            // Add assistant response and tool results to messages for next iteration
+            currentMessages = [
+              ...currentMessages,
+              { role: 'assistant' as const, content: response.content },
+              { role: 'user' as const, content: toolResults },
+            ];
+
+            // Reflection phase
+            sendEvent('phase', { phase: 'reflecting' });
+          }
+
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
+    // Non-streaming mode (legacy support)
     const response = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
-      max_tokens: 1024,
+      max_tokens: 2048,
       system: systemPrompt,
       tools,
       messages: anthropicMessages,
+      ...(shouldForcePlanProposal && { tool_choice: { type: 'tool' as const, name: 'plan_proposal' } }),
     });
 
     // Process the response

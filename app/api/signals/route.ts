@@ -4,6 +4,13 @@ import { Signal, CreateSignalInput } from '@/types/signal';
 import { currentUser } from '@/data/mock-users';
 import { generateId, generateSignalNumber } from '@/lib/utils';
 
+// Validate ISO date strings
+const isValidDate = (dateStr: unknown): boolean => {
+  if (typeof dateStr !== 'string' || !dateStr) return false;
+  const date = new Date(dateStr);
+  return !isNaN(date.getTime());
+};
+
 // GET /api/signals - Get all signals
 export async function GET() {
   const signals = store.getSignals();
@@ -15,6 +22,9 @@ export async function POST(request: NextRequest) {
   try {
     const data: CreateSignalInput = await request.json();
     const now = new Date().toISOString();
+    const timeOfObservation = isValidDate(data.timeOfObservation)
+      ? data.timeOfObservation
+      : now;
 
     const newSignal: Signal = {
       id: generateId(),
@@ -23,7 +33,7 @@ export async function POST(request: NextRequest) {
       types: data.types,
       placeOfObservation: data.placeOfObservation,
       locationDescription: data.locationDescription,
-      timeOfObservation: data.timeOfObservation,
+      timeOfObservation,
       receivedBy: data.receivedBy,
       contactPerson: data.contactPerson,
       createdById: currentUser.id,
