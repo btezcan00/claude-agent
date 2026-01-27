@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useUsers } from '@/context/user-context';
 import { useSignals } from '@/context/signal-context';
+import { useChatDrawer } from '@/context/chat-drawer-context';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useEffect, useState } from 'react';
@@ -28,6 +29,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const { currentUser, getUserInitials, getUserFullName } = useUsers();
   const { setSearchQuery, searchQuery } = useSignals();
+  const { isOpen: isChatOpen, toggle: toggleChat } = useChatDrawer();
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [mounted, setMounted] = useState(false);
   const debouncedSearch = useDebounce(localSearch, 300);
@@ -119,6 +121,20 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       {/* Right Section */}
       <div className={cn('flex items-center gap-3', pathname !== '/signals' && 'ml-auto')}>
+        {/* Chat Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleChat}
+          className={cn(
+            'relative bg-primary text-primary-foreground hover:bg-primary/90',
+            isChatOpen && 'ring-2 ring-primary/50'
+          )}
+          title="Toggle Chat (Cmd+/)"
+        >
+          <MessageCircle className="w-5 h-5" />
+        </Button>
+
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5" />

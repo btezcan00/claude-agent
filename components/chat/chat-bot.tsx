@@ -57,7 +57,6 @@ interface Message {
 }
 
 function ChatBotInner() {
-  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -131,10 +130,10 @@ function ChatBotInner() {
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isOpen]);
+  }, []);
 
   const handleReactionAdd = useCallback((messageId: string, reactionType: ReactionType) => {
     setMessages(prev => prev.map(msg => {
@@ -1492,120 +1491,101 @@ function ChatBotInner() {
         />
       )}
 
-      {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          'fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200',
-          isOpen
-            ? 'bg-muted text-muted-foreground hover:bg-muted/80'
-            : 'bg-primary text-primary-foreground hover:bg-primary/90'
+      {/* Header Info Bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
+        <div className="flex items-center gap-3">
+          <BotIcon size="sm" className="bg-primary/20" />
+          <p className="text-xs text-muted-foreground">
+            {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive
+              ? PHASE_DISPLAY_NAMES[workflow.state.phase]
+              : 'Powered by Claude'}
+          </p>
+        </div>
+        {/* Workflow Progress or Gamification Indicator */}
+        {CHAT_CONFIG.workflow.enabled && workflow.state.phase === 'execution' ? (
+          <MiniProgress
+            percentage={workflow.state.execution.progress.percentage}
+            className="text-muted-foreground"
+          />
+        ) : CHAT_CONFIG.gamification.enabled ? (
+          <ProgressIndicator compact className="text-muted-foreground" />
+        ) : null}
+      </div>
+
+      {/* Phase Stepper (when workflow is active) */}
+      {CHAT_CONFIG.workflow.enabled && CHAT_CONFIG.workflow.showPhaseStepper && workflow.isWorkflowActive && (
+        <PhaseStepper currentPhase={workflow.state.phase} />
+      )}
+
+      {/* Messages / Workflow Phase Views */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Workflow Phase Views */}
+        {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive && workflow.state.phase === 'clarification' && (
+          <ClarificationView
+            onComplete={() => {
+              // AI will generate plan based on clarified requirements
+            }}
+            onCancel={() => {
+              setMessages(prev => [...prev, {
+                id: generateMessageId(),
+                role: 'assistant',
+                content: 'Workflow cancelled. Is there anything else I can help you with?',
+                isNew: true,
+              }]);
+            }}
+            className="h-full"
+          />
         )}
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
-      </button>
 
-      {/* Chat Panel */}
-      {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-96 h-[500px] bg-card border border-border rounded-lg shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground">
-            <div className="flex items-center gap-3">
-              <BotIcon size="sm" className="bg-primary-foreground/20" />
-              <div>
-                <h3 className="font-semibold text-sm">GCMP Assistant</h3>
-                <p className="text-xs opacity-90">
-                  {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive
-                    ? PHASE_DISPLAY_NAMES[workflow.state.phase]
-                    : 'Powered by Claude'}
-                </p>
-              </div>
-            </div>
-            {/* Workflow Progress or Gamification Indicator in Header */}
-            {CHAT_CONFIG.workflow.enabled && workflow.state.phase === 'execution' ? (
-              <MiniProgress
-                percentage={workflow.state.execution.progress.percentage}
-                className="text-primary-foreground/80"
-              />
-            ) : CHAT_CONFIG.gamification.enabled ? (
-              <ProgressIndicator compact className="text-primary-foreground/80" />
-            ) : null}
-          </div>
+        {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive && workflow.state.phase === 'planning' && (
+          <PlanningView
+            onConfirm={() => {
+              // Start execution
+            }}
+            onBack={() => {
+              // Go back to clarification
+            }}
+            onCancel={() => {
+              setMessages(prev => [...prev, {
+                id: generateMessageId(),
+                role: 'assistant',
+                content: 'Workflow cancelled. Is there anything else I can help you with?',
+                isNew: true,
+              }]);
+            }}
+            className="h-full"
+          />
+        )}
 
-          {/* Phase Stepper (when workflow is active) */}
-          {CHAT_CONFIG.workflow.enabled && CHAT_CONFIG.workflow.showPhaseStepper && workflow.isWorkflowActive && (
-            <PhaseStepper currentPhase={workflow.state.phase} />
-          )}
+        {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive && workflow.state.phase === 'execution' && (
+          <ExecutionView
+            onCancel={() => {
+              // Cancel will trigger transition to review
+            }}
+            className="h-full"
+          />
+        )}
 
-          {/* Messages / Workflow Phase Views */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Workflow Phase Views */}
-            {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive && workflow.state.phase === 'clarification' && (
-              <ClarificationView
-                onComplete={() => {
-                  // AI will generate plan based on clarified requirements
-                }}
-                onCancel={() => {
-                  setMessages(prev => [...prev, {
-                    id: generateMessageId(),
-                    role: 'assistant',
-                    content: 'Workflow cancelled. Is there anything else I can help you with?',
-                    isNew: true,
-                  }]);
-                }}
-                className="h-full"
-              />
-            )}
+        {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive && workflow.state.phase === 'review' && (
+          <ReviewView
+            onNewTask={() => {
+              // Start new task will go back to clarification
+            }}
+            onExit={() => {
+              setMessages(prev => [...prev, {
+                id: generateMessageId(),
+                role: 'assistant',
+                content: 'Great! Is there anything else I can help you with?',
+                isNew: true,
+              }]);
+            }}
+            className="h-full"
+          />
+        )}
 
-            {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive && workflow.state.phase === 'planning' && (
-              <PlanningView
-                onConfirm={() => {
-                  // Start execution
-                }}
-                onBack={() => {
-                  // Go back to clarification
-                }}
-                onCancel={() => {
-                  setMessages(prev => [...prev, {
-                    id: generateMessageId(),
-                    role: 'assistant',
-                    content: 'Workflow cancelled. Is there anything else I can help you with?',
-                    isNew: true,
-                  }]);
-                }}
-                className="h-full"
-              />
-            )}
-
-            {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive && workflow.state.phase === 'execution' && (
-              <ExecutionView
-                onCancel={() => {
-                  // Cancel will trigger transition to review
-                }}
-                className="h-full"
-              />
-            )}
-
-            {CHAT_CONFIG.workflow.enabled && workflow.isWorkflowActive && workflow.state.phase === 'review' && (
-              <ReviewView
-                onNewTask={() => {
-                  // Start new task will go back to clarification
-                }}
-                onExit={() => {
-                  setMessages(prev => [...prev, {
-                    id: generateMessageId(),
-                    role: 'assistant',
-                    content: 'Great! Is there anything else I can help you with?',
-                    isNew: true,
-                  }]);
-                }}
-                className="h-full"
-              />
-            )}
-
-            {/* Regular Messages (when workflow not active or in idle) */}
-            {(!CHAT_CONFIG.workflow.enabled || !workflow.isWorkflowActive) && (
-              <div className="p-4 space-y-4">
+        {/* Regular Messages (when workflow not active or in idle) */}
+        {(!CHAT_CONFIG.workflow.enabled || !workflow.isWorkflowActive) && (
+          <div className="p-4 space-y-4">
             {messages.map((message, index) => (
               <MessageTransition
                 key={message.id}
@@ -1683,46 +1663,44 @@ function ChatBotInner() {
             )}
 
             <div ref={messagesEndRef} />
-              </div>
-            )}
           </div>
+        )}
+      </div>
 
-          {/* Input */}
-          <div className="border-t border-border p-3">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="flex items-center gap-2"
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type a message..."
-                disabled={isLoading}
-                className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={!input.trim() || isLoading}
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Input */}
+      <div className="border-t border-border p-3 shrink-0">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage();
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            disabled={isLoading}
+            className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!input.trim() || isLoading}
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </form>
+      </div>
     </>
   );
 }
 
-// Export wrapped component with Providers
-export function ChatBot() {
+// ChatContent wraps ChatBotInner with providers for use in ChatDrawer
+export function ChatContent() {
   return (
     <GamificationProvider>
       <WorkflowProvider>
@@ -1730,4 +1708,9 @@ export function ChatBot() {
       </WorkflowProvider>
     </GamificationProvider>
   );
+}
+
+// Export ChatBot for backwards compatibility (wraps ChatContent)
+export function ChatBot() {
+  return <ChatContent />;
 }
