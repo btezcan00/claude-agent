@@ -1415,6 +1415,9 @@ When information is missing:
 
             // Reflection phase
             sendEvent('phase', { phase: 'reflecting' });
+
+            // Mark workflow as complete
+            sendEvent('phase', { phase: 'complete' });
           }
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
