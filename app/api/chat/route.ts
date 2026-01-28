@@ -503,6 +503,20 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'delete_folder',
+    description: 'Delete a folder from the system. Use this when the user explicitly wants to delete/remove a folder. Always confirm before deleting.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the folder to delete',
+        },
+      },
+      required: ['folder_id'],
+    },
+  },
+  {
     name: 'add_folder_practitioner',
     description: 'Add a team member as a practitioner to a folder. Practitioners can work on the folder but have limited permissions compared to the owner.',
     input_schema: {
@@ -1111,7 +1125,7 @@ DO NOT call plan_proposal. The plan is approved. Execute the write tools now.` :
 
 WRITE TOOLS (REQUIRE plan_proposal FIRST):
 - create_signal, edit_signal, add_note, delete_signal, add_signal_to_folder
-- create_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder
+- create_folder, delete_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder
 - add_folder_organization, add_folder_address, add_folder_person, add_folder_finding
 - add_folder_letter, add_folder_communication, add_folder_visualization, add_folder_activity
 - send_folder_message, complete_bibob_application, save_bibob_application_draft
@@ -1463,7 +1477,7 @@ Then use signal_id: "GCMP-2026-266241" in your plan.
 
 **Signals:** summarize_signals, create_signal, edit_signal, add_signal_to_folder, add_note, delete_signal, search_signals, get_signal_activity, get_signal_notes, get_signal_stats, summarize_attachments
 
-**Folders:** list_folders, get_folder_stats, create_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder, complete_bibob_application, save_bibob_application_draft
+**Folders:** list_folders, get_folder_stats, create_folder, delete_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder, complete_bibob_application, save_bibob_application_draft
 
 **Folder Content:** add_folder_organization, add_folder_address, add_folder_person, add_folder_finding, add_folder_letter, add_folder_communication, add_folder_visualization, add_folder_activity, get_folder_messages, send_folder_message
 

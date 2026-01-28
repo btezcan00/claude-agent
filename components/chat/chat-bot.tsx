@@ -51,7 +51,7 @@ function ChatBotInner() {
   const stepOutputsRef = useRef<Map<number, Record<string, unknown>>>(new Map());
 
   const { signals, filteredSignals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, addSignalToFolder, signalStats } = useSignals();
-  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity } = useFolders();
+  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, deleteFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity } = useFolders();
   const { users, getUserFullName } = useUsers();
   const { organizations } = useOrganizations();
   const { addresses } = useAddresses();
@@ -332,6 +332,16 @@ function ChatBotInner() {
               }
             }
             return { message: `Folder "${name || folder.name}" updated` };
+          }
+          return { message: `Folder "${folder_id}" not found` };
+        }
+
+        case 'delete_folder': {
+          const { folder_id } = input;
+          const folder = findFolder(folder_id as string);
+          if (folder) {
+            await deleteFolder(folder.id);
+            return { message: `Folder "${folder.name}" deleted` };
           }
           return { message: `Folder "${folder_id}" not found` };
         }
@@ -681,7 +691,7 @@ function ChatBotInner() {
       console.error(`Tool ${toolName} error:`, error);
       return { message: `Error executing ${toolName}` };
     }
-  }, [signals, folders, users, findSignal, findFolder, findFolderAsync, createSignal, updateSignal, addNote, deleteSignal, addSignalToFolder, createFolder, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, assignFolderOwner, addPractitioner, shareFolder, updateApplicationData, completeApplication, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForFolder, getUserFullName, signalStats]);
+  }, [signals, folders, users, findSignal, findFolder, findFolderAsync, createSignal, updateSignal, addNote, deleteSignal, addSignalToFolder, createFolder, deleteFolder, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, assignFolderOwner, addPractitioner, shareFolder, updateApplicationData, completeApplication, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForFolder, getUserFullName, signalStats]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
