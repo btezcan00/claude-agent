@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useState, useCallback, useMemo, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   Signal,
   SignalFilters,
@@ -100,14 +100,20 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   const [selectedSignalIds, setSelectedSignalIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Synchronous cache for immediately available signal lookups (bypasses React state timing)
+  const signalCacheRef = useRef<Map<string, Signal>>(new Map());
+
   // Fetch signals from API on mount
   const fetchSignals = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch('/api/signals');
       if (response.ok) {
-        const data = await response.json();
-        setSignals(data);
+        const fetchedSignals = await response.json();
+        setSignals(fetchedSignals);
+        // Sync cache with fetched signals
+        signalCacheRef.current.clear();
+        fetchedSignals.forEach((s: Signal) => signalCacheRef.current.set(s.id, s));
       }
     } catch (error) {
       console.error('Failed to fetch signals:', error);
@@ -188,6 +194,8 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     }
 
     const newSignal = await response.json();
+    // Update cache synchronously for immediate availability
+    signalCacheRef.current.set(newSignal.id, newSignal);
     setSignals((prev) => [newSignal, ...prev]);
     return newSignal;
   }, []);
@@ -222,6 +230,10 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getSignalById = useCallback((id: string): Signal | undefined => {
+    // Check synchronous cache first (for newly created signals)
+    const cached = signalCacheRef.current.get(id);
+    if (cached) return cached;
+    // Fall back to state
     return signals.find((s) => s.id === id);
   }, [signals]);
 

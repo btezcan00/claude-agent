@@ -10,7 +10,7 @@ import { useUsers } from '@/context/user-context';
 import { useOrganizations } from '@/context/organization-context';
 import { useAddresses } from '@/context/address-context';
 import { usePeople } from '@/context/person-context';
-import { CreateSignalInput, UpdateSignalInput, SignalType } from '@/types/signal';
+import { CreateSignalInput, UpdateSignalInput, SignalType, Signal } from '@/types/signal';
 import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus, Folder } from '@/types/folder';
 import { AgentLog, AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay } from './agent-log';
 import { BotIcon } from './animations/avatar-expressions';
@@ -50,7 +50,7 @@ function ChatBotInner() {
   // Track step outputs for resolving $stepN.fieldName references
   const stepOutputsRef = useRef<Map<number, Record<string, unknown>>>(new Map());
 
-  const { signals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, signalStats } = useSignals();
+  const { signals, filteredSignals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, addSignalToFolder, signalStats } = useSignals();
   const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity } = useFolders();
   const { users, getUserFullName } = useUsers();
   const { organizations } = useOrganizations();
@@ -133,7 +133,6 @@ function ChatBotInner() {
           if (stepOutput && stepOutput[fieldName] !== undefined) {
             resolved[key] = stepOutput[fieldName];
           } else {
-            console.warn(`Reference ${value} could not be resolved`);
             resolved[key] = value; // Keep original if not found
           }
         } else {
@@ -252,6 +251,20 @@ function ChatBotInner() {
             return { message: `Signal ${targetSignal.signalNumber} deleted` };
           }
           return { message: `Signal ${signal_id} not found` };
+        }
+
+        case 'add_signal_to_folder': {
+          const { signal_id, folder_id } = input;
+          const signal = findSignal(signal_id as string);
+          if (!signal) {
+            return { message: `Signal "${signal_id}" not found` };
+          }
+          const folder = findFolder(folder_id as string);
+          if (!folder) {
+            return { message: `Folder "${folder_id}" not found` };
+          }
+          await addSignalToFolder(signal.id, folder.id);
+          return { message: `Added signal ${signal.signalNumber} to folder "${folder.name}"` };
         }
 
         case 'create_folder': {
@@ -668,7 +681,7 @@ function ChatBotInner() {
       console.error(`Tool ${toolName} error:`, error);
       return { message: `Error executing ${toolName}` };
     }
-  }, [signals, folders, users, findSignal, findFolder, findFolderAsync, createSignal, updateSignal, addNote, deleteSignal, createFolder, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, assignFolderOwner, addPractitioner, shareFolder, updateApplicationData, completeApplication, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForFolder, getUserFullName, signalStats]);
+  }, [signals, folders, users, findSignal, findFolder, findFolderAsync, createSignal, updateSignal, addNote, deleteSignal, addSignalToFolder, createFolder, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, assignFolderOwner, addPractitioner, shareFolder, updateApplicationData, completeApplication, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForFolder, getUserFullName, signalStats]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -690,8 +703,24 @@ function ChatBotInner() {
     clearLog();
 
     try {
-      // Prepare context data
-      const signalData = signals.map((s) => ({
+      // Fetch fresh signals to ensure we have the latest data
+      let freshSignals = filteredSignals;
+      try {
+        const signalsResponse = await fetch('/api/signals');
+        if (signalsResponse.ok) {
+          const fetchedSignals: Signal[] = await signalsResponse.json();
+          // Sort by createdAt desc to match expected order (newest first)
+          freshSignals = fetchedSignals.sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        }
+      } catch (error) {
+        console.error('Failed to refresh signals:', error);
+        // Fall back to existing filteredSignals
+      }
+
+      // Prepare context data - use freshSignals which is sorted by createdAt desc
+      const signalData = freshSignals.map((s) => ({
         id: s.id,
         signalNumber: s.signalNumber,
         description: s.description,
@@ -941,7 +970,8 @@ function ChatBotInner() {
 
     // Continue with the same conversation
     try {
-      const signalData = signals.map((s) => ({
+      // Use filteredSignals which is sorted by createdAt desc
+      const signalData = filteredSignals.map((s) => ({
         id: s.id,
         signalNumber: s.signalNumber,
         description: s.description,

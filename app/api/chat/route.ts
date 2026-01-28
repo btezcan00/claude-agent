@@ -230,6 +230,24 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'add_signal_to_folder',
+    description: 'Add an existing signal to an existing folder. Use this when the user wants to move or link a signal to a folder that already exists.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        signal_id: {
+          type: 'string',
+          description: 'The ID or signal number of the signal to add',
+        },
+        folder_id: {
+          type: 'string',
+          description: 'The ID or name of the existing folder',
+        },
+      },
+      required: ['signal_id', 'folder_id'],
+    },
+  },
+  {
     name: 'list_team_members',
     description: 'List all available team members and their folder ownership. Use this when the user asks about team members or folder assignments.',
     input_schema: {
@@ -1081,12 +1099,18 @@ The user has approved the following plan. Execute the tools immediately without 
 
 Summary: ${approvedPlan.summary}
 Actions:
-${approvedPlan.actions.map(a => `${a.step}. ${a.action} (${a.tool})`).join('\n')}
+${approvedPlan.actions.map(a => {
+  const detailsStr = a.details ? `\n   Parameters: ${JSON.stringify(a.details)}` : '';
+  return `${a.step}. ${a.action} (${a.tool})${detailsStr}`;
+}).join('\n')}
+
+IMPORTANT: When executing multi-step plans, use these exact parameter values from the plan.
+For step references like "$step1.signalId", use that exact string - the client will resolve it to the actual value.
 
 DO NOT call plan_proposal. The plan is approved. Execute the write tools now.` : `**ABSOLUTE RULE: You MUST use the plan_proposal tool BEFORE any write operation.**`}
 
 WRITE TOOLS (REQUIRE plan_proposal FIRST):
-- create_signal, edit_signal, add_note, delete_signal
+- create_signal, edit_signal, add_note, delete_signal, add_signal_to_folder
 - create_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder
 - add_folder_organization, add_folder_address, add_folder_person, add_folder_finding
 - add_folder_letter, add_folder_communication, add_folder_visualization, add_folder_activity
@@ -1108,6 +1132,32 @@ READ TOOLS (Execute immediately):
 
 3. **User requests a READ operation** (list, search, summarize, etc.)
    → Execute immediately, no plan needed
+
+## USING EXISTING FOLDERS
+
+When a user mentions moving a signal to a folder:
+1. Check the "Current Data" section to see if a folder with that name exists
+2. If the folder EXISTS, use add_signal_to_folder instead of create_folder
+3. Only create a new folder if the user explicitly asks to create one OR if no matching folder exists
+
+**For moving signals to existing folders:**
+- Use the existing folder's ID from the Current Data section
+- Do NOT create a new folder when one already exists with the same or similar name
+
+## USING EXISTING SIGNALS
+
+When a user mentions "this signal", "the signal", "the latest signal", or refers to a specific signal:
+1. **Check if lastCreatedSignalId is set** - If so, the user likely means that signal
+2. **Check the conversation history** - Look for recent signal references
+3. **Check Current Data** - Match signal numbers or descriptions the user mentioned
+4. **DO NOT create a new signal** when the user is clearly referring to an existing one
+
+**Key distinction:**
+- "Create a signal about X" → Use create_signal (new signal)
+- "Make a folder from this signal" → Use create_folder with existing signal ID (NO create_signal)
+- "Create a folder for the latest signal" → Use create_folder with the first signal from Current Data
+
+**IMPORTANT:** If lastCreatedSignalId is provided, use it when the user says "this signal" or "the signal" without specifying which one.
 
 ## EXAMPLE - Creating a Signal
 
@@ -1132,7 +1182,89 @@ Your response MUST be to call plan_proposal:
 
 DO NOT call create_signal until user approves!
 
+## EXAMPLE - Creating a Folder from an Existing Signal
+
+User: "Make a folder from this signal and complete the application form"
+(Look up lastCreatedSignalId or the first signal from Current Data)
+
+Your response MUST be to call plan_proposal:
+{
+  "summary": "Create folder from existing signal and complete Bibob application",
+  "actions": [
+    {
+      "step": 1,
+      "action": "Create folder from signal [USE ACTUAL SIGNAL NUMBER FROM CURRENT DATA]",
+      "tool": "create_folder",
+      "details": {
+        "name": "New Folder",
+        "signalIds": ["[USE ACTUAL SIGNAL ID FROM CURRENT DATA OR lastCreatedSignalId]"]
+      }
+    },
+    {
+      "step": 2,
+      "action": "Complete Bibob application for the folder",
+      "tool": "complete_bibob_application",
+      "details": {
+        "folder_id": "$step1.folderId",
+        "explanation": "Application completed",
+        "criteria": [
+          { "id": "necessary_info", "isMet": true, "explanation": "Provided" },
+          { "id": "annual_accounts", "isMet": true, "explanation": "Verified" },
+          { "id": "budgets", "isMet": true, "explanation": "Reviewed" },
+          { "id": "loan_agreement", "isMet": true, "explanation": "Verified" }
+        ]
+      }
+    }
+  ]
+}
+
+**CRITICAL:** Replace placeholders with ACTUAL values from the Current Data section below. NEVER use example IDs like "SIG-2024-0089".
+
+**IMPORTANT:** Notice there is NO create_signal step - the user wants to use an EXISTING signal!
+
+## EXAMPLE - Editing an Existing Signal
+
+User: "Change the latest signal's type to human trafficking"
+
+**CRITICAL: Look at the ACTUAL Current Data section below. The first signal listed is the most recent. Use THAT signal's actual ID and number - NOT any example ID.**
+
+Your response MUST be to call plan_proposal:
+{
+  "summary": "Update signal [ACTUAL_SIGNAL_NUMBER] to type human-trafficking",
+  "actions": [
+    {
+      "step": 1,
+      "action": "Edit signal [ACTUAL_SIGNAL_NUMBER] to change type to human-trafficking",
+      "tool": "edit_signal",
+      "details": {
+        "signal_id": "[ACTUAL_SIGNAL_NUMBER_FROM_CURRENT_DATA]",
+        "types": ["human-trafficking"]
+      }
+    }
+  ]
+}
+
+**NEVER use "SIG-2024-0089" or any other example ID. Always use the REAL signal number from Current Data.**
+
 **VIOLATION WARNING: Calling a write tool without first calling plan_proposal is a critical error.**
+
+## IMPORTANT: Step Reference Rules
+
+Step references ($stepN.fieldName) are ONLY for referencing outputs from PREVIOUS steps in multi-step plans.
+
+**NEVER use step references for:**
+- Single-step operations (step 1 cannot reference step 1's output - it doesn't exist yet!)
+- Operations on EXISTING entities - use their actual ID from the Current Data section
+
+**DO use step references for:**
+- Step 2+ referencing output from an earlier step (e.g., create signal in step 1, add to folder in step 2)
+
+**Examples of WRONG usage:**
+- edit_signal with signal_id: "$step1.signalId" (step 1 can't reference itself!)
+- Step 1 of any plan using $step1.anything
+
+**Examples of CORRECT usage:**
+- Step 2 add_signal_to_folder with signal_id: "$step1.signalId" (references step 1's create_signal output)
 
 ## Multi-Step Plans with Dependencies
 
@@ -1221,7 +1353,45 @@ User: "Create a signal about fraud at Main Street, create a folder from it, then
 
 IMPORTANT: Always use $stepN.fieldName syntax when referencing outputs from previous steps. Never hardcode IDs for entities that will be created in earlier steps.
 
+## EXAMPLE - Creating a signal and adding to existing folder
+
+User: "Create a signal and move it to the Narcotics Operation folder"
+
+First check Current Data - if "Narcotics Operation" folder exists (e.g., folder-123):
+
+{
+  "summary": "Create signal and add to existing Narcotics Operation folder",
+  "actions": [
+    {
+      "step": 1,
+      "action": "Create the signal",
+      "tool": "create_signal",
+      "details": {
+        "description": "[user-provided]",
+        "types": ["[user-provided]"],
+        "placeOfObservation": "[user-provided]",
+        "receivedBy": "[user-provided]"
+      }
+    },
+    {
+      "step": 2,
+      "action": "Add signal to existing Narcotics Operation folder",
+      "tool": "add_signal_to_folder",
+      "details": {
+        "signal_id": "$step1.signalId",
+        "folder_id": "folder-123"
+      }
+    }
+  ]
+}
+
+IMPORTANT: Do NOT use create_folder when the folder already exists!
+
 ## Current Data
+
+**>>> IMPORTANT: USE THESE ACTUAL VALUES <<<**
+**When referencing signals, folders, or team members, use the REAL IDs listed below.**
+**Do NOT use example IDs from the examples above (like "SIG-2024-0089").**
 
 **Signals (${(signals || []).length}):** ${signalSummary || 'None'}
 
@@ -1237,11 +1407,34 @@ IMPORTANT: Always use $stepN.fieldName syntax when referencing outputs from prev
 
 **Current User:** ${currentUser ? `${currentUser.fullName} (${currentUser.id}) - "${currentUser.id}" and "${currentUser.fullName}" for tool calls` : 'Unknown'}
 
-${lastCreatedSignalId ? `**Last Created Signal ID:** ${lastCreatedSignalId} - Auto-include in folder creation` : ''}
+${lastCreatedSignalId ? `**Last Created Signal ID:** ${lastCreatedSignalId} - When the user says "this signal" or "the signal", use THIS ID. Do NOT create a new signal.` : ''}
+
+## Handling "Latest" or "Most Recent" References
+
+**CRITICAL INSTRUCTION - READ CAREFULLY:**
+
+When the user refers to "the latest signal", "most recent signal", "this signal", or "the signal":
+
+1. **IMMEDIATELY look at the Current Data section below** - find the "Signals" list
+2. **The FIRST signal listed is the most recent** (they are sorted by createdAt descending)
+3. **Use THAT signal's ACTUAL ID** - the real signal number like "GCMP-2026-266241" or whatever is actually listed
+4. **NEVER use example IDs** like "SIG-2024-0089" - these are just examples, not real signals
+
+**HOW TO FIND THE LATEST SIGNAL:**
+- Scroll down to "## Current Data" section
+- Find "**Signals (N):**" where N is the count
+- The FIRST bullet point is the latest signal
+- Use its exact signal number (the part before the colon)
+
+**EXAMPLE OF WHAT TO DO:**
+If Current Data shows: \`- GCMP-2026-266241: Main Street (fraud, received by: police)\`
+Then use signal_id: "GCMP-2026-266241" in your plan.
+
+**NEVER assume or make up signal IDs. Always look them up from Current Data.**
 
 ## Available Tools
 
-**Signals:** summarize_signals, create_signal, edit_signal, add_note, delete_signal, search_signals, get_signal_activity, get_signal_notes, get_signal_stats, summarize_attachments
+**Signals:** summarize_signals, create_signal, edit_signal, add_signal_to_folder, add_note, delete_signal, search_signals, get_signal_activity, get_signal_notes, get_signal_stats, summarize_attachments
 
 **Folders:** list_folders, get_folder_stats, create_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder, complete_bibob_application, save_bibob_application_draft
 
@@ -1273,7 +1466,7 @@ When information is missing:
     // Detect if this is a write operation request vs approval vs read operation
     const lastUserMessage = messages[messages.length - 1]?.content.toLowerCase() || '';
     const isApprovalMessage = /\b(approved?|yes|proceed|go ahead|do it|confirm|execute|ok|okay)\b/i.test(lastUserMessage);
-    const isWriteRequest = /\b(create|add|edit|update|delete|remove|assign|share|complete|save|send)\b/i.test(lastUserMessage);
+    const isWriteRequest = /\b(create|add|edit|update|delete|remove|assign|share|complete|save|send|change|modify|set|make|put|move)\b/i.test(lastUserMessage);
     // Don't force plan_proposal if we have an approved plan
     const shouldForcePlanProposal = isWriteRequest && !isApprovalMessage && !approvedPlan;
 
@@ -1291,6 +1484,7 @@ When information is missing:
           let iterations = 0;
           const maxIterations = 3;
           const allToolResults: { name: string; input: Record<string, unknown>; result?: string }[] = [];
+          let currentPlanStep = 0;
 
           while (iterations < maxIterations) {
             iterations++;
@@ -1339,6 +1533,68 @@ When information is missing:
 
             const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
+            // When we have an approved plan, execute plan actions directly instead of Claude's tool calls
+            // This prevents Claude from generating extra/wrong tool calls during execution
+            if (approvedPlan && approvedPlan.actions.length > 0) {
+              // Get the next action to execute based on currentPlanStep
+              const nextAction = approvedPlan.actions.find(a => a.step === currentPlanStep + 1);
+
+              if (nextAction) {
+                currentPlanStep++;
+                const toolInput = nextAction.details || {};
+
+                sendEvent('tool_call', { tool: nextAction.tool, input: toolInput });
+
+                let result = '';
+
+                // Handle summarize_attachments server-side
+                if (nextAction.tool === 'summarize_attachments') {
+                  const signalId = (toolInput as { signal_id: string }).signal_id;
+                  result = await summarizeAttachmentsForSignal(signalId, signals);
+                } else {
+                  // For other tools, return success - client will execute
+                  result = JSON.stringify({ success: true, tool: nextAction.tool, input: toolInput });
+                }
+
+                allToolResults.push({
+                  name: nextAction.tool,
+                  input: toolInput as Record<string, unknown>,
+                  result,
+                });
+
+                sendEvent('tool_result', { tool: nextAction.tool, result, status: 'success' });
+
+                // Create a synthetic tool result for Claude's next iteration
+                // Use the first toolUse ID if available, otherwise generate one
+                const toolUseId = toolUses[0]?.id || `toolu_plan_${currentPlanStep}`;
+                toolResults.push({
+                  type: 'tool_result',
+                  tool_use_id: toolUseId,
+                  content: result,
+                });
+
+                // Check if all plan actions are complete
+                if (currentPlanStep >= approvedPlan.actions.length) {
+                  // All actions executed - complete the workflow
+                  sendEvent('phase', { phase: 'reflecting' });
+                  sendEvent('phase', { phase: 'complete' });
+                  sendEvent('response', {
+                    text: 'All actions completed successfully.',
+                    toolResults: allToolResults,
+                  });
+                  break;  // Exit the loop - all plan actions are done
+                }
+
+                // Add assistant response and tool results to messages for next iteration
+                currentMessages = [
+                  ...currentMessages,
+                  { role: 'assistant' as const, content: response.content },
+                  { role: 'user' as const, content: toolResults },
+                ];
+                continue;
+              }
+            }
+
             for (const toolUse of toolUses) {
               // Handle plan_proposal specially
               if (toolUse.name === 'plan_proposal') {
@@ -1378,22 +1634,81 @@ When information is missing:
                 return;
               }
 
-              sendEvent('tool_call', { tool: toolUse.name, input: toolUse.input });
+              // If we have an approved plan, use the plan's parameters instead of AI's
+              let toolInput = toolUse.input as Record<string, unknown>;
+
+              if (approvedPlan) {
+                currentPlanStep++;
+
+                const planAction = approvedPlan.actions.find(a => a.step === currentPlanStep);
+
+                if (planAction && planAction.details) {
+                  toolInput = planAction.details;
+                }
+
+                // Inject step references for known tool patterns
+                // This ensures references are used even if AI didn't include them
+                if (toolUse.name === 'add_signal_to_folder' && currentPlanStep > 1) {
+                  const createSignalStep = approvedPlan.actions.find(a => a.tool === 'create_signal');
+
+                  if (createSignalStep && createSignalStep.step < currentPlanStep) {
+                    toolInput = {
+                      ...toolInput,
+                      signal_id: `$step${createSignalStep.step}.signalId`
+                    };
+                  }
+                }
+
+                if (toolUse.name === 'complete_bibob_application' || toolUse.name === 'save_bibob_application_draft') {
+                  const createFolderStep = approvedPlan.actions.find(a => a.tool === 'create_folder');
+
+                  if (createFolderStep && createFolderStep.step < currentPlanStep) {
+                    // Only inject if folder_id looks like a fake ID (not an existing folder ID)
+                    const currentFolderId = (toolInput as Record<string, unknown>).folder_id as string;
+                    if (currentFolderId && !currentFolderId.startsWith('folder-') && !currentFolderId.startsWith('$step')) {
+                      toolInput = {
+                        ...toolInput,
+                        folder_id: `$step${createFolderStep.step}.folderId`
+                      };
+                    }
+                  }
+                }
+
+                if (toolUse.name === 'create_folder') {
+                  const createSignalStep = approvedPlan.actions.find(a => a.tool === 'create_signal');
+
+                  if (createSignalStep && createSignalStep.step < currentPlanStep) {
+                    // If signalIds is present but doesn't use reference syntax, inject it
+                    const signalIds = (toolInput as Record<string, unknown>).signalIds as string[] | undefined;
+                    if (signalIds && signalIds.length > 0) {
+                      const hasReference = signalIds.some(id => id.startsWith('$step'));
+                      if (!hasReference) {
+                        toolInput = {
+                          ...toolInput,
+                          signalIds: [`$step${createSignalStep.step}.signalId`]
+                        };
+                      }
+                    }
+                  }
+                }
+              }
+
+              sendEvent('tool_call', { tool: toolUse.name, input: toolInput });
 
               let result = '';
 
               // Handle summarize_attachments server-side
               if (toolUse.name === 'summarize_attachments') {
-                const signalId = (toolUse.input as { signal_id: string }).signal_id;
+                const signalId = (toolInput as { signal_id: string }).signal_id;
                 result = await summarizeAttachmentsForSignal(signalId, signals);
               } else {
                 // For other tools, return success - client will execute
-                result = JSON.stringify({ success: true, tool: toolUse.name, input: toolUse.input });
+                result = JSON.stringify({ success: true, tool: toolUse.name, input: toolInput });
               }
 
               allToolResults.push({
                 name: toolUse.name,
-                input: toolUse.input as Record<string, unknown>,
+                input: toolInput as Record<string, unknown>,
                 result,
               });
 
