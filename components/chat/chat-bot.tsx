@@ -922,6 +922,19 @@ function ChatBotInner() {
             isNew: true,
           },
         ]);
+
+        // Add workflow boundary marker when workflow completes
+        if (finalResponse.includes('completed successfully') || finalResponse.startsWith('Done!')) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: generateMessageId(),
+              role: 'assistant',
+              content: '[WORKFLOW_BOUNDARY: The above workflow is complete. New requests are independent - only include actions explicitly requested.]',
+              isNew: false,
+            },
+          ]);
+        }
       }
     } catch (error) {
       console.error('Chat error:', error);
@@ -1160,6 +1173,19 @@ function ChatBotInner() {
             isNew: true,
           },
         ]);
+
+        // Add workflow boundary marker when workflow completes
+        if (finalResponse.includes('completed successfully') || finalResponse.startsWith('Done!')) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: generateMessageId(),
+              role: 'assistant',
+              content: '[WORKFLOW_BOUNDARY: The above workflow is complete. New requests are independent - only include actions explicitly requested.]',
+              isNew: false,
+            },
+          ]);
+        }
       }
     } catch (error) {
       console.error('Approval execution error:', error);

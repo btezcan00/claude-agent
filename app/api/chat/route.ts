@@ -1120,6 +1120,33 @@ READ TOOLS (Execute immediately):
 - summarize_signals, search_signals, get_signal_activity, get_signal_notes, get_signal_stats
 - summarize_attachments, list_folders, get_folder_stats, list_team_members, get_folder_messages
 
+## CRITICAL: WORKFLOW BOUNDARIES
+
+When you see "[WORKFLOW_BOUNDARY: ...]" in conversation history:
+- Everything BEFORE that marker is a COMPLETED workflow - treat it as archived history
+- New user messages AFTER the marker are COMPLETELY INDEPENDENT requests
+
+**Example of WRONG behavior:**
+- Previous workflow: create_signal → create_folder → complete_bibob (DONE)
+- [WORKFLOW_BOUNDARY marker]
+- User says: "create a signal"
+- Agent proposes: create_signal, create_folder, complete_bibob ❌ WRONG
+
+**Example of CORRECT behavior:**
+- Previous workflow: create_signal → create_folder → complete_bibob (DONE)
+- [WORKFLOW_BOUNDARY marker]
+- User says: "create a signal"
+- Agent proposes: ONLY create_signal ✓ CORRECT
+
+RULE: Only include actions the user EXPLICITLY mentions in their CURRENT message.
+
+Each new user message is an INDEPENDENT request. When creating a plan:
+- ONLY include actions the user EXPLICITLY requests in their CURRENT message
+- Do NOT infer patterns from previous plans or workflows
+- Do NOT assume the user wants to repeat previous multi-step workflows
+- If the user says "create a signal", propose ONLY create_signal - not folder creation or applications
+- Previous completed workflows are finished - new requests start fresh
+
 ## WORKFLOW
 
 1. **User requests a WRITE operation** (create, edit, delete, add, etc.)
