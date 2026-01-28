@@ -90,8 +90,39 @@ interface PersonData {
 
 const tools: Anthropic.Tool[] = [
   {
+    name: 'ask_clarification',
+    description: 'Ask the user for missing required information before creating a plan. Use this BEFORE plan_proposal when required fields cannot be determined from the user message. Only use for WRITE operations when required fields are missing.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        summary: {
+          type: 'string',
+          description: 'Brief explanation of what information is needed and why',
+        },
+        questions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'Unique identifier for this question' },
+              question: { type: 'string', description: 'The question to ask the user' },
+              type: { type: 'string', enum: ['text', 'choice', 'multi-select'], description: 'Type of input expected' },
+              options: { type: 'array', items: { type: 'string' }, description: 'Options for choice or multi-select questions' },
+              required: { type: 'boolean', description: 'Whether this field is required' },
+              fieldName: { type: 'string', description: 'The field name this question corresponds to (e.g., "types", "placeOfObservation")' },
+              toolName: { type: 'string', description: 'The tool this field belongs to (e.g., "create_signal")' },
+            },
+            required: ['id', 'question', 'type', 'required', 'fieldName'],
+          },
+          description: 'List of questions to ask the user',
+        },
+      },
+      required: ['summary', 'questions'],
+    },
+  },
+  {
     name: 'plan_proposal',
-    description: 'Present a structured execution plan to the user for approval before executing write operations. Use this tool BEFORE any create, edit, delete, or other write operations.',
+    description: 'Present a structured execution plan to the user for approval before executing write operations. Use this tool BEFORE any create, edit, delete, or other write operations. If required fields are missing, use ask_clarification first.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1029,6 +1060,73 @@ async function summarizeAttachmentsForSignal(
   }
 }
 
+// Validate plan_proposal for placeholder values that indicate missing information
+function validatePlanProposal(plan: {
+  summary: string;
+  actions: Array<{ step: number; action: string; tool: string; details?: Record<string, unknown> }>
+}): { isValid: boolean; missingFields: string[] } {
+  const placeholderPatterns = [
+    /\[please\s*(specify|clarify|provide)/i,
+    /\[unknown\]/i,
+    /\[required\]/i,
+    /\[missing\]/i,
+    /<unknown>/i,
+    /not[_\s]?provided/i,
+    /^unknown$/i,           // Catch "Unknown" without brackets
+    /^unspecified$/i,       // Catch "Unspecified"
+    /^n\/a$/i,              // Catch "N/A"
+    /^tbd$/i,               // Catch "TBD"
+    /^to be determined$/i,  // Catch "To be determined"
+  ];
+
+  // Types that indicate Claude couldn't determine the actual type
+  const fallbackTypes = ['other'];
+
+  const requiredFields: Record<string, string[]> = {
+    create_signal: ['types', 'placeOfObservation'],
+  };
+
+  const result = { isValid: true, missingFields: [] as string[] };
+
+  for (const action of plan.actions) {
+    const required = requiredFields[action.tool] || [];
+    const details = action.details || {};
+
+    for (const field of required) {
+      const value = details[field];
+
+      // Missing or empty
+      if (value === undefined || value === null ||
+          (Array.isArray(value) && value.length === 0)) {
+        result.isValid = false;
+        result.missingFields.push(`${action.tool}.${field}`);
+        continue;
+      }
+
+      // Special handling for 'types' field - check if only fallback types
+      if (field === 'types' && Array.isArray(value)) {
+        const onlyFallbacks = value.every(t =>
+          typeof t === 'string' && fallbackTypes.includes(t.toLowerCase())
+        );
+        if (onlyFallbacks) {
+          result.isValid = false;
+          result.missingFields.push(`${action.tool}.${field}`);
+          continue;
+        }
+      }
+
+      // Check for placeholder patterns in string values
+      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+      if (placeholderPatterns.some(p => p.test(valueStr))) {
+        result.isValid = false;
+        result.missingFields.push(`${action.tool}.${field}`);
+      }
+    }
+  }
+
+  return result;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { messages, signals, folders, teamMembers, currentUser, lastCreatedSignalId, organizations, addresses, people, stream: enableStreaming, approvedPlan }: {
@@ -1104,6 +1202,46 @@ export async function POST(request: NextRequest) {
 
     // Build system prompt - modify if we have an approved plan
     const systemPrompt = `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals and folders related to investigations.
+
+## CLARIFICATION BEFORE PLANNING
+
+When the user requests a WRITE operation, check if all required information is provided.
+If required fields are missing, use ask_clarification BEFORE plan_proposal.
+
+**IMPORTANT:** Only ask for fields that are ACTUALLY MISSING. If the user provides some fields (in any format - prose, bullet points, or structured), extract those values and only ask for the remaining missing fields.
+
+**IMPORTANT:** Maximum 5 questions for create_signal. Do NOT create duplicate questions (e.g., do NOT ask for date and time separately - use ONE question for "date and time").
+
+**For create_signal - Required Fields (use these exact questions):**
+- description: REQUIRED - Question: "Please provide a description for the signal"
+- types: REQUIRED - Question: "What type of signal is this?" Options: human-trafficking, drug-trafficking, bogus-scheme, fraud, money-laundering, other
+- placeOfObservation: REQUIRED - Question: "Where was this observed (location/address)?"
+- receivedBy: REQUIRED - Question: "How was this signal received?" Options: police, anonymous-report, municipal-department, bibob-request, other
+- timeOfObservation: REQUIRED - Question: "When was the observation made (date and time)?" (single question for both date AND time together)
+
+**Example - Missing Info:**
+User: "Create a signal"
+→ Use ask_clarification for: description, types, placeOfObservation, receivedBy, timeOfObservation
+
+**Example - Complete Info:**
+User: "Create a signal about drug trafficking at Main Street"
+→ Skip clarification, use plan_proposal directly
+
+**Example - Structured Answers:**
+User provides answers like:
+- description: Suspicious activity
+- types: human-trafficking
+- placeOfObservation: Here
+- receivedBy: municipal-department
+- timeOfObservation: Today
+→ Extract values from the structured format and use plan_proposal directly. Do NOT ask clarification again.
+
+**SKIP clarification when:**
+- All required fields are in the message (either in prose or structured format)
+- Read-only operations (search, list, summarize)
+- User provides complete structured info (bullet points, key-value pairs)
+- User is responding to a clarification question (their message contains answers)
+- User message contains field names with values (e.g., "types: human-trafficking")
 
 ## MANDATORY PLAN-FIRST BEHAVIOR
 
@@ -1504,12 +1642,8 @@ When information is missing:
       content: m.content,
     }));
 
-    // Detect if this is a write operation request vs approval vs read operation
-    const lastUserMessage = messages[messages.length - 1]?.content.toLowerCase() || '';
-    const isApprovalMessage = /\b(approved?|yes|proceed|go ahead|do it|confirm|execute|ok|okay)\b/i.test(lastUserMessage);
-    const isWriteRequest = /\b(create|add|edit|update|delete|remove|assign|share|complete|save|send|change|modify|set|make|put|move)\b/i.test(lastUserMessage);
-    // Don't force plan_proposal if we have an approved plan
-    const shouldForcePlanProposal = isWriteRequest && !isApprovalMessage && !approvedPlan;
+    // Note: We no longer force tool_choice - Claude decides between ask_clarification and plan_proposal
+    // based on whether required fields are present in the user's message
 
     // Streaming mode
     if (enableStreaming) {
@@ -1535,8 +1669,8 @@ When information is missing:
               sendEvent('phase', { phase: approvedPlan ? 'executing' : 'planning' });
             }
 
-            // Force plan_proposal on first iteration for write requests
-            const useToolChoice = shouldForcePlanProposal && iterations === 1;
+            // Let Claude decide between ask_clarification and plan_proposal based on whether required fields are present
+            // No forced tool_choice - Claude will follow system prompt instructions
 
             const response = await anthropic.messages.create({
               model: 'claude-3-haiku-20240307',
@@ -1544,7 +1678,6 @@ When information is missing:
               system: systemPrompt,
               tools,
               messages: currentMessages,
-              ...(useToolChoice && { tool_choice: { type: 'tool' as const, name: 'plan_proposal' } }),
             });
 
             let textContent = '';
@@ -1637,6 +1770,43 @@ When information is missing:
             }
 
             for (const toolUse of toolUses) {
+              // Handle ask_clarification - pause and wait for user response
+              if (toolUse.name === 'ask_clarification') {
+                const clarificationInput = toolUse.input as {
+                  summary: string;
+                  questions: Array<{ id: string; question: string; type: string; options?: string[]; required: boolean; fieldName?: string; toolName?: string }>;
+                };
+
+                // Deduplicate questions by question text (case-insensitive)
+                const seenQuestions = new Set<string>();
+                const deduplicatedQuestions = clarificationInput.questions.filter(q => {
+                  const normalized = q.question.toLowerCase().trim();
+                  if (seenQuestions.has(normalized)) {
+                    return false;
+                  }
+                  seenQuestions.add(normalized);
+                  return true;
+                });
+
+                sendEvent('clarification', {
+                  summary: clarificationInput.summary,
+                  questions: deduplicatedQuestions,
+                });
+                sendEvent('phase', { phase: 'clarifying' });
+
+                // Return early - wait for user to answer clarification questions
+                sendEvent('response', {
+                  text: '',
+                  toolResults: allToolResults,
+                  awaitingClarification: true,
+                  clarificationData: { ...clarificationInput, questions: deduplicatedQuestions },
+                });
+
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.close();
+                return;
+              }
+
               // Handle plan_proposal specially
               if (toolUse.name === 'plan_proposal') {
                 // If we have an approved plan, skip plan_proposal entirely
@@ -1655,6 +1825,58 @@ When information is missing:
                   summary: string;
                   actions: Array<{ step: number; action: string; tool: string; details?: Record<string, unknown> }>
                 };
+
+                // Validate plan for placeholder values
+                const validation = validatePlanProposal(planInput);
+
+                if (!validation.isValid) {
+                  // Plan has missing/placeholder values - force clarification
+                  const retryResponse = await anthropic.messages.create({
+                    model: 'claude-3-haiku-20240307',
+                    max_tokens: 2048,
+                    system: systemPrompt + `\n\nIMPORTANT: The user's request is missing required information: ${validation.missingFields.join(', ')}. You MUST use ask_clarification to request this information before proceeding.`,
+                    tools,
+                    tool_choice: { type: 'tool', name: 'ask_clarification' },
+                    messages: currentMessages,
+                  });
+
+                  // Process retry response for ask_clarification
+                  for (const block of retryResponse.content) {
+                    if (block.type === 'tool_use' && block.name === 'ask_clarification') {
+                      const clarificationInput = block.input as {
+                        summary: string;
+                        questions: Array<{ id: string; question: string; type: string; options?: string[]; required: boolean; fieldName?: string; toolName?: string }>;
+                      };
+
+                      // Deduplicate questions by question text (case-insensitive)
+                      const seenQuestions = new Set<string>();
+                      const deduplicatedQuestions = clarificationInput.questions.filter(q => {
+                        const normalized = q.question.toLowerCase().trim();
+                        if (seenQuestions.has(normalized)) {
+                          return false;
+                        }
+                        seenQuestions.add(normalized);
+                        return true;
+                      });
+
+                      sendEvent('clarification', {
+                        summary: clarificationInput.summary,
+                        questions: deduplicatedQuestions,
+                      });
+                      sendEvent('phase', { phase: 'clarifying' });
+                      sendEvent('response', {
+                        text: '',
+                        toolResults: allToolResults,
+                        awaitingClarification: true,
+                        clarificationData: { ...clarificationInput, questions: deduplicatedQuestions },
+                      });
+
+                      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                      controller.close();
+                      return;
+                    }
+                  }
+                }
 
                 sendEvent('plan_proposal', {
                   summary: planInput.summary,
@@ -1791,13 +2013,13 @@ When information is missing:
     }
 
     // Non-streaming mode (legacy support)
+    // Let Claude decide between ask_clarification and plan_proposal based on whether required fields are present
     const response = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
       max_tokens: 2048,
       system: systemPrompt,
       tools,
       messages: anthropicMessages,
-      ...(shouldForcePlanProposal && { tool_choice: { type: 'tool' as const, name: 'plan_proposal' } }),
     });
 
     // Process the response

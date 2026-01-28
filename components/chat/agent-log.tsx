@@ -5,7 +5,7 @@ import { Loader2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock } from 'l
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
-export type AgentPhase = 'idle' | 'planning' | 'awaiting_approval' | 'executing' | 'reflecting' | 'complete';
+export type AgentPhase = 'idle' | 'clarifying' | 'planning' | 'awaiting_approval' | 'executing' | 'reflecting' | 'complete';
 
 export interface PlanAction {
   step: number;
@@ -19,15 +19,31 @@ export interface PlanData {
   actions: PlanAction[];
 }
 
+export interface ClarificationQuestion {
+  id: string;
+  question: string;
+  type: 'text' | 'choice' | 'multi-select';
+  options?: string[];
+  required: boolean;
+  fieldName?: string;
+  toolName?: string;
+}
+
+export interface ClarificationData {
+  summary: string;
+  questions: ClarificationQuestion[];
+}
+
 export interface LogEntry {
   id: string;
-  type: 'thinking' | 'tool_call' | 'tool_result' | 'reflection' | 'error' | 'plan';
+  type: 'thinking' | 'tool_call' | 'tool_result' | 'reflection' | 'error' | 'plan' | 'clarification';
   content: string;
   timestamp: Date;
   status?: 'pending' | 'success' | 'error';
   toolName?: string;
   toolInput?: Record<string, unknown>;
   planData?: PlanData;
+  clarificationData?: ClarificationData;
 }
 
 interface PhaseIndicatorProps {
@@ -36,6 +52,7 @@ interface PhaseIndicatorProps {
 
 function PhaseIndicator({ phase }: PhaseIndicatorProps) {
   const phases: { key: AgentPhase; label: string }[] = [
+    { key: 'clarifying', label: 'Clarify' },
     { key: 'planning', label: 'Plan' },
     { key: 'awaiting_approval', label: 'Approve' },
     { key: 'executing', label: 'Execute' },
@@ -278,6 +295,7 @@ export function createLogEntry(
     toolName?: string;
     toolInput?: Record<string, unknown>;
     planData?: PlanData;
+    clarificationData?: ClarificationData;
   }
 ): LogEntry {
   return {
@@ -289,5 +307,6 @@ export function createLogEntry(
     toolName: options?.toolName,
     toolInput: options?.toolInput,
     planData: options?.planData,
+    clarificationData: options?.clarificationData,
   };
 }
