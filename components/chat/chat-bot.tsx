@@ -18,7 +18,7 @@ import { useAddresses } from '@/context/address-context';
 import { usePeople } from '@/context/person-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType, Signal } from '@/types/signal';
 import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus, Folder } from '@/types/folder';
-import { AgentLog, AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData } from './agent-log';
+import { AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData } from './agent-log';
 import { ClarificationDisplay } from './clarification-display';
 
 // Generate unique message IDs
@@ -1560,23 +1560,14 @@ function ChatBotInner() {
               className={cn(
                 'rounded-2xl px-4 py-3 text-sm max-w-[85%]',
                 message.role === 'user'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-[--claude-beige] text-foreground'
+                  ? 'bg-claude-beige text-foreground'
+                  : 'bg-transparent text-foreground'
               )}
             >
               <div className="whitespace-pre-wrap">{message.content}</div>
             </div>
           </div>
         ))}
-
-        {/* Agent Log */}
-        {(isLoading || agentPhase !== 'idle') && (
-          <AgentLog
-            entries={logEntries}
-            currentPhase={agentPhase}
-            className="mx-auto max-w-[90%]"
-          />
-        )}
 
         {/* Clarification Display */}
         {pendingClarification && agentPhase === 'clarifying' && (
@@ -1604,7 +1595,7 @@ function ChatBotInner() {
         {/* Loading indicator when no log entries yet */}
         {isLoading && logEntries.length === 0 && (
           <div className="flex justify-start">
-            <div className="bg-[--claude-beige] rounded-2xl px-4 py-3">
+            <div className="bg-claude-beige rounded-2xl px-4 py-3">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" />
                 <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1639,7 +1630,7 @@ function ChatBotInner() {
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="h-10 w-10 rounded-full bg-[--claude-coral] hover:bg-[--claude-coral-hover] text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="h-10 w-10 rounded-full bg-claude-coral hover:bg-claude-coral-hover text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>

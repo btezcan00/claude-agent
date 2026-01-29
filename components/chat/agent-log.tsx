@@ -222,7 +222,7 @@ export function AgentLog({
   const isProcessing = currentPhase !== 'idle' && currentPhase !== 'complete';
 
   return (
-    <div className={cn('bg-[--claude-beige] rounded-2xl overflow-hidden', className)}>
+    <div className={cn('bg-claude-beige rounded-2xl overflow-hidden', className)}>
       {/* Header with steps indicator */}
       <div
         className="flex items-center px-4 py-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
