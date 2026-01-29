@@ -50,6 +50,7 @@ interface FolderData {
   name: string;
   description: string;
   status: string;
+  location?: string;
   ownerId: string | null;
   ownerName: string | null;
   signalCount: number;
@@ -1097,7 +1098,7 @@ function validatePlanProposal(plan: {
 
       // Missing or empty
       if (value === undefined || value === null ||
-          (Array.isArray(value) && value.length === 0)) {
+        (Array.isArray(value) && value.length === 0)) {
         result.isValid = false;
         result.missingFields.push(`${action.tool}.${field}`);
         continue;
@@ -1167,7 +1168,7 @@ export async function POST(request: NextRequest) {
           const sharedNames = (f.sharedWith || []).map(s => `${s.userName} (${s.accessLevel})`).join(', ');
           const orgNames = (f.organizations || []).map(o => o.name).join(', ');
           const peopleNames = (f.peopleInvolved || []).map(p => `${p.firstName} ${p.surname}`).join(', ');
-          return `- ${f.name} (${f.id}): ${f.description.substring(0, 50)}${f.description.length > 50 ? '...' : ''} (status: ${f.status}, ${f.signalCount} signals, owner: ${f.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'}, organizations: ${orgNames || 'none'}, people involved: ${peopleNames || 'none'})`;
+          return `- ${f.name} (${f.id}): ${f.description} (status: ${f.status}, location: ${f.location || 'none'}, ${f.signalCount} signals, owner: ${f.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'}, organizations: ${orgNames || 'none'}, people involved: ${peopleNames || 'none'})`;
         }
       )
       .join('\n');
@@ -1252,9 +1253,9 @@ The user has approved the following plan. Execute the tools immediately without 
 Summary: ${approvedPlan.summary}
 Actions:
 ${approvedPlan.actions.map(a => {
-  const detailsStr = a.details ? `\n   Parameters: ${JSON.stringify(a.details)}` : '';
-  return `${a.step}. ${a.action} (${a.tool})${detailsStr}`;
-}).join('\n')}
+      const detailsStr = a.details ? `\n   Parameters: ${JSON.stringify(a.details)}` : '';
+      return `${a.step}. ${a.action} (${a.tool})${detailsStr}`;
+    }).join('\n')}
 
 IMPORTANT: When executing multi-step plans, use these exact parameter values from the plan.
 For step references like "$step1.signalId", use that exact string - the client will resolve it to the actual value.
