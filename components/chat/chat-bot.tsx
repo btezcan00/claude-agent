@@ -650,9 +650,11 @@ function ChatBotInner() {
         }
 
         case 'list_folders':
-          return { message: folders.length > 0
-            ? folders.map(f => `${f.name} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`).join('; ')
-            : 'No folders' };
+          return {
+            message: folders.length > 0
+              ? folders.map(f => `${f.name} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`).join('; ')
+              : 'No folders'
+          };
 
         case 'list_team_members':
           return { message: users.map(u => `${getUserFullName(u)} (${u.title})`).join('; ') };
@@ -676,18 +678,22 @@ function ChatBotInner() {
           }
           if (type) results = results.filter(s => s.types.includes(type as SignalType));
           if (receivedBy) results = results.filter(s => s.receivedBy === receivedBy);
-          return { message: results.length > 0
-            ? `Found ${results.length}: ${results.map(s => s.signalNumber).join(', ')}`
-            : 'No signals found' };
+          return {
+            message: results.length > 0
+              ? `Found ${results.length}: ${results.map(s => s.signalNumber).join(', ')}`
+              : 'No signals found'
+          };
         }
 
         case 'get_signal_activity': {
           const s = findSignal(input.signal_id as string);
           if (s) {
             const activities = s.activities.slice(0, 5);
-            return { message: activities.length > 0
-              ? activities.map(a => `${a.details} by ${a.userName}`).join('; ')
-              : 'No activity' };
+            return {
+              message: activities.length > 0
+                ? activities.map(a => `${a.details} by ${a.userName}`).join('; ')
+                : 'No activity'
+            };
           }
           return { message: 'Signal not found' };
         }
@@ -695,9 +701,11 @@ function ChatBotInner() {
         case 'get_signal_notes': {
           const s = findSignal(input.signal_id as string);
           if (s) {
-            return { message: s.notes.length > 0
-              ? s.notes.map(n => `${n.authorName}: ${n.content.substring(0, 50)}`).join('; ')
-              : 'No notes' };
+            return {
+              message: s.notes.length > 0
+                ? s.notes.map(n => `${n.authorName}: ${n.content.substring(0, 50)}`).join('; ')
+                : 'No notes'
+            };
           }
           return { message: 'Signal not found' };
         }

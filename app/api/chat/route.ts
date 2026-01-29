@@ -1202,9 +1202,10 @@ async function summarizeAttachmentsForSignal(
   try {
     // Make vision-capable API call
     const summaryResponse = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-opus-4-5-20251101',
       max_tokens: 2048,
       messages: [{ role: 'user', content }],
+      temperature: 0
     });
 
     // Extract text from response
@@ -1854,7 +1855,7 @@ When information is missing:
             // No forced tool_choice - Claude will follow system prompt instructions
 
             const response = await anthropic.messages.create({
-              model: 'claude-3-haiku-20240307',
+              model: 'claude-opus-4-5-20251101',
               max_tokens: 2048,
               system: systemPrompt,
               tools,
@@ -2011,7 +2012,7 @@ When information is missing:
                 if (!validation.isValid) {
                   // Plan has missing/placeholder values - force clarification
                   const retryResponse = await anthropic.messages.create({
-                    model: 'claude-3-haiku-20240307',
+                    model: 'claude-opus-4-5-20251101',
                     max_tokens: 2048,
                     system: systemPrompt + `\n\nIMPORTANT: The user's request is missing required information: ${validation.missingFields.join(', ')}. You MUST use ask_clarification to request this information before proceeding.`,
                     tools,
@@ -2200,7 +2201,7 @@ When information is missing:
     // Non-streaming mode (legacy support)
     // Let Claude decide between ask_clarification and plan_proposal based on whether required fields are present
     const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-opus-4-5-20251101',
       max_tokens: 2048,
       system: systemPrompt,
       tools,
