@@ -116,7 +116,7 @@ export function getInitialGreeting(
     return `${greeting} ${namePrefix}Welcome back! ${followUp} I can help you manage signals, organize folders, assign team members, and more.`;
   }
 
-  return `${greeting} ${namePrefix}I'm your GCMP assistant. ${followUp} I can help you create and manage signals, organize folders, assign team members, search records, and much more. How can I help you today?`;
+  return `${greeting} ${namePrefix}I'm your Atlas AI assistant. ${followUp} I can help you create and manage signals, organize folders, assign team members, search records, and much more. How can I help you today?`;
 }
 
 // Check if current time qualifies for "early bird" achievement (before 9 AM)

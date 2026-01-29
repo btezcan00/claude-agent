@@ -66,7 +66,7 @@ function ChatBotInner() {
         {
           id: '1',
           role: 'assistant',
-          content: "Hi! I'm your GCMP assistant. I can help you manage signals and folders - just tell me what you need and I'll take care of it.",
+          content: "Hi! I'm your Atlas AI assistant. I can help you manage signals and folders - just tell me what you need and I'll take care of it.",
           isNew: true,
         },
       ]);
@@ -1545,7 +1545,7 @@ function ChatBotInner() {
       <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
           <BotIcon size="sm" className="bg-primary/20" />
-          <p className="text-xs text-muted-foreground">GCMP Assistant</p>
+          <p className="text-xs text-muted-foreground">Atlas AI Assistant</p>
         </div>
       </div>
 

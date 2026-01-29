@@ -38,7 +38,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
               <Shield className="w-5 h-5 text-primary-foreground" />
             </div>
             <div className="text-left">
-              <h1 className="text-base font-bold">GCMP</h1>
+              <h1 className="text-base font-bold">Atlas AI</h1>
               <p className="text-xs text-muted-foreground font-normal">
                 Case Management
               </p>

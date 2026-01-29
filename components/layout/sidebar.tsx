@@ -45,7 +45,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-base font-bold text-foreground">GCMP</h1>
+              <h1 className="text-base font-bold text-foreground">Atlas AI</h1>
               <p className="text-xs text-muted-foreground">Case Management</p>
             </div>
           )}

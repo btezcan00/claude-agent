@@ -64,8 +64,8 @@ export const WELCOME_BACK_MESSAGES = [
 
 // First-time user messages
 export const FIRST_TIME_MESSAGES = [
-  "Hello! I'm your GCMP assistant. I can help you manage signals, organize folders, and keep track of important information. What would you like to do first?",
-  "Welcome! I'm here to help you navigate GCMP. Whether it's creating signals, searching records, or managing folders - just ask!",
+  "Hello! I'm your Atlas AI assistant. I can help you manage signals, organize folders, and keep track of important information. What would you like to do first?",
+  "Welcome! I'm here to help you navigate Atlas AI. Whether it's creating signals, searching records, or managing folders - just ask!",
 ];
 
 // Contextual celebration messages

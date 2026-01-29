@@ -13,7 +13,7 @@ export function ChatDrawer() {
     <PushDrawer open={isOpen} width={400}>
       <div className="flex flex-col h-full">
         <header className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground shrink-0">
-          <h2 className="font-semibold text-sm">GCMP Assistant</h2>
+          <h2 className="font-semibold text-sm">Atlas AI Assistant</h2>
           <Button
             variant="ghost"
             size="icon"

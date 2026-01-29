@@ -1362,7 +1362,7 @@ export async function POST(request: NextRequest) {
       .join('\n');
 
     // Build system prompt - modify if we have an approved plan
-    const systemPrompt = `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals and folders related to investigations.
+    const systemPrompt = `You are an AI assistant for Atlas AI. You help government employees manage signals and folders related to investigations.
 
 ## CLARIFICATION BEFORE PLANNING
 
