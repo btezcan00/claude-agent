@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useState, useCallback, useMemo, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   Signal,
   SignalFilters,
@@ -100,14 +100,20 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   const [selectedSignalIds, setSelectedSignalIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Synchronous cache for immediately available signal lookups (bypasses React state timing)
+  const signalCacheRef = useRef<Map<string, Signal>>(new Map());
+
   // Fetch signals from API on mount
   const fetchSignals = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch('/api/signals');
       if (response.ok) {
-        const data = await response.json();
-        setSignals(data);
+        const fetchedSignals = await response.json();
+        setSignals(fetchedSignals);
+        // Sync cache with fetched signals
+        signalCacheRef.current.clear();
+        fetchedSignals.forEach((s: Signal) => signalCacheRef.current.set(s.id, s));
       }
     } catch (error) {
       console.error('Failed to fetch signals:', error);
@@ -188,6 +194,8 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     }
 
     const newSignal = await response.json();
+    // Update cache synchronously for immediate availability
+    signalCacheRef.current.set(newSignal.id, newSignal);
     setSignals((prev) => [newSignal, ...prev]);
     return newSignal;
   }, []);
@@ -222,6 +230,10 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getSignalById = useCallback((id: string): Signal | undefined => {
+    // Check synchronous cache first (for newly created signals)
+    const cached = signalCacheRef.current.get(id);
+    if (cached) return cached;
+    // Fall back to state
     return signals.find((s) => s.id === id);
   }, [signals]);
 
@@ -470,10 +482,8 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   }, [signals]);
 
   const addSignalToFolder = useCallback(async (signalId: string, folderId: string) => {
-    const signal = signals.find(s => s.id === signalId);
-    if (!signal) return;
-    if (signal.folderRelations.some(fr => fr.folderId === folderId)) return;
-
+    // Don't check local state - let the API handle validation
+    // This fixes race conditions where newly created signals aren't in local state yet
     const response = await fetch(`/api/signals/${signalId}/folder-relations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -481,14 +491,23 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to add signal to folder');
+      // 400 means already linked, which is fine
+      if (response.status !== 400) {
+        throw new Error('Failed to add signal to folder');
+      }
+      return;
     }
 
     const updatedSignal = await response.json();
-    setSignals((prev) =>
-      prev.map((s) => (s.id === signalId ? updatedSignal : s))
-    );
-  }, [signals]);
+    setSignals((prev) => {
+      const exists = prev.some(s => s.id === signalId);
+      if (exists) {
+        return prev.map((s) => (s.id === signalId ? updatedSignal : s));
+      }
+      // If signal doesn't exist in local state, add it
+      return [updatedSignal, ...prev];
+    });
+  }, []);
 
   const removeSignalFromFolder = useCallback(async (signalId: string, folderId: string) => {
     const signal = signals.find(s => s.id === signalId);
@@ -510,33 +529,27 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   }, [signals]);
 
   const addSignalsToFolder = useCallback(async (signalIds: string[], folderId: string) => {
-    const results = await Promise.all(
+    // Don't check local state - let the API handle validation
+    // This fixes race conditions where newly created signals aren't in local state yet
+    await Promise.all(
       signalIds.map(async (signalId) => {
-        const signal = signals.find(s => s.id === signalId);
-        if (!signal || signal.folderRelations.some(fr => fr.folderId === folderId)) {
-          return null;
-        }
-
         const response = await fetch(`/api/signals/${signalId}/folder-relations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ folderId }),
         });
-
-        if (response.ok) {
-          return response.json();
-        }
-        return null;
+        // API returns 400 if already linked, 404 if not found - both are handled gracefully
+        return response.ok ? response.json() : null;
       })
     );
 
-    setSignals((prev) =>
-      prev.map((s) => {
-        const updated = results.find((r) => r && r.id === s.id);
-        return updated || s;
-      })
-    );
-  }, [signals]);
+    // Refresh signals to get updated folder relations
+    const refreshResponse = await fetch('/api/signals');
+    if (refreshResponse.ok) {
+      const updatedSignals = await refreshResponse.json();
+      setSignals(updatedSignals);
+    }
+  }, []);
 
   const updateSignalFolderRelation = useCallback(async (signalId: string, folderId: string, relation: string) => {
     const signal = signals.find(s => s.id === signalId);

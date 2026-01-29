@@ -171,8 +171,10 @@ export interface CreateFolderInput {
   name: string;
   description: string;
   ownerId?: string;
+  ownerName?: string;
   color?: string;
   icon?: string;
+  location?: string;
   signalIds?: string[];
 }
 

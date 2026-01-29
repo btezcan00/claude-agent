@@ -38,7 +38,7 @@ export function FolderKanbanBoard() {
         return (
           <div
             key={status.value}
-            className="flex-shrink-0 w-72"
+            className="flex-1 min-w-[180px] max-w-[320px]"
           >
             {/* Column Header */}
             <div
