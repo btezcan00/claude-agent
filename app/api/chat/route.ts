@@ -45,21 +45,157 @@ interface TeamMember {
   ownedFolderCount: number;
 }
 
+interface FolderStatusDates {
+  application?: string;
+  research?: string;
+  national_office?: string;
+  decision?: string;
+  archive?: string;
+}
+
+interface FolderPractitioner {
+  userId: string;
+  userName: string;
+  addedAt: string;
+}
+
+interface FolderShare {
+  userId: string;
+  userName: string;
+  accessLevel: string;
+  sharedAt: string;
+  sharedBy: string;
+}
+
+interface FolderNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  createdBy: string;
+  createdByName: string;
+  isAdminNote: boolean;
+}
+
+interface FolderChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: string;
+}
+
+interface ApplicationCriterion {
+  id: string;
+  name: string;
+  label: string;
+  isMet: boolean;
+  explanation: string;
+}
+
+interface ApplicationData {
+  explanation: string;
+  criteria: ApplicationCriterion[];
+  isCompleted: boolean;
+  completedAt?: string;
+  completedBy?: string;
+}
+
+interface FolderItem {
+  id: string;
+  date: string;
+  phase: string;
+  label: string;
+  description: string;
+  assignedTo?: string;
+  source?: string;
+  sourceTheme?: string;
+}
+
+interface FindingItem extends FolderItem {
+  isCompleted: boolean;
+  totalSteps?: number;
+  completedSteps?: number;
+  severity?: string;
+}
+
+interface LetterItem {
+  id: string;
+  name: string;
+  template: string;
+  description: string;
+  tags: string[];
+  createdBy: string;
+  createdByFirstName: string;
+  createdBySurname: string;
+  createdAt: string;
+  updatedAt: string;
+  fieldData: Record<string, string | boolean>;
+}
+
+interface ActivityItem {
+  id: string;
+  date: string;
+  phase: string;
+  label: string;
+  description: string;
+  assignedTo?: string;
+  source?: string;
+  sourceTheme?: string;
+  createdByName: string;
+  updatedAt: string;
+}
+
+interface FolderAttachment {
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedBy: string;
+  uploadedByName: string;
+  uploadedAt: string;
+  description: string;
+  tags: string[];
+  content?: string;
+  textContent?: string;
+}
+
 interface FolderData {
   id: string;
   name: string;
   description: string;
-  status: string;
-  location?: string;
+  createdById: string;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
   ownerId: string | null;
   ownerName: string | null;
-  signalCount: number;
-  createdAt: string;
+  color?: string;
+  icon?: string;
+  status: string;
+  statusDates: FolderStatusDates;
   tags: string[];
-  practitioners: { userId: string; userName: string }[];
-  sharedWith: { userId: string; userName: string; accessLevel: string }[];
-  organizations: { id: string; name: string }[];
-  peopleInvolved: { id: string; firstName: string; surname: string }[];
+  signalTypes: string[];
+  practitioners: FolderPractitioner[];
+  sharedWith: FolderShare[];
+  location: string;
+  notes: FolderNote[];
+  organizations: OrganizationData[];
+  addresses: AddressData[];
+  peopleInvolved: PersonData[];
+  letters: LetterItem[];
+  findings: FindingItem[];
+  attachments: FolderItem[];
+  records: FolderItem[];
+  communications: FolderItem[];
+  suggestions: FolderItem[];
+  visualizations: FolderItem[];
+  activities: ActivityItem[];
+  fileAttachments: FolderAttachment[];
+  chatMessages: FolderChatMessage[];
+  applicationData: ApplicationData;
+  // Computed field (not in Folder type)
+  signalCount: number;
 }
 
 interface OrganizationData {
@@ -163,6 +299,15 @@ const tools: Anthropic.Tool[] = [
           description: 'Optional specific signal ID or signal number to summarize. If not provided, summarizes all signals.',
         },
       },
+      required: [],
+    },
+  },
+  {
+    name: 'list_signals',
+    description: 'List all signals in the system. Use this when the user wants to see all signals or asks about signals.',
+    input_schema: {
+      type: 'object',
+      properties: {},
       required: [],
     },
   },
@@ -1270,7 +1415,7 @@ WRITE TOOLS (REQUIRE plan_proposal FIRST):
 - send_folder_message, complete_bibob_application, save_bibob_application_draft
 
 READ TOOLS (Execute immediately):
-- summarize_signals, search_signals, get_signal_activity, get_signal_notes, get_signal_stats
+- list_signals, summarize_signals, search_signals, get_signal_activity, get_signal_notes, get_signal_stats
 - summarize_attachments, list_folders, get_folder_stats, list_team_members, get_folder_messages
 
 ## CRITICAL: WORKFLOW BOUNDARIES
@@ -1612,9 +1757,29 @@ Then use signal_id: "GCMP-2026-266241" in your plan.
 
 **NEVER assume or make up signal IDs. Always look them up from Current Data.**
 
+## SIGNAL QUERIES - TOOL SELECTION
+
+When the user asks about signals, use SIGNAL tools, NOT folder tools:
+- "List all signals" → list_signals
+- "Show signals with type X" → search_signals with type filter
+- "Find signals at location Y" → search_signals with keyword filter
+- "Summarize signals" → summarize_signals
+- "How many signals?" → get_signal_stats
+
+NEVER use list_folders when the user is asking about signals.
+
+## EFFICIENT MULTI-SIGNAL OPERATIONS
+
+When user asks to summarize or describe multiple signals (e.g., "summarize all human trafficking signals"):
+1. Use search_signals with type filter to find matching signals
+2. Provide a summary based on the search results - DO NOT call summarize_signals for each signal individually
+3. If you need detailed information, call summarize_signals ONCE without signal_id to get an overview of all signals
+
+NEVER call summarize_signals in a loop for individual signals - this is inefficient and will fail.
+
 ## Available Tools
 
-**Signals:** summarize_signals, create_signal, edit_signal, add_signal_to_folder, add_note, delete_signal, search_signals, get_signal_activity, get_signal_notes, get_signal_stats, summarize_attachments
+**Signals:** list_signals, summarize_signals, create_signal, edit_signal, add_signal_to_folder, add_note, delete_signal, search_signals, get_signal_activity, get_signal_notes, get_signal_stats, summarize_attachments
 
 **Folders:** list_folders, get_folder_stats, create_folder, delete_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder, complete_bibob_application, save_bibob_application_draft
 
@@ -1658,9 +1823,10 @@ When information is missing:
 
           let currentMessages: Anthropic.MessageParam[] = [...anthropicMessages];
           let iterations = 0;
-          const maxIterations = 3;
+          const maxIterations = 5;
           const allToolResults: { name: string; input: Record<string, unknown>; result?: string }[] = [];
           let currentPlanStep = 0;
+          let textContent = '';
 
           while (iterations < maxIterations) {
             iterations++;
@@ -1680,8 +1846,6 @@ When information is missing:
               tools,
               messages: currentMessages,
             });
-
-            let textContent = '';
             const toolUses: Anthropic.ToolUseBlock[] = [];
 
             for (const block of response.content) {
@@ -1998,6 +2162,12 @@ When information is missing:
             // Mark workflow as complete
             sendEvent('phase', { phase: 'complete' });
           }
+
+          // Send accumulated tool results back to client after loop completes
+          sendEvent('response', {
+            text: textContent || 'Completed.',
+            toolResults: allToolResults
+          });
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
