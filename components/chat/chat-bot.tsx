@@ -634,6 +634,21 @@ function ChatBotInner() {
           return { message: `${signals.length} signals in system` };
         }
 
+        case 'summarize_folder': {
+          const folderId = input.folder_id as string | undefined;
+          if (folderId) {
+            const f = findFolder(folderId);
+            if (f) {
+              const signalCount = getSignalCountForFolder(f.id);
+              return {
+                message: `${f.name}: ${f.description.substring(0, 80)}... | Status: ${f.status} | Location: ${f.location || 'N/A'} | Signals: ${signalCount} | Practitioners: ${f.practitioners?.length || 0} | Organizations: ${f.organizations?.length || 0}`
+              };
+            }
+            return { message: `Folder "${folderId}" not found` };
+          }
+          return { message: `${folders.length} folders: ${folders.map(f => `${f.name} (${f.status})`).join('; ')}` };
+        }
+
         case 'list_folders':
           return { message: folders.length > 0
             ? folders.map(f => `${f.name} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`).join('; ')

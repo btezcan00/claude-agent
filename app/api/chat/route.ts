@@ -303,6 +303,20 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'summarize_folder',
+    description: 'Summarize a specific folder or all folders. Returns key information including status, location, signals, and team members.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        folder_id: {
+          type: 'string',
+          description: 'Optional folder ID or name to summarize. If not provided, summarizes all folders.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'list_signals',
     description: 'List all signals in the system. Use this when the user wants to see all signals or asks about signals.',
     input_schema: {
@@ -1416,7 +1430,7 @@ WRITE TOOLS (REQUIRE plan_proposal FIRST):
 
 READ TOOLS (Execute immediately):
 - list_signals, summarize_signals, search_signals, get_signal_activity, get_signal_notes, get_signal_stats
-- summarize_attachments, list_folders, get_folder_stats, list_team_members, get_folder_messages
+- summarize_attachments, list_folders, summarize_folder, get_folder_stats, list_team_members, get_folder_messages
 
 ## CRITICAL: WORKFLOW BOUNDARIES
 
