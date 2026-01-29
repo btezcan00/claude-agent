@@ -1,8 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Sparkles, Plus, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useSignals } from '@/context/signal-context';
 import { useFolders } from '@/context/folder-context';
@@ -13,7 +19,6 @@ import { usePeople } from '@/context/person-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType, Signal } from '@/types/signal';
 import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus, Folder } from '@/types/folder';
 import { AgentLog, AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData } from './agent-log';
-import { BotIcon } from './animations/avatar-expressions';
 import { ClarificationDisplay } from './clarification-display';
 
 // Generate unique message IDs
@@ -66,7 +71,7 @@ function ChatBotInner() {
         {
           id: '1',
           role: 'assistant',
-          content: "Hi! I'm your Atlas AI assistant. I can help you manage signals and folders - just tell me what you need and I'll take care of it.",
+          content: "Hi! I'm Claude, your AI assistant. I can help you manage signals and folders - just tell me what you need and I'll take care of it.",
           isNew: true,
         },
       ]);
@@ -1541,14 +1546,6 @@ function ChatBotInner() {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
-        <div className="flex items-center gap-3">
-          <BotIcon size="sm" className="bg-primary/20" />
-          <p className="text-xs text-muted-foreground">Atlas AI Assistant</p>
-        </div>
-      </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
@@ -1561,10 +1558,10 @@ function ChatBotInner() {
           >
             <div
               className={cn(
-                'rounded-lg px-3 py-2 text-sm max-w-[85%]',
+                'rounded-2xl px-4 py-3 text-sm max-w-[85%]',
                 message.role === 'user'
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-foreground'
+                  : 'bg-[--claude-beige] text-foreground'
               )}
             >
               <div className="whitespace-pre-wrap">{message.content}</div>
@@ -1607,7 +1604,7 @@ function ChatBotInner() {
         {/* Loading indicator when no log entries yet */}
         {isLoading && logEntries.length === 0 && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-lg px-3 py-2">
+            <div className="bg-[--claude-beige] rounded-2xl px-4 py-3">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" />
                 <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1621,7 +1618,7 @@ function ChatBotInner() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border p-3 shrink-0">
+      <div className="border-t border-border p-3 shrink-0 space-y-2">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -1635,18 +1632,53 @@ function ChatBotInner() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
+            placeholder="Reply to Claude..."
             disabled={isLoading}
-            className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 text-sm bg-muted/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
           />
-          <Button
+          <button
             type="submit"
-            size="icon"
             disabled={!input.trim() || isLoading}
+            className="h-10 w-10 rounded-full bg-[--claude-coral] hover:bg-[--claude-coral-hover] text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
-          </Button>
+          </button>
         </form>
+        {/* Bottom action controls */}
+        <div className="flex items-center justify-between">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+              >
+                Act without asking
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem>Always ask first</DropdownMenuItem>
+              <DropdownMenuItem>Act without asking</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            >
+              <Sparkles className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </>
   );

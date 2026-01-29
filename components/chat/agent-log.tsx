@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Loader2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, ChevronRight, Clock, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -46,64 +46,27 @@ export interface LogEntry {
   clarificationData?: ClarificationData;
 }
 
-interface PhaseIndicatorProps {
-  phase: AgentPhase;
+interface StepsIndicatorProps {
+  stepCount: number;
+  isProcessing: boolean;
+  isExpanded: boolean;
 }
 
-function PhaseIndicator({ phase }: PhaseIndicatorProps) {
-  const phases: { key: AgentPhase; label: string }[] = [
-    { key: 'clarifying', label: 'Clarify' },
-    { key: 'planning', label: 'Plan' },
-    { key: 'awaiting_approval', label: 'Approve' },
-    { key: 'executing', label: 'Execute' },
-    { key: 'reflecting', label: 'Reflect' },
-    { key: 'complete', label: 'Done' },
-  ];
-
-  if (phase === 'idle') return null;
-
+function StepsIndicator({ stepCount, isProcessing, isExpanded }: StepsIndicatorProps) {
   return (
-    <div className="flex items-center gap-1.5">
-      {phases.map((p, i) => {
-        const isActive = p.key === phase;
-        const isPast = phases.findIndex(x => x.key === phase) > i;
-        const isComplete = phase === 'complete';
-
-        return (
-          <div key={p.key} className="flex items-center gap-1.5">
-            <div
-              className={cn(
-                'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors',
-                isActive && !isComplete && 'bg-primary/20 text-primary',
-                isPast && 'bg-muted text-muted-foreground',
-                isComplete && p.key === 'complete' && 'bg-green-500/20 text-green-600',
-                !isActive && !isPast && !isComplete && 'text-muted-foreground/50'
-              )}
-            >
-              {isActive && !isComplete && (
-                <Loader2 className="w-2.5 h-2.5 animate-spin" />
-              )}
-              {(isPast || (isComplete && p.key !== 'complete')) && (
-                <CheckCircle2 className="w-2.5 h-2.5 text-green-500" />
-              )}
-              {isComplete && p.key === 'complete' && (
-                <CheckCircle2 className="w-2.5 h-2.5" />
-              )}
-              {p.label}
-            </div>
-            {i < phases.length - 1 && (
-              <div
-                className={cn(
-                  'w-3 h-px',
-                  isPast || (isActive && i < phases.findIndex(x => x.key === phase))
-                    ? 'bg-green-500'
-                    : 'bg-border'
-                )}
-              />
-            )}
-          </div>
-        );
-      })}
+    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      {isProcessing && (
+        <Sparkles className="w-4 h-4 text-[--claude-coral] animate-pulse" />
+      )}
+      <span className="font-medium">
+        {stepCount} {stepCount === 1 ? 'step' : 'steps'}
+      </span>
+      <ChevronRight
+        className={cn(
+          'w-4 h-4 transition-transform duration-200',
+          isExpanded && 'rotate-90'
+        )}
+      />
     </div>
   );
 }
@@ -248,7 +211,7 @@ export function AgentLog({
   entries,
   currentPhase,
   className,
-  defaultExpanded = true
+  defaultExpanded = false
 }: AgentLogProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -256,26 +219,25 @@ export function AgentLog({
     return null;
   }
 
+  const isProcessing = currentPhase !== 'idle' && currentPhase !== 'complete';
+
   return (
-    <div className={cn('bg-muted/50 rounded-lg border border-border overflow-hidden', className)}>
-      {/* Header with phase indicator and collapse toggle */}
+    <div className={cn('bg-[--claude-beige] rounded-2xl overflow-hidden', className)}>
+      {/* Header with steps indicator */}
       <div
-        className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/70 transition-colors"
+        className="flex items-center px-4 py-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <PhaseIndicator phase={currentPhase} />
-        <button className="p-0.5 hover:bg-muted rounded">
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </button>
+        <StepsIndicator
+          stepCount={entries.length}
+          isProcessing={isProcessing}
+          isExpanded={isExpanded}
+        />
       </div>
 
       {/* Log entries */}
       {isExpanded && entries.length > 0 && (
-        <div className="px-3 pb-3 pt-1 border-t border-border/50 space-y-0.5 max-h-48 overflow-y-auto">
+        <div className="px-4 pb-3 pt-1 border-t border-black/5 dark:border-white/10 space-y-0.5 max-h-48 overflow-y-auto">
           {entries.map((entry) => (
             <LogEntryItem key={entry.id} entry={entry} />
           ))}
