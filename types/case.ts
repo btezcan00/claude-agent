@@ -208,8 +208,8 @@ export const CASE_COLORS = [
 ] as const;
 
 export const CASE_ICONS = [
-  'folder',
-  'folder-open',
+  'case',
+  'case-open',
   'file-text',
   'alert-triangle',
   'shield',
@@ -225,10 +225,10 @@ export const CASE_ACCESS_LEVELS: {
   label: string;
   description: string;
 }[] = [
-  { value: 'view', label: 'View', description: 'Can view case and signals' },
-  { value: 'edit', label: 'Edit', description: 'Can edit case and add signals' },
-  { value: 'admin', label: 'Admin', description: 'Full access including sharing' },
-];
+    { value: 'view', label: 'View', description: 'Can view case and signals' },
+    { value: 'edit', label: 'Edit', description: 'Can edit case and add signals' },
+    { value: 'admin', label: 'Admin', description: 'Full access including sharing' },
+  ];
 
 // File Attachment types and constants
 export interface CaseAttachment {
@@ -268,39 +268,39 @@ export const CASE_STATUSES: {
   color: string;
   bgColor: string;
 }[] = [
-  {
-    value: 'application',
-    label: 'Application for Bibob Test',
-    shortLabel: 'Application',
-    color: '#3b82f6',
-    bgColor: '#eff6ff',
-  },
-  {
-    value: 'research',
-    label: 'Own Research',
-    shortLabel: 'Research',
-    color: '#f59e0b',
-    bgColor: '#fffbeb',
-  },
-  {
-    value: 'national_office',
-    label: 'National Bibob Office',
-    shortLabel: 'National Office',
-    color: '#8b5cf6',
-    bgColor: '#f5f3ff',
-  },
-  {
-    value: 'decision',
-    label: 'Decision',
-    shortLabel: 'Decision',
-    color: '#22c55e',
-    bgColor: '#f0fdf4',
-  },
-  {
-    value: 'archive',
-    label: 'Archive',
-    shortLabel: 'Archive',
-    color: '#6b7280',
-    bgColor: '#f9fafb',
-  },
-];
+    {
+      value: 'application',
+      label: 'Application for Bibob Test',
+      shortLabel: 'Application',
+      color: '#3b82f6',
+      bgColor: '#eff6ff',
+    },
+    {
+      value: 'research',
+      label: 'Own Research',
+      shortLabel: 'Research',
+      color: '#f59e0b',
+      bgColor: '#fffbeb',
+    },
+    {
+      value: 'national_office',
+      label: 'National Bibob Office',
+      shortLabel: 'National Office',
+      color: '#8b5cf6',
+      bgColor: '#f5f3ff',
+    },
+    {
+      value: 'decision',
+      label: 'Decision',
+      shortLabel: 'Decision',
+      color: '#22c55e',
+      bgColor: '#f0fdf4',
+    },
+    {
+      value: 'archive',
+      label: 'Archive',
+      shortLabel: 'Archive',
+      color: '#6b7280',
+      bgColor: '#f9fafb',
+    },
+  ];

@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { apiRequest, formatResponse } from '../utils/api-client.js';
 
 // Types for API responses
-interface Folder {
+interface Case {
   id: string;
   name: string;
   description: string;
@@ -53,7 +53,7 @@ interface Folder {
 }
 
 // Zod schemas
-const FolderStatusSchema = z.enum([
+const CaseStatusSchema = z.enum([
   'application',
   'research',
   'national_office',
@@ -70,47 +70,47 @@ export function registerCaseTools(server: McpServer): void {
   // READ OPERATIONS (9 tools)
   // ==========================================
 
-  // 1. summarize_cases - Get case/folder overview
+  // 1. summarize_cases - Get case overview
   server.tool(
     'summarize_cases',
-    'Get a summary overview of all cases (folders) in the system, including status breakdown and key metrics',
+    'Get a summary overview of all cases in the system, including status breakdown and key metrics',
     {
-      status: FolderStatusSchema.optional().describe('Filter by status (application, research, national_office, decision, archive)'),
+      status: CaseStatusSchema.optional().describe('Filter by status (application, research, national_office, decision, archive)'),
       limit: z.number().optional().describe('Limit the number of cases returned'),
     },
     async ({ status, limit }) => {
-      const response = await apiRequest<Folder[]>({ method: 'GET', path: '/api/cases' });
+      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
 
       if (response.error) {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
       }
 
-      let folders = response.data || [];
+      let cases = response.data || [];
 
       // Filter by status if provided
       if (status) {
-        folders = folders.filter((f) => f.status === status);
+        cases = cases.filter((f) => f.status === status);
       }
 
       // Apply limit if provided
       if (limit && limit > 0) {
-        folders = folders.slice(0, limit);
+        cases = cases.slice(0, limit);
       }
 
       // Create summary
       const statusCounts = {
-        application: folders.filter((f) => f.status === 'application').length,
-        research: folders.filter((f) => f.status === 'research').length,
-        national_office: folders.filter((f) => f.status === 'national_office').length,
-        decision: folders.filter((f) => f.status === 'decision').length,
-        archive: folders.filter((f) => f.status === 'archive').length,
+        application: cases.filter((f) => f.status === 'application').length,
+        research: cases.filter((f) => f.status === 'research').length,
+        national_office: cases.filter((f) => f.status === 'national_office').length,
+        decision: cases.filter((f) => f.status === 'decision').length,
+        archive: cases.filter((f) => f.status === 'archive').length,
       };
 
       const summary = {
-        totalCases: folders.length,
+        totalCases: cases.length,
         statusBreakdown: statusCounts,
-        activeCases: folders.filter((f) => f.status !== 'archive').length,
-        cases: folders.map((f) => ({
+        activeCases: cases.filter((f) => f.status !== 'archive').length,
+        cases: cases.map((f) => ({
           id: f.id,
           name: f.name,
           description: f.description,
@@ -143,14 +143,14 @@ export function registerCaseTools(server: McpServer): void {
     'Get comprehensive dashboard statistics for cases including counts, status distribution, and trends',
     {},
     async () => {
-      const foldersResponse = await apiRequest<Folder[]>({ method: 'GET', path: '/api/cases' });
+      const casesResponse = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
       const statsResponse = await apiRequest({ method: 'GET', path: '/api/cases/stats' });
 
-      if (foldersResponse.error) {
-        return { content: [{ type: 'text', text: formatResponse(foldersResponse) }] };
+      if (casesResponse.error) {
+        return { content: [{ type: 'text', text: formatResponse(casesResponse) }] };
       }
 
-      const folders = foldersResponse.data || [];
+      const cases = casesResponse.data || [];
       const basicStats = statsResponse.data || {};
 
       // Calculate detailed stats
@@ -160,29 +160,29 @@ export function registerCaseTools(server: McpServer): void {
       const stats = {
         ...basicStats,
         byStatus: {
-          application: folders.filter((f) => f.status === 'application').length,
-          research: folders.filter((f) => f.status === 'research').length,
-          national_office: folders.filter((f) => f.status === 'national_office').length,
-          decision: folders.filter((f) => f.status === 'decision').length,
-          archive: folders.filter((f) => f.status === 'archive').length,
+          application: cases.filter((f) => f.status === 'application').length,
+          research: cases.filter((f) => f.status === 'research').length,
+          national_office: cases.filter((f) => f.status === 'national_office').length,
+          decision: cases.filter((f) => f.status === 'decision').length,
+          archive: cases.filter((f) => f.status === 'archive').length,
         },
         recentActivity: {
-          createdLast30Days: folders.filter((f) => new Date(f.createdAt) > thirtyDaysAgo).length,
-          updatedLast30Days: folders.filter((f) => new Date(f.updatedAt) > thirtyDaysAgo).length,
+          createdLast30Days: cases.filter((f) => new Date(f.createdAt) > thirtyDaysAgo).length,
+          updatedLast30Days: cases.filter((f) => new Date(f.updatedAt) > thirtyDaysAgo).length,
         },
         findings: {
-          total: folders.reduce((sum, f) => sum + (f.findings?.length || 0), 0),
-          critical: folders.reduce(
+          total: cases.reduce((sum, f) => sum + (f.findings?.length || 0), 0),
+          critical: cases.reduce(
             (sum, f) => sum + (f.findings?.filter((fn) => fn.severity === 'critical').length || 0),
             0
           ),
-          serious: folders.reduce(
+          serious: cases.reduce(
             (sum, f) => sum + (f.findings?.filter((fn) => fn.severity === 'serious').length || 0),
             0
           ),
         },
-        assigned: folders.filter((f) => f.ownerId).length,
-        unassigned: folders.filter((f) => !f.ownerId).length,
+        assigned: cases.filter((f) => f.ownerId).length,
+        unassigned: cases.filter((f) => !f.ownerId).length,
       };
 
       return { content: [{ type: 'text', text: JSON.stringify(stats, null, 2) }] };
@@ -195,25 +195,25 @@ export function registerCaseTools(server: McpServer): void {
     'Search cases by various filters including name, status, owner, and tags',
     {
       query: z.string().optional().describe('Text to search in case name and description'),
-      status: FolderStatusSchema.optional().describe('Filter by case status'),
+      status: CaseStatusSchema.optional().describe('Filter by case status'),
       ownerId: z.string().optional().describe('Filter by owner user ID'),
       tag: z.string().optional().describe('Filter by tag'),
       hasFindings: z.boolean().optional().describe('Filter cases that have findings'),
       hasCriticalFindings: z.boolean().optional().describe('Filter cases with critical severity findings'),
     },
     async ({ query, status, ownerId, tag, hasFindings, hasCriticalFindings }) => {
-      const response = await apiRequest<Folder[]>({ method: 'GET', path: '/api/cases' });
+      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
 
       if (response.error) {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
       }
 
-      let folders = response.data || [];
+      let cases = response.data || [];
 
       // Apply filters
       if (query) {
         const q = query.toLowerCase();
-        folders = folders.filter(
+        cases = cases.filter(
           (f) =>
             f.name.toLowerCase().includes(q) ||
             f.description.toLowerCase().includes(q)
@@ -221,30 +221,30 @@ export function registerCaseTools(server: McpServer): void {
       }
 
       if (status) {
-        folders = folders.filter((f) => f.status === status);
+        cases = cases.filter((f) => f.status === status);
       }
 
       if (ownerId) {
-        folders = folders.filter((f) => f.ownerId === ownerId);
+        cases = cases.filter((f) => f.ownerId === ownerId);
       }
 
       if (tag) {
-        folders = folders.filter((f) => f.tags?.includes(tag));
+        cases = cases.filter((f) => f.tags?.includes(tag));
       }
 
       if (hasFindings === true) {
-        folders = folders.filter((f) => f.findings && f.findings.length > 0);
+        cases = cases.filter((f) => f.findings && f.findings.length > 0);
       } else if (hasFindings === false) {
-        folders = folders.filter((f) => !f.findings || f.findings.length === 0);
+        cases = cases.filter((f) => !f.findings || f.findings.length === 0);
       }
 
       if (hasCriticalFindings) {
-        folders = folders.filter((f) =>
+        cases = cases.filter((f) =>
           f.findings?.some((fn) => fn.severity === 'critical')
         );
       }
 
-      const results = folders.map((f) => ({
+      const results = cases.map((f) => ({
         id: f.id,
         name: f.name,
         description: f.description,
@@ -278,7 +278,7 @@ export function registerCaseTools(server: McpServer): void {
       limit: z.number().optional().describe('Limit the number of activities returned'),
     },
     async ({ caseId, limit }) => {
-      const response = await apiRequest<Folder>({
+      const response = await apiRequest<Case>({
         method: 'GET',
         path: '/api/cases/{id}',
         pathParams: { id: caseId },
@@ -288,8 +288,8 @@ export function registerCaseTools(server: McpServer): void {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
       }
 
-      const folder = response.data;
-      let activities = folder?.activities || [];
+      const caseData = response.data;
+      let activities = caseData?.activities || [];
 
       // Sort by timestamp descending (most recent first)
       activities = activities.sort(
@@ -307,8 +307,8 @@ export function registerCaseTools(server: McpServer): void {
             text: JSON.stringify(
               {
                 caseId,
-                caseName: folder?.name,
-                totalActivities: folder?.activities?.length || 0,
+                caseName: caseData?.name,
+                totalActivities: caseData?.activities?.length || 0,
                 activities,
               },
               null,
@@ -329,7 +329,7 @@ export function registerCaseTools(server: McpServer): void {
       includeAdminOnly: z.boolean().optional().describe('Include admin-only notes (default: false)'),
     },
     async ({ caseId, includeAdminOnly }) => {
-      const response = await apiRequest<Folder>({
+      const response = await apiRequest<Case>({
         method: 'GET',
         path: '/api/cases/{id}',
         pathParams: { id: caseId },
@@ -339,8 +339,8 @@ export function registerCaseTools(server: McpServer): void {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
       }
 
-      const folder = response.data;
-      let notes = folder?.notes || [];
+      const caseData = response.data;
+      let notes = caseData?.notes || [];
 
       // Filter admin-only notes unless explicitly requested
       if (!includeAdminOnly) {
@@ -359,7 +359,7 @@ export function registerCaseTools(server: McpServer): void {
             text: JSON.stringify(
               {
                 caseId,
-                caseName: folder?.name,
+                caseName: caseData?.name,
                 totalNotes: notes.length,
                 notes,
               },
@@ -378,20 +378,20 @@ export function registerCaseTools(server: McpServer): void {
     'Find cases that have been in the same status for an extended period (potentially stale)',
     {
       daysThreshold: z.number().optional().describe('Number of days without updates to consider overdue (default: 30)'),
-      status: FolderStatusSchema.optional().describe('Filter by specific status'),
+      status: CaseStatusSchema.optional().describe('Filter by specific status'),
     },
     async ({ daysThreshold = 30, status }) => {
-      const response = await apiRequest<Folder[]>({ method: 'GET', path: '/api/cases' });
+      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
 
       if (response.error) {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
       }
 
-      const folders = response.data || [];
+      const cases = response.data || [];
       const now = new Date();
       const threshold = new Date(now.getTime() - daysThreshold * 24 * 60 * 60 * 1000);
 
-      let overdueCases = folders.filter((f) => {
+      let overdueCases = cases.filter((f) => {
         // Exclude archived cases
         if (f.status === 'archive') return false;
         // Check if last update is older than threshold
@@ -443,22 +443,22 @@ export function registerCaseTools(server: McpServer): void {
     'get_unassigned_cases',
     'Find all cases that do not have an owner assigned',
     {
-      status: FolderStatusSchema.optional().describe('Filter by specific status'),
+      status: CaseStatusSchema.optional().describe('Filter by specific status'),
     },
     async ({ status }) => {
-      const response = await apiRequest<Folder[]>({ method: 'GET', path: '/api/cases' });
+      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
 
       if (response.error) {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
       }
 
-      let folders = (response.data || []).filter((f) => !f.ownerId);
+      let cases = (response.data || []).filter((f) => !f.ownerId);
 
       if (status) {
-        folders = folders.filter((f) => f.status === status);
+        cases = cases.filter((f) => f.status === status);
       }
 
-      const results = folders.map((f) => ({
+      const results = cases.map((f) => ({
         id: f.id,
         name: f.name,
         description: f.description,
@@ -494,7 +494,7 @@ export function registerCaseTools(server: McpServer): void {
       caseId: z.string().describe('The ID of the case to get attachments for'),
     },
     async ({ caseId }) => {
-      const response = await apiRequest<Folder>({
+      const response = await apiRequest<Case>({
         method: 'GET',
         path: '/api/cases/{id}',
         pathParams: { id: caseId },
@@ -504,8 +504,8 @@ export function registerCaseTools(server: McpServer): void {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
       }
 
-      const folder = response.data;
-      const attachments = folder?.fileAttachments || [];
+      const caseData = response.data;
+      const attachments = caseData?.fileAttachments || [];
 
       const summary = attachments.map((a) => ({
         id: a.id,
@@ -527,7 +527,7 @@ export function registerCaseTools(server: McpServer): void {
             text: JSON.stringify(
               {
                 caseId,
-                caseName: folder?.name,
+                caseName: caseData?.name,
                 totalAttachments: attachments.length,
                 attachments: summary,
               },
@@ -547,7 +547,7 @@ export function registerCaseTools(server: McpServer): void {
   // 1. create_case - Create new case
   server.tool(
     'create_case',
-    'Create a new case (folder) for an investigation. REQUIRES CONFIRMATION.',
+    'Create a new case for an investigation. REQUIRES CONFIRMATION.',
     {
       name: z.string().describe('Name of the case'),
       description: z.string().describe('Description of the case'),
@@ -599,8 +599,8 @@ export function registerCaseTools(server: McpServer): void {
       isAdminOnly: z.boolean().optional().describe('Whether this note should only be visible to admins'),
     },
     async ({ caseId, content, isAdminOnly }) => {
-      // First get the current folder to append the note
-      const getResponse = await apiRequest<Folder>({
+      // First get the current case to append the note
+      const getResponse = await apiRequest<Case>({
         method: 'GET',
         path: '/api/cases/{id}',
         pathParams: { id: caseId },
@@ -610,8 +610,8 @@ export function registerCaseTools(server: McpServer): void {
         return { content: [{ type: 'text', text: formatResponse(getResponse) }] };
       }
 
-      const folder = getResponse.data;
-      const existingNotes = folder?.notes || [];
+      const caseData = getResponse.data;
+      const existingNotes = caseData?.notes || [];
 
       const newNote = {
         id: `note-${Date.now()}`,
@@ -754,13 +754,13 @@ export function registerCaseTools(server: McpServer): void {
     'Change the workflow status of a case. REQUIRES CONFIRMATION. Status flow: application -> research -> national_office -> decision -> archive',
     {
       caseId: z.string().describe('The ID of the case to update'),
-      status: FolderStatusSchema.describe('The new status for the case'),
+      status: CaseStatusSchema.describe('The new status for the case'),
     },
     async ({ caseId, status }) => {
       const now = new Date().toISOString();
 
-      // Get current folder to update statusDates
-      const getResponse = await apiRequest<Folder & { statusDates?: Record<string, string> }>({
+      // Get current case to update statusDates
+      const getResponse = await apiRequest<Case & { statusDates?: Record<string, string> }>({
         method: 'GET',
         path: '/api/cases/{id}',
         pathParams: { id: caseId },
@@ -770,8 +770,8 @@ export function registerCaseTools(server: McpServer): void {
         return { content: [{ type: 'text', text: formatResponse(getResponse) }] };
       }
 
-      const folder = getResponse.data;
-      const statusDates = folder?.statusDates || {};
+      const caseData = getResponse.data;
+      const statusDates = caseData?.statusDates || {};
 
       const response = await apiRequest({
         method: 'PUT',
@@ -799,7 +799,7 @@ export function registerCaseTools(server: McpServer): void {
                 success: true,
                 message: `Case status changed to "${status}"`,
                 caseId,
-                previousStatus: folder?.status,
+                previousStatus: caseData?.status,
                 newStatus: status,
                 timestamp: now,
               },

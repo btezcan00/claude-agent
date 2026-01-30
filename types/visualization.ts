@@ -8,7 +8,7 @@ export interface VisualizationData {
 
 export interface VisualizationNode {
   id: string;
-  type: 'folder' | 'organization' | 'person' | 'address';
+  type: 'case' | 'organization' | 'person' | 'address';
   label: string;
   position: { x: number; y: number };
 }

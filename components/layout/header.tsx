@@ -52,14 +52,14 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       if (path === 'signals') {
         label = 'Signals';
-      } else if (path === 'folders') {
-        label = 'Folders';
+      } else if (path === 'cases') {
+        label = 'Cases';
       } else if (path === 'team') {
         label = 'Teams';
       } else if (paths[index - 1] === 'signals') {
         label = 'Signal Details';
-      } else if (paths[index - 1] === 'folders') {
-        label = 'Folder Details';
+      } else if (paths[index - 1] === 'cases') {
+        label = 'Case Details';
       }
 
       breadcrumbs.push({ label, href });

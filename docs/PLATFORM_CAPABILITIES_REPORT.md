@@ -47,7 +47,7 @@ A **Government Case Management Platform** designed for managing law enforcement 
 
 | Entity | Description |
 |--------|-------------|
-| **Cases (Folders)** | Investigation containers with workflow status, findings, and documentation |
+| **Cases** | Investigation containers with workflow status, findings, and documentation |
 | **Signals** | Tips, reports, and intelligence that may trigger investigations |
 | **People** | Individuals involved in or related to investigations |
 | **Organizations** | Companies, entities under investigation |
@@ -81,7 +81,7 @@ A **Government Case Management Platform** designed for managing law enforcement 
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `summarize_cases` | Get case/folder overview with status breakdown | `status?`, `limit?` |
+| `summarize_cases` | Get case overview with status breakdown | `status?`, `limit?` |
 | `list_team_members` | Team members with workload statistics | None |
 | `get_case_stats` | Comprehensive dashboard statistics | None |
 | `search_cases` | Search by filters | `query?`, `status?`, `ownerId?`, `tag?`, `hasFindings?`, `hasCriticalFindings?` |
@@ -112,19 +112,19 @@ A **Government Case Management Platform** designed for managing law enforcement 
 | `signal_create` | Create new signal |
 | `signal_update` | Update signal |
 | `signal_delete` | Delete signal |
-| `signal_add_to_folder` | Link signal to case |
-| `signal_remove_from_folder` | Unlink signal from case |
+| `signal_add_to_case` | Link signal to case |
+| `signal_remove_from_case` | Unlink signal from case |
 
-### 3.3 Folder Tools (6 tools)
+### 3.3 Case Tools (6 tools)
 
 | Tool | Description |
 |------|-------------|
-| `folder_list` | List all folders |
-| `folder_get` | Get specific folder by ID |
-| `folder_create` | Create new folder |
-| `folder_update` | Update folder |
-| `folder_delete` | Delete folder |
-| `folder_submit_application` | Submit Bibob application |
+| `case_list` | List all cases |
+| `case_get` | Get specific case by ID |
+| `case_create` | Create new case |
+| `case_update` | Update case |
+| `case_delete` | Delete case |
+| `case_submit_application` | Submit Bibob application |
 
 ---
 
@@ -134,7 +134,7 @@ A **Government Case Management Platform** designed for managing law enforcement 
 
 | Task | Description | Tool(s) Used |
 |------|-------------|--------------|
-| List all folders by status | Get folders in Application, Research, Decision stages | `summarize_cases` |
+| List all cases by status | Get cases in Application, Research, Decision stages | `summarize_cases` |
 | Get team workload | Show which team members have most cases | `list_team_members` |
 | Find unassigned cases | List cases without an owner | `get_unassigned_cases` |
 | Summarize a signal | Read a signal and provide summary | `signal_get` |
@@ -144,31 +144,31 @@ A **Government Case Management Platform** designed for managing law enforcement 
 
 | Task | Description | Tool(s) Used |
 |------|-------------|--------------|
-| Create a new folder | Create folder with name, description, tags | `create_case` |
-| Add a finding to folder | Select type, assign user, set severity | `edit_case` |
-| Move folder through workflow | Change status Application → Research → Decision | `change_status` |
-| Generate a letter | Create LBB notification with filled fields | `folder_update` |
+| Create a new case | Create case with name, description, tags | `create_case` |
+| Add a finding to case | Select type, assign user, set severity | `edit_case` |
+| Move case through workflow | Change status Application → Research → Decision | `change_status` |
+| Generate a letter | Create LBB notification with filled fields | `case_update` |
 | Analyze an attachment | Upload PDF and extract key information | `summarize_attachments` |
 
 ### Hard Tasks (Multi-step, Multiple Entities)
 
 | Task | Description | Tool(s) Used |
 |------|-------------|--------------|
-| Link signal to folder | Find signal, add to existing folder | `signal_get` + `signal_add_to_folder` |
-| Create visualization | Add people, orgs, addresses as nodes with edges | `folder_update` |
-| Complete application criteria | Check all criteria, provide explanations | `folder_submit_application` |
-| Add person with organization | Create person, create org, link both to folder | Multiple entity APIs |
-| Process suspicious activity | From signal → folder → findings → letter | Full workflow |
+| Link signal to case | Find signal, add to existing case | `signal_get` + `signal_add_to_case` |
+| Create visualization | Add people, orgs, addresses as nodes with edges | `case_update` |
+| Complete application criteria | Check all criteria, provide explanations | `case_submit_application` |
+| Add person with organization | Create person, create org, link both to case | Multiple entity APIs |
+| Process suspicious activity | From signal → case → findings → letter | Full workflow |
 
 ### Expert Tasks (Complex Reasoning + Automation)
 
 | Task | Description | Tool(s) Used |
 |------|-------------|--------------|
 | Rebalance team workload | Analyze capacity, suggest reassignments | `list_team_members` + `assign_case` |
-| Identify related cases | Find connections between signals/folders | `search_cases` + analysis |
+| Identify related cases | Find connections between signals/cases | `search_cases` + analysis |
 | Generate investigation summary | Compile findings, timeline, recommendations | Multiple read tools + synthesis |
 | Bulk signal processing | Categorize 10 signals by type and priority | `signal_list` + batch operations |
-| Risk assessment | Analyze folder data, generate severity findings | `summarize_cases` + `edit_case` |
+| Risk assessment | Analyze case data, generate severity findings | `summarize_cases` + `edit_case` |
 
 ---
 
@@ -179,7 +179,7 @@ A **Government Case Management Platform** designed for managing law enforcement 
 **User Prompt:** *"Create a new Bibob investigation for ABC Corporation"*
 
 **Expected Agent Actions:**
-1. Create folder with appropriate name/tags using `create_case`
+1. Create case with appropriate name/tags using `create_case`
 2. Add ABC Corporation to organizations
 3. Set initial status to "Application"
 4. Create initial findings checklist
@@ -196,7 +196,7 @@ A **Government Case Management Platform** designed for managing law enforcement 
 1. Create signal with source "Anonymous" using `signal_create`
 2. Set appropriate signal type
 3. Add address to signal
-4. Suggest creating folder if warranted
+4. Suggest creating case if warranted
 
 **Tools Used:** `signal_create`, `create_case`
 
@@ -207,7 +207,7 @@ A **Government Case Management Platform** designed for managing law enforcement 
 **User Prompt:** *"Move the Johnson case to Research phase and add a finding"*
 
 **Expected Agent Actions:**
-1. Find the Johnson folder using `search_cases`
+1. Find the Johnson case using `search_cases`
 2. Update status to "Research" using `change_status`
 3. Add appropriate finding with severity using `edit_case`
 4. Activity timeline auto-updates
@@ -352,7 +352,7 @@ The `.mcp.json` file configures the MCP server:
 ```json
 {
   "mcpServers": {
-    "signal-folder-api": {
+    "signal-case-api": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
       "env": {
@@ -375,13 +375,13 @@ The `.mcp.json` file configures the MCP server:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/folders` | GET, POST | List/create folders |
-| `/api/folders/[id]` | GET, PUT, DELETE | CRUD single folder |
-| `/api/folders/[id]/application` | PUT | Submit Bibob application |
-| `/api/folders/stats` | GET | Folder statistics |
+| `/api/cases` | GET, POST | List/create cases |
+| `/api/cases/[id]` | GET, PUT, DELETE | CRUD single case |
+| `/api/cases/[id]/application` | PUT | Submit Bibob application |
+| `/api/cases/stats` | GET | Case statistics |
 | `/api/signals` | GET, POST | List/create signals |
 | `/api/signals/[id]` | GET, PUT, DELETE | CRUD single signal |
-| `/api/signals/[id]/folder-relations` | POST | Link signal to folder |
+| `/api/signals/[id]/case-relations` | POST | Link signal to case |
 | `/api/team-members` | GET | Team with workload |
 | `/api/organizations` | GET, POST | Organizations |
 | `/api/addresses` | GET, POST | Addresses |
@@ -402,9 +402,9 @@ The `.mcp.json` file configures the MCP server:
       "name": "Sarah Mitchell",
       "role": "supervisor",
       "workload": {
-        "totalFolders": 1,
+        "totalCases": 1,
         "activeCases": 1,
-        "foldersByStatus": {
+        "casesByStatus": {
           "application": 0,
           "research": 1,
           "national_office": 0,

@@ -117,12 +117,12 @@ export async function loadSkills(): Promise<Skill[]> {
   const skills: Skill[] = [];
 
   try {
-    const folders = fs.readdirSync(skillsDir, { withFileTypes: true });
+    const cases = fs.readdirSync(skillsDir, { withFileTypes: true });
 
-    for (const folder of folders) {
-      if (!folder.isDirectory()) continue;
+    for (const caseFolder of cases) {
+      if (!caseFolder.isDirectory()) continue;
 
-      const skillPath = path.join(skillsDir, folder.name, 'SKILL.md');
+      const skillPath = path.join(skillsDir, caseFolder.name, 'SKILL.md');
       if (fs.existsSync(skillPath)) {
         const skill = parseSkill(skillPath);
         if (skill) {

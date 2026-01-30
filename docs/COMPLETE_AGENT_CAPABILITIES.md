@@ -11,25 +11,25 @@ This document provides a complete inventory of all platform capabilities, compar
 
 | Category | Platform Operations | MCP Tools Available | Coverage |
 |----------|--------------------|--------------------|----------|
-| **Case/Folder** | 50+ operations | 16 tools | ~32% |
+| **Case** | 50+ operations | 16 tools | ~32% |
 | **Signal** | 20+ operations | 7 tools | ~35% |
 | **Total** | 70+ operations | 29 tools | ~40% |
 
-**Note:** Many platform operations can be performed via the generic `edit_case` and `folder_update` tools, but dedicated tools would provide better UX.
+**Note:** Many platform operations can be performed via the generic `edit_case` and `case_update` tools, but dedicated tools would provide better UX.
 
 ---
 
-## 1. CASE/FOLDER CAPABILITIES
+## 1. CASE CAPABILITIES
 
 ### 1.1 Core CRUD Operations
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Create case | `createFolder()` | `create_case` | ✅ Available |
-| Read case | `getFolderById()` | `folder_get` | ✅ Available |
-| Update case | `updateFolder()` | `edit_case` | ✅ Available |
-| Delete case | `deleteFolder()` | `delete_case` | ✅ Available |
-| List cases | `folders[]` | `summarize_cases` | ✅ Available |
+| Create case | `createCase()` | `create_case` | ✅ Available |
+| Read case | `getCaseById()` | `case_get` | ✅ Available |
+| Update case | `updateCase()` | `edit_case` | ✅ Available |
+| Delete case | `deleteCase()` | `delete_case` | ✅ Available |
+| List cases | `cases[]` | `summarize_cases` | ✅ Available |
 | Search cases | filter logic | `search_cases` | ✅ Available |
 | Get case stats | computed | `get_case_stats` | ✅ Available |
 
@@ -37,16 +37,16 @@ This document provides a complete inventory of all platform capabilities, compar
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Assign owner | `assignFolderOwner()` | `assign_case` | ✅ Available |
-| Unassign owner | `unassignFolderOwner()` | `unassign_case` | ✅ Available |
+| Assign owner | `assignCaseOwner()` | `assign_case` | ✅ Available |
+| Unassign owner | `unassignCaseOwner()` | `unassign_case` | ✅ Available |
 | List unassigned | filter logic | `get_unassigned_cases` | ✅ Available |
 
 ### 1.3 Status/Workflow Management
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Change status | `updateFolderStatus()` | `change_status` | ✅ Available |
-| Get by status | `getFoldersByStatus()` | `summarize_cases` (filter) | ✅ Available |
+| Change status | `updateCaseStatus()` | `change_status` | ✅ Available |
+| Get by status | `getCasesByStatus()` | `summarize_cases` (filter) | ✅ Available |
 | Find overdue | computed | `get_overdue_cases` | ✅ Available |
 
 **Status Flow:** `application` → `research` → `national_office` → `decision` → `archive`
@@ -55,9 +55,9 @@ This document provides a complete inventory of all platform capabilities, compar
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Add note | `addFolderNote()` | `add_note` | ✅ Available |
-| Get notes | `folder.notes` | `get_case_notes` | ✅ Available |
-| Remove note | `removeFolderNote()` | ❌ | 🔴 Not exposed |
+| Add note | `addCaseNote()` | `add_note` | ✅ Available |
+| Get notes | `case.notes` | `get_case_notes` | ✅ Available |
+| Remove note | `removeCaseNote()` | ❌ | 🔴 Not exposed |
 | Admin-only notes | `isAdminNote: true` | `add_note` (param) | ✅ Available |
 
 ### 1.5 Practitioners (Team Collaboration)
@@ -66,13 +66,13 @@ This document provides a complete inventory of all platform capabilities, compar
 |-----------|-----------------|----------|--------|
 | Add practitioner | `addPractitioner()` | ❌ | 🔴 Not exposed |
 | Remove practitioner | `removePractitioner()` | ❌ | 🔴 Not exposed |
-| List practitioners | `folder.practitioners` | via `folder_get` | ⚠️ Partial |
+| List practitioners | `case.practitioners` | via `case_get` | ⚠️ Partial |
 
 ### 1.6 Sharing & Access Control
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Share folder | `shareFolder()` | ❌ | 🔴 Not exposed |
+| Share case | `shareCase()` | ❌ | 🔴 Not exposed |
 | Update access level | `updateShareAccess()` | ❌ | 🔴 Not exposed |
 | Remove share | `removeShare()` | ❌ | 🔴 Not exposed |
 
@@ -90,25 +90,25 @@ This document provides a complete inventory of all platform capabilities, compar
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Add organization to case | `addOrganizationToFolder()` | ❌ | 🔴 Not exposed |
+| Add organization to case | `addOrganizationToCase()` | ❌ | 🔴 Not exposed |
 | Remove organization | `removeOrganization()` | ❌ | 🔴 Not exposed |
-| List case organizations | `folder.organizations` | via `folder_get` | ⚠️ Partial |
+| List case organizations | `case.organizations` | via `case_get` | ⚠️ Partial |
 
 ### 1.9 Addresses
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Add address to case | `addAddressToFolder()` | ❌ | 🔴 Not exposed |
+| Add address to case | `addAddressToCase()` | ❌ | 🔴 Not exposed |
 | Remove address | `removeAddress()` | ❌ | 🔴 Not exposed |
-| List case addresses | `folder.addresses` | via `folder_get` | ⚠️ Partial |
+| List case addresses | `case.addresses` | via `case_get` | ⚠️ Partial |
 
 ### 1.10 People Involved
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Add person to case | `addPersonToFolder()` | ❌ | 🔴 Not exposed |
+| Add person to case | `addPersonToCase()` | ❌ | 🔴 Not exposed |
 | Remove person | `removePersonInvolved()` | ❌ | 🔴 Not exposed |
-| List people | `folder.peopleInvolved` | via `folder_get` | ⚠️ Partial |
+| List people | `case.peopleInvolved` | via `case_get` | ⚠️ Partial |
 
 ### 1.11 Letters (Official Documents)
 
@@ -159,7 +159,7 @@ This document provides a complete inventory of all platform capabilities, compar
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
 | Add chat message | `addChatMessage()` | ❌ | 🔴 Not exposed |
-| List messages | `folder.chatMessages` | via `folder_get` | ⚠️ Partial |
+| List messages | `case.chatMessages` | via `case_get` | ⚠️ Partial |
 
 ### 1.15 Suggestions
 
@@ -177,13 +177,13 @@ This document provides a complete inventory of all platform capabilities, compar
 | Add visualization | `addVisualization()` | ❌ | 🔴 Not exposed |
 | Remove visualization | `removeVisualization()` | ❌ | 🔴 Not exposed |
 
-**Node Types:** `folder` | `organization` | `person` | `address`
+**Node Types:** `case` | `organization` | `person` | `address`
 
 ### 1.17 Activities (Audit Trail)
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Get activities | `folder.activities` | `get_case_activity` | ✅ Available |
+| Get activities | `case.activities` | `get_case_activity` | ✅ Available |
 | Add activity | `addActivity()` | ❌ | 🔴 Not exposed |
 
 ### 1.18 Location
@@ -196,8 +196,8 @@ This document provides a complete inventory of all platform capabilities, compar
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Update application data | `updateApplicationData()` | `folder_submit_application` | ✅ Available |
-| Complete application | `completeApplication()` | `folder_submit_application` | ✅ Available |
+| Update application data | `updateApplicationData()` | `case_submit_application` | ✅ Available |
+| Complete application | `completeApplication()` | `case_submit_application` | ✅ Available |
 
 **Application Criteria:**
 - Provided all necessary information?
@@ -272,14 +272,14 @@ This document provides a complete inventory of all platform capabilities, compar
 
 **Indicator Structure:** Category → Subcategory hierarchical taxonomy
 
-### 2.8 Signal-Folder Relations
+### 2.8 Signal-Case Relations
 
 | Operation | Platform Support | MCP Tool | Status |
 |-----------|-----------------|----------|--------|
-| Link to folder | `addSignalToFolder()` | `signal_add_to_folder` | ✅ Available |
-| Unlink from folder | `removeSignalFromFolder()` | `signal_remove_from_folder` | ✅ Available |
-| Bulk link | `addSignalsToFolder()` | ❌ | 🔴 Not exposed |
-| Update relation | `updateSignalFolderRelation()` | ❌ | 🔴 Not exposed |
+| Link to case | `addSignalToCase()` | `signal_add_to_case` | ✅ Available |
+| Unlink from case | `removeSignalFromCase()` | `signal_remove_from_case` | ✅ Available |
+| Bulk link | `addSignalsToCase()` | ❌ | 🔴 Not exposed |
+| Update relation | `updateSignalCaseRelation()` | ❌ | 🔴 Not exposed |
 
 ---
 
@@ -329,19 +329,19 @@ This document provides a complete inventory of all platform capabilities, compar
 3. signal_create         - Create new signal
 4. signal_update         - Update signal
 5. signal_delete         - Delete signal
-6. signal_add_to_folder  - Link signal to case
-7. signal_remove_from_folder - Unlink signal from case
+6. signal_add_to_case  - Link signal to case
+7. signal_remove_from_case - Unlink signal from case
 ```
 
-### 4.3 Folder Tools (6)
+### 4.3 Case Tools (6)
 
 ```
-1. folder_list              - List all folders
-2. folder_get               - Get specific folder by ID
-3. folder_create            - Create new folder
-4. folder_update            - Update folder
-5. folder_delete            - Delete folder
-6. folder_submit_application- Submit Bibob application
+1. case_list              - List all cases
+2. case_get               - Get specific case by ID
+3. case_create            - Create new case
+4. case_update            - Update case
+5. case_delete            - Delete case
+6. case_submit_application- Submit Bibob application
 ```
 
 ---
@@ -402,7 +402,7 @@ This document provides a complete inventory of all platform capabilities, compar
 
 - Adding tags (via `edit_case`)
 - Updating location (via `edit_case`)
-- Complex folder updates (via `folder_update`)
+- Complex case updates (via `case_update`)
 
 ### Not Yet Supported via MCP
 
@@ -430,14 +430,14 @@ Agent: Uses list_team_members, analyzes workload
 User: "Create a new Bibob investigation for XYZ Corp"
 Agent: Uses create_case
 
-User: "Move case folder-001 to Decision phase"
+User: "Move case case-001 to Decision phase"
 Agent: Uses change_status
 
 User: "Find cases that haven't been updated in 30 days"
 Agent: Uses get_overdue_cases with daysThreshold=30
 
 User: "Link signal SIG-2024-001 to the trafficking case"
-Agent: Uses signal_add_to_folder
+Agent: Uses signal_add_to_case
 
 User: "Add a note that we received new evidence"
 Agent: Uses add_note

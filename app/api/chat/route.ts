@@ -42,10 +42,10 @@ interface TeamMember {
   lastName: string;
   title: string;
   role: string;
-  ownedFolderCount: number;
+  ownedCaseCount: number;
 }
 
-interface FolderStatusDates {
+interface CaseStatusDates {
   application?: string;
   research?: string;
   national_office?: string;
@@ -53,13 +53,13 @@ interface FolderStatusDates {
   archive?: string;
 }
 
-interface FolderPractitioner {
+interface CasePractitioner {
   userId: string;
   userName: string;
   addedAt: string;
 }
 
-interface FolderShare {
+interface CaseShare {
   userId: string;
   userName: string;
   accessLevel: string;
@@ -67,7 +67,7 @@ interface FolderShare {
   sharedBy: string;
 }
 
-interface FolderNote {
+interface CaseNote {
   id: string;
   content: string;
   createdAt: string;
@@ -76,7 +76,7 @@ interface FolderNote {
   isAdminNote: boolean;
 }
 
-interface FolderChatMessage {
+interface CaseChatMessage {
   id: string;
   conversationId: string;
   senderId: string;
@@ -101,7 +101,7 @@ interface ApplicationData {
   completedBy?: string;
 }
 
-interface FolderItem {
+interface CaseItem {
   id: string;
   date: string;
   phase: string;
@@ -112,7 +112,7 @@ interface FolderItem {
   sourceTheme?: string;
 }
 
-interface FindingItem extends FolderItem {
+interface FindingItem extends CaseItem {
   isCompleted: boolean;
   totalSteps?: number;
   completedSteps?: number;
@@ -146,7 +146,7 @@ interface ActivityItem {
   updatedAt: string;
 }
 
-interface FolderAttachment {
+interface CaseAttachment {
   id: string;
   fileName: string;
   fileType: string;
@@ -160,7 +160,7 @@ interface FolderAttachment {
   textContent?: string;
 }
 
-interface FolderData {
+interface CaseData {
   id: string;
   name: string;
   description: string;
@@ -173,28 +173,28 @@ interface FolderData {
   color?: string;
   icon?: string;
   status: string;
-  statusDates: FolderStatusDates;
+  statusDates: CaseStatusDates;
   tags: string[];
   signalTypes: string[];
-  practitioners: FolderPractitioner[];
-  sharedWith: FolderShare[];
+  practitioners: CasePractitioner[];
+  sharedWith: CaseShare[];
   location: string;
-  notes: FolderNote[];
+  notes: CaseNote[];
   organizations: OrganizationData[];
   addresses: AddressData[];
   peopleInvolved: PersonData[];
   letters: LetterItem[];
   findings: FindingItem[];
-  attachments: FolderItem[];
-  records: FolderItem[];
-  communications: FolderItem[];
-  suggestions: FolderItem[];
-  visualizations: FolderItem[];
+  attachments: CaseItem[];
+  records: CaseItem[];
+  communications: CaseItem[];
+  suggestions: CaseItem[];
+  visualizations: CaseItem[];
   activities: ActivityItem[];
-  fileAttachments: FolderAttachment[];
-  chatMessages: FolderChatMessage[];
+  fileAttachments: CaseAttachment[];
+  chatMessages: CaseChatMessage[];
   applicationData: ApplicationData;
-  // Computed field (not in Folder type)
+  // Computed field (not in Case type)
   signalCount: number;
 }
 
@@ -277,7 +277,7 @@ const tools: Anthropic.Tool[] = [
               tool: { type: 'string', description: 'Name of the tool to be used' },
               details: {
                 type: 'object',
-                description: 'Key parameters for this action. For parameters that depend on outputs from previous steps, use reference syntax: "$stepN.fieldName" (e.g., "$step1.folderId" to reference the folder ID created in step 1). Available output fields: step with create_signal returns signalId, signalNumber; step with create_folder returns folderId, folderName.',
+                description: 'Key parameters for this action. For parameters that depend on outputs from previous steps, use reference syntax: "$stepN.fieldName" (e.g., "$step1.caseId" to reference the case ID created in step 1). Available output fields: step with create_signal returns signalId, signalNumber; step with create_case returns caseId, caseName.',
               },
             },
             required: ['step', 'action', 'tool'],
@@ -303,14 +303,14 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
-    name: 'summarize_folder',
-    description: 'Summarize a specific folder or all folders. Returns key information including status, location, signals, and team members.',
+    name: 'summarize_case',
+    description: 'Summarize a specific case or all cases. Returns key information including status, location, signals, and team members.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'Optional folder ID or name to summarize. If not provided, summarizes all folders.',
+          description: 'Optional case ID or name to summarize. If not provided, summarizes all cases.',
         },
       },
       required: [],
@@ -421,8 +421,8 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
-    name: 'add_signal_to_folder',
-    description: 'Add an existing signal to an existing folder. Use this when the user wants to move or link a signal to a folder that already exists.',
+    name: 'add_signal_to_case',
+    description: 'Add an existing signal to an existing case. Use this when the user wants to move or link a signal to a case that already exists.',
     input_schema: {
       type: 'object',
       properties: {
@@ -430,17 +430,17 @@ const tools: Anthropic.Tool[] = [
           type: 'string',
           description: 'The ID or signal number of the signal to add',
         },
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the existing folder',
+          description: 'The ID or name of the existing case',
         },
       },
-      required: ['signal_id', 'folder_id'],
+      required: ['signal_id', 'case_id'],
     },
   },
   {
     name: 'list_team_members',
-    description: 'List all available team members and their folder ownership. Use this when the user asks about team members or folder assignments.',
+    description: 'List all available team members and their case ownership. Use this when the user asks about team members or case assignments.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -522,8 +522,8 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
-    name: 'list_folders',
-    description: 'List all folders in the system. Use this when the user wants to see available folders or asks about folders.',
+    name: 'list_cases',
+    description: 'List all cases in the system. Use this when the user wants to see available cases or asks about cases.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -531,8 +531,8 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
-    name: 'get_folder_stats',
-    description: 'Get statistics about folders. Returns total count and count by status.',
+    name: 'get_case_stats',
+    description: 'Get statistics about cases. Returns total count and count by status.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -541,13 +541,13 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: 'complete_bibob_application',
-    description: 'Complete the Bibob application for a folder. IMPORTANT: Only use this when ALL 4 criteria are met. If any criterion is not met, use save_bibob_application_draft instead and inform the user which criteria are missing.',
+    description: 'Complete the Bibob application for a case. IMPORTANT: Only use this when ALL 4 criteria are met. If any criterion is not met, use save_bibob_application_draft instead and inform the user which criteria are missing.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder to complete the application for',
+          description: 'The ID or name of the case to complete the application for',
         },
         explanation: {
           type: 'string',
@@ -567,7 +567,7 @@ const tools: Anthropic.Tool[] = [
           description: 'Array of criteria with completion status and explanations',
         },
       },
-      required: ['folder_id', 'explanation', 'criteria'],
+      required: ['case_id', 'explanation', 'criteria'],
     },
   },
   {
@@ -576,9 +576,9 @@ const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'ID or name of the folder',
+          description: 'ID or name of the case',
         },
         explanation: {
           type: 'string',
@@ -601,18 +601,18 @@ const tools: Anthropic.Tool[] = [
           },
         },
       },
-      required: ['folder_id'],
+      required: ['case_id'],
     },
   },
   {
-    name: 'assign_folder_owner',
-    description: 'Assign a team member as the owner of a folder. Use this when the user wants to assign someone to a folder.',
+    name: 'assign_case_owner',
+    description: 'Assign a team member as the owner of a case. Use this when the user wants to assign someone to a case.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder to assign an owner to',
+          description: 'The ID or name of the case to assign an owner to',
         },
         user_id: {
           type: 'string',
@@ -623,31 +623,31 @@ const tools: Anthropic.Tool[] = [
           description: 'The full name of the team member to assign as owner',
         },
       },
-      required: ['folder_id', 'user_id', 'user_name'],
+      required: ['case_id', 'user_id', 'user_name'],
     },
   },
   {
-    name: 'edit_folder',
-    description: 'Edit folder properties like name, description, status, location, color, or tags. Use this when the user wants to update folder information.',
+    name: 'edit_case',
+    description: 'Edit case properties like name, description, status, location, color, or tags. Use this when the user wants to update case information.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder to edit',
+          description: 'The ID or name of the case to edit',
         },
         name: {
           type: 'string',
-          description: 'New folder name',
+          description: 'New case name',
         },
         description: {
           type: 'string',
-          description: 'New folder description',
+          description: 'New case description',
         },
         status: {
           type: 'string',
           enum: ['application', 'research', 'national_office', 'decision', 'archive'],
-          description: 'New folder status in the workflow',
+          description: 'New case status in the workflow',
         },
         location: {
           type: 'string',
@@ -655,67 +655,67 @@ const tools: Anthropic.Tool[] = [
         },
         color: {
           type: 'string',
-          description: 'Folder color (e.g., #ef4444 for red, #3b82f6 for blue)',
+          description: 'Case color (e.g., #ef4444 for red, #3b82f6 for blue)',
         },
         tags: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Tags to set on the folder (replaces existing tags)',
+          description: 'Tags to set on the case (replaces existing tags)',
         },
       },
-      required: ['folder_id'],
+      required: ['case_id'],
     },
   },
   {
-    name: 'create_folder',
-    description: 'Create a new folder. IMPORTANT: If user mentions a signal or is creating a folder from a signal, you MUST include that signal ID in signalIds. After creation, ask if the user wants to fill out the Bibob application form. Default name is "New folder".',
+    name: 'create_case',
+    description: 'Create a new case. IMPORTANT: If user mentions a signal or is creating a case from a signal, you MUST include that signal ID in signalIds. After creation, ask if the user wants to fill out the Bibob application form. Default name is "New case".',
     input_schema: {
       type: 'object',
       properties: {
         name: {
           type: 'string',
-          description: 'Name of the folder (default: "New folder")',
+          description: 'Name of the case (default: "New case")',
         },
         description: {
           type: 'string',
-          description: 'Description of the folder\'s purpose',
+          description: 'Description of the case\'s purpose',
         },
         color: {
           type: 'string',
-          description: 'Optional hex color for the folder',
+          description: 'Optional hex color for the case',
         },
         signalIds: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Signal IDs to add to the folder. MUST be included when creating a folder from/for a signal.',
+          description: 'Signal IDs to add to the case. MUST be included when creating a case from/for a signal.',
         },
       },
       required: [],
     },
   },
   {
-    name: 'delete_folder',
-    description: 'Delete a folder from the system. Use this when the user explicitly wants to delete/remove a folder. Always confirm before deleting.',
+    name: 'delete_case',
+    description: 'Delete a case from the system. Use this when the user explicitly wants to delete/remove a case. Always confirm before deleting.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder to delete',
+          description: 'The ID or name of the case to delete',
         },
       },
-      required: ['folder_id'],
+      required: ['case_id'],
     },
   },
   {
-    name: 'add_folder_practitioner',
-    description: 'Add a team member as a practitioner to a folder. Practitioners can work on the folder but have limited permissions compared to the owner.',
+    name: 'add_case_practitioner',
+    description: 'Add a team member as a practitioner to a case. Practitioners can work on the case but have limited permissions compared to the owner.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         user_id: {
           type: 'string',
@@ -726,18 +726,18 @@ const tools: Anthropic.Tool[] = [
           description: 'The full name of the team member to add as practitioner',
         },
       },
-      required: ['folder_id', 'user_id', 'user_name'],
+      required: ['case_id', 'user_id', 'user_name'],
     },
   },
   {
-    name: 'share_folder',
-    description: 'Share a folder with a team member. Sharing gives them access to view or edit the folder based on the access level specified.',
+    name: 'share_case',
+    description: 'Share a case with a team member. Sharing gives them access to view or edit the case based on the access level specified.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder to share',
+          description: 'The ID or name of the case to share',
         },
         user_id: {
           type: 'string',
@@ -753,18 +753,18 @@ const tools: Anthropic.Tool[] = [
           description: 'The access level to grant: view (read-only), edit (can modify), admin (full access)',
         },
       },
-      required: ['folder_id', 'user_id', 'user_name', 'access_level'],
+      required: ['case_id', 'user_id', 'user_name', 'access_level'],
     },
   },
   {
-    name: 'add_folder_organization',
-    description: 'Add an organization to a folder. Use this when the user wants to associate a company, business, or organization with the folder.',
+    name: 'add_case_organization',
+    description: 'Add an organization to a case. Use this when the user wants to associate a company, business, or organization with the case.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         name: {
           type: 'string',
@@ -783,18 +783,18 @@ const tools: Anthropic.Tool[] = [
           description: 'Type of organization (e.g., "company", "foundation", "association")',
         },
       },
-      required: ['folder_id', 'name'],
+      required: ['case_id', 'name'],
     },
   },
   {
-    name: 'add_folder_address',
-    description: 'Add an address/location to a folder. Use this when the user wants to associate a specific address or location with the folder.',
+    name: 'add_case_address',
+    description: 'Add an address/location to a case. Use this when the user wants to associate a specific address or location with the case.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         street: {
           type: 'string',
@@ -817,18 +817,18 @@ const tools: Anthropic.Tool[] = [
           description: 'Description or notes about this address',
         },
       },
-      required: ['folder_id', 'street', 'city'],
+      required: ['case_id', 'street', 'city'],
     },
   },
   {
-    name: 'add_folder_person',
-    description: 'Add a person involved to a folder. Use this when the user wants to associate a person with the folder investigation.',
+    name: 'add_case_person',
+    description: 'Add a person involved to a case. Use this when the user wants to associate a person with the case investigation.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         first_name: {
           type: 'string',
@@ -851,18 +851,18 @@ const tools: Anthropic.Tool[] = [
           description: 'Additional notes about this person',
         },
       },
-      required: ['folder_id', 'first_name', 'last_name'],
+      required: ['case_id', 'first_name', 'last_name'],
     },
   },
   {
-    name: 'add_folder_finding',
-    description: 'Add a finding to a folder. Use one of the 6 predefined finding types: 1) LBB - no serious degree of danger (none), 2) LBB - a lower level of danger (low), 3) LBB - serious level of danger (serious), 4) Serious danger - investing criminal assets (A) (critical), 5) Serious danger - committing criminal offences (B) (critical), 6) no serious level of danger (none).',
+    name: 'add_case_finding',
+    description: 'Add a finding to a case. Use one of the 6 predefined finding types: 1) LBB - no serious degree of danger (none), 2) LBB - a lower level of danger (low), 3) LBB - serious level of danger (serious), 4) Serious danger - investing criminal assets (A) (critical), 5) Serious danger - committing criminal offences (B) (critical), 6) no serious level of danger (none).',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         label: {
           type: 'string',
@@ -878,18 +878,18 @@ const tools: Anthropic.Tool[] = [
           description: 'Name of the team member this finding is assigned to',
         },
       },
-      required: ['folder_id', 'label', 'severity'],
+      required: ['case_id', 'label', 'severity'],
     },
   },
   {
-    name: 'add_folder_letter',
-    description: 'Add a letter/document to a folder. Two templates available: lbb_notification (LBB notification letter) and bibob_7c_request (Article 7c Bibob Act request). Each has specific required fields. IMPORTANT: Always ask for the letter_name first, then collect all template-specific fields before calling this tool.',
+    name: 'add_case_letter',
+    description: 'Add a letter/document to a case. Two templates available: lbb_notification (LBB notification letter) and bibob_7c_request (Article 7c Bibob Act request). Each has specific required fields. IMPORTANT: Always ask for the letter_name first, then collect all template-specific fields before calling this tool.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         letter_name: {
           type: 'string',
@@ -975,18 +975,18 @@ const tools: Anthropic.Tool[] = [
           description: 'Additional remarks (Bibob 7c)',
         },
       },
-      required: ['folder_id', 'template', 'date', 'municipal_province'],
+      required: ['case_id', 'template', 'date', 'municipal_province'],
     },
   },
   {
-    name: 'add_folder_communication',
-    description: 'Add a communication record to a folder. Communications track correspondence, calls, meetings, or other interactions related to the case.',
+    name: 'add_case_communication',
+    description: 'Add a communication record to a case. Communications track correspondence, calls, meetings, or other interactions related to the case.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         label: {
           type: 'string',
@@ -1001,18 +1001,18 @@ const tools: Anthropic.Tool[] = [
           description: 'Date of the communication (YYYY-MM-DD format). Defaults to today if not provided.',
         },
       },
-      required: ['folder_id', 'label'],
+      required: ['case_id', 'label'],
     },
   },
   {
-    name: 'get_folder_messages',
-    description: 'Get the chat messages for a specific contact in a folder. Returns the last messages in the conversation.',
+    name: 'get_case_messages',
+    description: 'Get the chat messages for a specific contact in a case. Returns the last messages in the conversation.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         contact_id: {
           type: 'string',
@@ -1032,18 +1032,18 @@ const tools: Anthropic.Tool[] = [
           description: 'Maximum number of messages to return (default: 5)',
         },
       },
-      required: ['folder_id', 'contact_id', 'contact_name', 'contact_type'],
+      required: ['case_id', 'contact_id', 'contact_name', 'contact_type'],
     },
   },
   {
-    name: 'send_folder_message',
-    description: 'Send a chat message to a contact in a folder.',
+    name: 'send_case_message',
+    description: 'Send a chat message to a contact in a case.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         contact_id: {
           type: 'string',
@@ -1063,18 +1063,18 @@ const tools: Anthropic.Tool[] = [
           description: 'The message content to send',
         },
       },
-      required: ['folder_id', 'contact_id', 'contact_name', 'contact_type', 'message'],
+      required: ['case_id', 'contact_id', 'contact_name', 'contact_type', 'message'],
     },
   },
   {
-    name: 'add_folder_visualization',
-    description: 'Add a visualization to a folder. Visualizations are diagrams, charts, relationship maps, or other visual representations of case data.',
+    name: 'add_case_visualization',
+    description: 'Add a visualization to a case. Visualizations are diagrams, charts, relationship maps, or other visual representations of case data.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         label: {
           type: 'string',
@@ -1085,18 +1085,18 @@ const tools: Anthropic.Tool[] = [
           description: 'Description of what the visualization shows',
         },
       },
-      required: ['folder_id', 'label'],
+      required: ['case_id', 'label'],
     },
   },
   {
-    name: 'add_folder_activity',
-    description: 'Add an activity to a folder. Activities track tasks, actions, or work items that need to be done or have been completed for the case.',
+    name: 'add_case_activity',
+    description: 'Add an activity to a case. Activities track tasks, actions, or work items that need to be done or have been completed for the case.',
     input_schema: {
       type: 'object',
       properties: {
-        folder_id: {
+        case_id: {
           type: 'string',
-          description: 'The ID or name of the folder',
+          description: 'The ID or name of the case',
         },
         label: {
           type: 'string',
@@ -1115,7 +1115,7 @@ const tools: Anthropic.Tool[] = [
           description: 'Due date or date of the activity (YYYY-MM-DD format). Defaults to today if not provided.',
         },
       },
-      required: ['folder_id', 'label'],
+      required: ['case_id', 'label'],
     },
   },
 ];
@@ -1290,10 +1290,10 @@ function validatePlanProposal(plan: {
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, signals, folders, teamMembers, currentUser, lastCreatedSignalId, organizations, addresses, people, stream: enableStreaming, approvedPlan }: {
+    const { messages, signals, cases, teamMembers, currentUser, lastCreatedSignalId, organizations, addresses, people, stream: enableStreaming, approvedPlan }: {
       messages: Message[];
       signals: SignalData[];
-      folders: FolderData[];
+      cases: CaseData[];
       teamMembers: TeamMember[];
       currentUser?: { id: string; firstName: string; lastName: string; fullName: string; title: string; role: string } | null;
       lastCreatedSignalId?: string | null;
@@ -1321,14 +1321,14 @@ export async function POST(request: NextRequest) {
       )
       .join('\n');
 
-    const folderSummary = (folders || [])
+    const caseSummary = (cases || [])
       .map(
-        (f) => {
-          const practitionerNames = (f.practitioners || []).map(p => p.userName).join(', ');
-          const sharedNames = (f.sharedWith || []).map(s => `${s.userName} (${s.accessLevel})`).join(', ');
-          const orgNames = (f.organizations || []).map(o => o.name).join(', ');
-          const peopleNames = (f.peopleInvolved || []).map(p => `${p.firstName} ${p.surname}`).join(', ');
-          return `- ${f.name} (${f.id}): ${f.description} (status: ${f.status}, location: ${f.location || 'none'}, ${f.signalCount} signals, owner: ${f.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'}, organizations: ${orgNames || 'none'}, people involved: ${peopleNames || 'none'})`;
+        (c) => {
+          const practitionerNames = (c.practitioners || []).map(p => p.userName).join(', ');
+          const sharedNames = (c.sharedWith || []).map(s => `${s.userName} (${s.accessLevel})`).join(', ');
+          const orgNames = (c.organizations || []).map(o => o.name).join(', ');
+          const peopleNames = (c.peopleInvolved || []).map(p => `${p.firstName} ${p.surname}`).join(', ');
+          return `- ${c.name} (${c.id}): ${c.description} (status: ${c.status}, location: ${c.location || 'none'}, ${c.signalCount} signals, owner: ${c.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'}, organizations: ${orgNames || 'none'}, people involved: ${peopleNames || 'none'})`;
         }
       )
       .join('\n');
@@ -1336,7 +1336,7 @@ export async function POST(request: NextRequest) {
     const teamSummary = (teamMembers || [])
       .map(
         (m) =>
-          `- ${m.firstName} ${m.lastName} (${m.id}): ${m.title} - owns ${m.ownedFolderCount} folder(s)`
+          `- ${m.firstName} ${m.lastName} (${m.id}): ${m.title} - owns ${m.ownedCaseCount} case(s)`
       )
       .join('\n');
 
@@ -1362,7 +1362,7 @@ export async function POST(request: NextRequest) {
       .join('\n');
 
     // Build system prompt - modify if we have an approved plan
-    const systemPrompt = `You are an AI assistant for Atlas AI. You help government employees manage signals and folders related to investigations.
+    const systemPrompt = `You are an AI assistant for Atlas AI. You help government employees manage signals and cases related to investigations.
 
 ## CLARIFICATION BEFORE PLANNING
 
@@ -1423,15 +1423,15 @@ For step references like "$step1.signalId", use that exact string - the client w
 DO NOT call plan_proposal. The plan is approved. Execute the write tools now.` : `**ABSOLUTE RULE: You MUST use the plan_proposal tool BEFORE any write operation.**`}
 
 WRITE TOOLS (REQUIRE plan_proposal FIRST):
-- create_signal, edit_signal, add_note, delete_signal, add_signal_to_folder
-- create_folder, delete_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder
-- add_folder_organization, add_folder_address, add_folder_person, add_folder_finding
-- add_folder_letter, add_folder_communication, add_folder_visualization, add_folder_activity
-- send_folder_message, complete_bibob_application, save_bibob_application_draft
+- create_signal, edit_signal, add_note, delete_signal, add_signal_to_case
+- create_case, delete_case, edit_case, assign_case_owner, add_case_practitioner, share_case
+- add_case_organization, add_case_address, add_case_person, add_case_finding
+- add_case_letter, add_case_communication, add_case_visualization, add_case_activity
+- send_case_message, complete_bibob_application, save_bibob_application_draft
 
 READ TOOLS (Execute immediately):
 - list_signals, summarize_signals, search_signals, get_signal_activity, get_signal_notes, get_signal_stats
-- summarize_attachments, list_folders, summarize_folder, get_folder_stats, list_team_members, get_folder_messages
+- summarize_attachments, list_cases, summarize_case, get_case_stats, list_team_members, get_case_messages
 
 ## CRITICAL: WORKFLOW BOUNDARIES
 
@@ -1440,13 +1440,13 @@ When you see "[WORKFLOW_BOUNDARY: ...]" in conversation history:
 - New user messages AFTER the marker are COMPLETELY INDEPENDENT requests
 
 **Example of WRONG behavior:**
-- Previous workflow: create_signal → create_folder → complete_bibob (DONE)
+- Previous workflow: create_signal → create_case → complete_bibob (DONE)
 - [WORKFLOW_BOUNDARY marker]
 - User says: "create a signal"
-- Agent proposes: create_signal, create_folder, complete_bibob ❌ WRONG
+- Agent proposes: create_signal, create_case, complete_bibob ❌ WRONG
 
 **Example of CORRECT behavior:**
-- Previous workflow: create_signal → create_folder → complete_bibob (DONE)
+- Previous workflow: create_signal → create_case → complete_bibob (DONE)
 - [WORKFLOW_BOUNDARY marker]
 - User says: "create a signal"
 - Agent proposes: ONLY create_signal ✓ CORRECT
@@ -1457,7 +1457,7 @@ Each new user message is an INDEPENDENT request. When creating a plan:
 - ONLY include actions the user EXPLICITLY requests in their CURRENT message
 - Do NOT infer patterns from previous plans or workflows
 - Do NOT assume the user wants to repeat previous multi-step workflows
-- If the user says "create a signal", propose ONLY create_signal - not folder creation or applications
+- If the user says "create a signal", propose ONLY create_signal - not case creation or applications
 - Previous completed workflows are finished - new requests start fresh
 
 ## WORKFLOW
@@ -1473,16 +1473,16 @@ Each new user message is an INDEPENDENT request. When creating a plan:
 3. **User requests a READ operation** (list, search, summarize, etc.)
    → Execute immediately, no plan needed
 
-## USING EXISTING FOLDERS
+## USING EXISTING CASES
 
-When a user mentions moving a signal to a folder:
-1. Check the "Current Data" section to see if a folder with that name exists
-2. If the folder EXISTS, use add_signal_to_folder instead of create_folder
-3. Only create a new folder if the user explicitly asks to create one OR if no matching folder exists
+When a user mentions moving a signal to a case:
+1. Check the "Current Data" section to see if a case with that name exists
+2. If the case EXISTS, use add_signal_to_case instead of create_case
+3. Only create a new case if the user explicitly asks to create one OR if no matching case exists
 
-**For moving signals to existing folders:**
-- Use the existing folder's ID from the Current Data section
-- Do NOT create a new folder when one already exists with the same or similar name
+**For moving signals to existing cases:**
+- Use the existing case's ID from the Current Data section
+- Do NOT create a new case when one already exists with the same or similar name
 
 ## USING EXISTING SIGNALS
 
@@ -1494,8 +1494,8 @@ When a user mentions "this signal", "the signal", "the latest signal", or refers
 
 **Key distinction:**
 - "Create a signal about X" → Use create_signal (new signal)
-- "Make a folder from this signal" → Use create_folder with existing signal ID (NO create_signal)
-- "Create a folder for the latest signal" → Use create_folder with the first signal from Current Data
+- "Make a case from this signal" → Use create_case with existing signal ID (NO create_signal)
+- "Create a case for the latest signal" → Use create_case with the first signal from Current Data
 
 **IMPORTANT:** If lastCreatedSignalId is provided, use it when the user says "this signal" or "the signal" without specifying which one.
 
@@ -1522,30 +1522,30 @@ Your response MUST be to call plan_proposal:
 
 DO NOT call create_signal until user approves!
 
-## EXAMPLE - Creating a Folder from an Existing Signal
+## EXAMPLE - Creating a Case from an Existing Signal
 
-User: "Make a folder from this signal and complete the application form"
+User: "Make a case from this signal and complete the application form"
 (Look up lastCreatedSignalId or the first signal from Current Data)
 
 Your response MUST be to call plan_proposal:
 {
-  "summary": "Create folder from existing signal and complete Bibob application",
+  "summary": "Create case from existing signal and complete Bibob application",
   "actions": [
     {
       "step": 1,
-      "action": "Create folder from signal [USE ACTUAL SIGNAL NUMBER FROM CURRENT DATA]",
-      "tool": "create_folder",
+      "action": "Create case from signal [USE ACTUAL SIGNAL NUMBER FROM CURRENT DATA]",
+      "tool": "create_case",
       "details": {
-        "name": "New Folder",
+        "name": "New Case",
         "signalIds": ["[USE ACTUAL SIGNAL ID FROM CURRENT DATA OR lastCreatedSignalId]"]
       }
     },
     {
       "step": 2,
-      "action": "Complete Bibob application for the folder",
+      "action": "Complete Bibob application for the case",
       "tool": "complete_bibob_application",
       "details": {
-        "folder_id": "$step1.folderId",
+        "case_id": "$step1.caseId",
         "explanation": "Application completed",
         "criteria": [
           { "id": "necessary_info", "isMet": true, "explanation": "Provided" },
@@ -1597,43 +1597,43 @@ Step references ($stepN.fieldName) are ONLY for referencing outputs from PREVIOU
 - Operations on EXISTING entities - use their actual ID from the Current Data section
 
 **DO use step references for:**
-- Step 2+ referencing output from an earlier step (e.g., create signal in step 1, add to folder in step 2)
+- Step 2+ referencing output from an earlier step (e.g., create signal in step 1, add to case in step 2)
 
 **Examples of WRONG usage:**
 - edit_signal with signal_id: "$step1.signalId" (step 1 can't reference itself!)
 - Step 1 of any plan using $step1.anything
 
 **Examples of CORRECT usage:**
-- Step 2 add_signal_to_folder with signal_id: "$step1.signalId" (references step 1's create_signal output)
+- Step 2 add_signal_to_case with signal_id: "$step1.signalId" (references step 1's create_signal output)
 
 ## Multi-Step Plans with Dependencies
 
 When a later step needs to use output from an earlier step, use reference syntax in the details:
-- $step1.folderId - The folder ID created in step 1
-- $step1.folderName - The folder name created in step 1
+- $step1.caseId - The case ID created in step 1
+- $step1.caseName - The case name created in step 1
 - $step1.signalId - The signal ID created in step 1
 - $step1.signalNumber - The signal number created in step 1
 
-## EXAMPLE - Creating a folder and completing Bibob application
+## EXAMPLE - Creating a case and completing Bibob application
 
-User: "Create a folder called 'Test' and complete its Bibob application"
+User: "Create a case called 'Test' and complete its Bibob application"
 
 Your response MUST be to call plan_proposal:
 {
-  "summary": "Create folder 'Test' and complete its Bibob application",
+  "summary": "Create case 'Test' and complete its Bibob application",
   "actions": [
     {
       "step": 1,
-      "action": "Create folder named 'Test'",
-      "tool": "create_folder",
+      "action": "Create case named 'Test'",
+      "tool": "create_case",
       "details": { "name": "Test" }
     },
     {
       "step": 2,
-      "action": "Complete Bibob application for the created folder",
+      "action": "Complete Bibob application for the created case",
       "tool": "complete_bibob_application",
       "details": {
-        "folder_id": "$step1.folderId",
+        "case_id": "$step1.caseId",
         "explanation": "Application completed with all criteria met",
         "criteria": [
           { "id": "necessary_info", "isMet": true, "explanation": "All necessary information provided" },
@@ -1646,12 +1646,12 @@ Your response MUST be to call plan_proposal:
   ]
 }
 
-## EXAMPLE - Creating signal, folder from signal, and completing Bibob
+## EXAMPLE - Creating signal, case from signal, and completing Bibob
 
-User: "Create a signal about fraud at Main Street, create a folder from it, then complete the Bibob application"
+User: "Create a signal about fraud at Main Street, create a case from it, then complete the Bibob application"
 
 {
-  "summary": "Create signal, folder from signal, and complete Bibob application",
+  "summary": "Create signal, case from signal, and complete Bibob application",
   "actions": [
     {
       "step": 1,
@@ -1666,8 +1666,8 @@ User: "Create a signal about fraud at Main Street, create a folder from it, then
     },
     {
       "step": 2,
-      "action": "Create folder from the signal",
-      "tool": "create_folder",
+      "action": "Create case from the signal",
+      "tool": "create_case",
       "details": {
         "name": "Fraud Investigation - Main Street",
         "signalIds": ["$step1.signalId"]
@@ -1675,10 +1675,10 @@ User: "Create a signal about fraud at Main Street, create a folder from it, then
     },
     {
       "step": 3,
-      "action": "Complete Bibob application for the folder",
+      "action": "Complete Bibob application for the case",
       "tool": "complete_bibob_application",
       "details": {
-        "folder_id": "$step2.folderId",
+        "case_id": "$step2.caseId",
         "explanation": "Application completed",
         "criteria": [
           { "id": "necessary_info", "isMet": true, "explanation": "Provided" },
@@ -1693,14 +1693,14 @@ User: "Create a signal about fraud at Main Street, create a folder from it, then
 
 IMPORTANT: Always use $stepN.fieldName syntax when referencing outputs from previous steps. Never hardcode IDs for entities that will be created in earlier steps.
 
-## EXAMPLE - Creating a signal and adding to existing folder
+## EXAMPLE - Creating a signal and adding to existing case
 
-User: "Create a signal and move it to the Narcotics Operation folder"
+User: "Create a signal and move it to the Narcotics Operation case"
 
-First check Current Data - if "Narcotics Operation" folder exists (e.g., folder-123):
+First check Current Data - if "Narcotics Operation" case exists (e.g., case-123):
 
 {
-  "summary": "Create signal and add to existing Narcotics Operation folder",
+  "summary": "Create signal and add to existing Narcotics Operation case",
   "actions": [
     {
       "step": 1,
@@ -1715,27 +1715,27 @@ First check Current Data - if "Narcotics Operation" folder exists (e.g., folder-
     },
     {
       "step": 2,
-      "action": "Add signal to existing Narcotics Operation folder",
-      "tool": "add_signal_to_folder",
+      "action": "Add signal to existing Narcotics Operation case",
+      "tool": "add_signal_to_case",
       "details": {
         "signal_id": "$step1.signalId",
-        "folder_id": "folder-123"
+        "case_id": "case-123"
       }
     }
   ]
 }
 
-IMPORTANT: Do NOT use create_folder when the folder already exists!
+IMPORTANT: Do NOT use create_case when the case already exists!
 
 ## Current Data
 
 **>>> IMPORTANT: USE THESE ACTUAL VALUES <<<**
-**When referencing signals, folders, or team members, use the REAL IDs listed below.**
+**When referencing signals, cases, or team members, use the REAL IDs listed below.**
 **Do NOT use example IDs from the examples above (like "SIG-2024-0089").**
 
 **Signals (${(signals || []).length}):** ${signalSummary || 'None'}
 
-**Folders (${(folders || []).length}):** ${folderSummary || 'None'}
+**Cases (${(cases || []).length}):** ${caseSummary || 'None'}
 
 **Team:** ${teamSummary || 'None'}
 
@@ -1774,14 +1774,14 @@ Then use signal_id: "GCMP-2026-266241" in your plan.
 
 ## SIGNAL QUERIES - TOOL SELECTION
 
-When the user asks about signals, use SIGNAL tools, NOT folder tools:
+When the user asks about signals, use SIGNAL tools, NOT case tools:
 - "List all signals" → list_signals
 - "Show signals with type X" → search_signals with type filter
 - "Find signals at location Y" → search_signals with keyword filter
 - "Summarize signals" → summarize_signals
 - "How many signals?" → get_signal_stats
 
-NEVER use list_folders when the user is asking about signals.
+NEVER use list_cases when the user is asking about signals.
 
 ## EFFICIENT MULTI-SIGNAL OPERATIONS
 
@@ -1794,11 +1794,11 @@ NEVER call summarize_signals in a loop for individual signals - this is ineffici
 
 ## Available Tools
 
-**Signals:** list_signals, summarize_signals, create_signal, edit_signal, add_signal_to_folder, add_note, delete_signal, search_signals, get_signal_activity, get_signal_notes, get_signal_stats, summarize_attachments
+**Signals:** list_signals, summarize_signals, create_signal, edit_signal, add_signal_to_case, add_note, delete_signal, search_signals, get_signal_activity, get_signal_notes, get_signal_stats, summarize_attachments
 
-**Folders:** list_folders, get_folder_stats, create_folder, delete_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder, complete_bibob_application, save_bibob_application_draft
+**Cases:** list_cases, get_case_stats, create_case, delete_case, edit_case, assign_case_owner, add_case_practitioner, share_case, complete_bibob_application, save_bibob_application_draft
 
-**Folder Content:** add_folder_organization, add_folder_address, add_folder_person, add_folder_finding, add_folder_letter, add_folder_communication, add_folder_visualization, add_folder_activity, get_folder_messages, send_folder_message
+**Case Content:** add_case_organization, add_case_address, add_case_person, add_case_finding, add_case_letter, add_case_communication, add_case_visualization, add_case_activity, get_case_messages, send_case_message
 
 **Team:** list_team_members
 
@@ -1807,8 +1807,8 @@ NEVER call summarize_signals in a loop for individual signals - this is ineffici
 When information is missing:
 - **Signal time**: Use current time
 - **Signal receivedBy**: Use "municipal-department"
-- **Folder name**: Use "New Folder" or derive from context
-- **Folder color**: Pick randomly from: #ef4444, #f97316, #22c55e, #3b82f6, #8b5cf6
+- **Case name**: Use "New Case" or derive from context
+- **Case color**: Pick randomly from: #ef4444, #f97316, #22c55e, #3b82f6, #8b5cf6
 - **Owner**: Assign to current user if not specified
 - **Bibob criteria**: If not all met, save as draft automatically
 
@@ -2097,7 +2097,7 @@ When information is missing:
 
                 // Inject step references for known tool patterns
                 // This ensures references are used even if AI didn't include them
-                if (toolUse.name === 'add_signal_to_folder' && currentPlanStep > 1) {
+                if (toolUse.name === 'add_signal_to_case' && currentPlanStep > 1) {
                   const createSignalStep = approvedPlan.actions.find(a => a.tool === 'create_signal');
 
                   if (createSignalStep && createSignalStep.step < currentPlanStep) {
@@ -2109,21 +2109,21 @@ When information is missing:
                 }
 
                 if (toolUse.name === 'complete_bibob_application' || toolUse.name === 'save_bibob_application_draft') {
-                  const createFolderStep = approvedPlan.actions.find(a => a.tool === 'create_folder');
+                  const createCaseStep = approvedPlan.actions.find(a => a.tool === 'create_case');
 
-                  if (createFolderStep && createFolderStep.step < currentPlanStep) {
-                    // Only inject if folder_id looks like a fake ID (not an existing folder ID)
-                    const currentFolderId = (toolInput as Record<string, unknown>).folder_id as string;
-                    if (currentFolderId && !currentFolderId.startsWith('folder-') && !currentFolderId.startsWith('$step')) {
+                  if (createCaseStep && createCaseStep.step < currentPlanStep) {
+                    // Only inject if case_id looks like a fake ID (not an existing case ID)
+                    const currentCaseId = (toolInput as Record<string, unknown>).case_id as string;
+                    if (currentCaseId && !currentCaseId.startsWith('case-') && !currentCaseId.startsWith('$step')) {
                       toolInput = {
                         ...toolInput,
-                        folder_id: `$step${createFolderStep.step}.folderId`
+                        case_id: `$step${createCaseStep.step}.caseId`
                       };
                     }
                   }
                 }
 
-                if (toolUse.name === 'create_folder') {
+                if (toolUse.name === 'create_case') {
                   const createSignalStep = approvedPlan.actions.find(a => a.tool === 'create_signal');
 
                   if (createSignalStep && createSignalStep.step < currentPlanStep) {

@@ -113,10 +113,10 @@ export function getInitialGreeting(
   const namePrefix = userName ? `${userName}, ` : '';
 
   if (isReturningUser) {
-    return `${greeting} ${namePrefix}Welcome back! ${followUp} I can help you manage signals, organize folders, assign team members, and more.`;
+    return `${greeting} ${namePrefix}Welcome back! ${followUp} I can help you manage signals, organize cases, assign team members, and more.`;
   }
 
-  return `${greeting} ${namePrefix}I'm your Atlas AI assistant. ${followUp} I can help you create and manage signals, organize folders, assign team members, search records, and much more. How can I help you today?`;
+  return `${greeting} ${namePrefix}I'm your Atlas AI assistant. ${followUp} I can help you create and manage signals, organize cases, assign team members, search records, and much more. How can I help you today?`;
 }
 
 // Check if current time qualifies for "early bird" achievement (before 9 AM)
