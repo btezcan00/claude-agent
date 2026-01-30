@@ -190,14 +190,14 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
         );
       case 'tool_result':
         return entry.status === 'success' ? (
-          <CheckCircle2 className="w-3 h-3 text-green-500" />
+          <CheckCircle2 className="w-3 h-3 text-claude-coral" />
         ) : (
-          <XCircle className="w-3 h-3 text-red-500" />
+          <XCircle className="w-3 h-3 text-claude-coral" />
         );
       case 'reflection':
         return <Sparkles className="w-3 h-3 text-claude-coral" />;
       case 'error':
-        return <XCircle className="w-3 h-3 text-red-500" />;
+        return <XCircle className="w-3 h-3 text-claude-coral" />;
       case 'plan':
         return <Clock className="w-3 h-3 text-claude-coral" />;
       default:
@@ -212,13 +212,11 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
       case 'tool_call':
         return 'text-foreground';
       case 'tool_result':
-        return entry.status === 'success'
-          ? 'text-green-600 dark:text-green-400'
-          : 'text-red-600 dark:text-red-400';
+        return 'text-foreground';
       case 'reflection':
         return 'text-foreground/80';
       case 'error':
-        return 'text-red-600 dark:text-red-400';
+        return 'text-foreground';
       case 'plan':
         return 'text-foreground';
       default:
