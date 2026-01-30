@@ -14,10 +14,31 @@ import { CreateSignalInput, UpdateSignalInput, SignalType, Signal } from '@/type
 import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus, Folder } from '@/types/folder';
 import { AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData } from './agent-log';
 import { ClarificationDisplay } from './clarification-display';
+import { PhaseStepper } from './workflow/components/phase-stepper';
+import { ConversationPhase } from '@/types/conversation-workflow';
 
 // Generate unique message IDs
 let messageIdCounter = 0;
 const generateMessageId = () => `msg-${Date.now()}-${++messageIdCounter}`;
+
+// Map AgentPhase to ConversationPhase for the stepper display
+const mapToConversationPhase = (agentPhase: AgentPhase): ConversationPhase => {
+  switch (agentPhase) {
+    case 'clarifying':
+      return 'clarification';
+    case 'planning':
+    case 'awaiting_approval':
+      return 'planning';
+    case 'executing':
+      return 'execution';
+    case 'reflecting':
+      return 'review';
+    case 'complete':
+      return 'complete';
+    default:
+      return 'idle';
+  }
+};
 
 // Validate ISO date strings
 const isValidDate = (dateStr: unknown): boolean => {
@@ -1801,6 +1822,14 @@ function ChatBotInner() {
 
   return (
     <>
+      {/* Phase Stepper - shows workflow progress */}
+      {agentPhase !== 'idle' && (
+        <PhaseStepper
+          currentPhase={mapToConversationPhase(agentPhase)}
+          className="shrink-0"
+        />
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (

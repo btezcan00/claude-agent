@@ -98,45 +98,48 @@ export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: P
   };
 
   return (
-    <div className="bg-claude-beige rounded-lg p-3 border border-border overflow-hidden">
-      <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
-        <Clock className="w-4 h-4" />
+    <div className="bg-claude-beige rounded-xl p-4 border border-border/50 overflow-hidden shadow-sm">
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-1">
+        <Clock className="w-4 h-4 text-claude-coral" />
         Proposed Plan
       </div>
-      <div className="text-xs text-muted-foreground mb-3 break-words">
+      <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
         {plan.summary}
-      </div>
+      </p>
       <div className="space-y-2">
         {plan.actions.map((action) => (
-          <div key={action.step} className="flex items-start gap-2 text-xs">
-            <span className="bg-claude-beige-dark text-foreground rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px] font-medium">
-              {action.step}
-            </span>
-            <div className="flex-1 min-w-0">
-              <span className="font-medium break-words">{action.action}</span>
-              <span className="text-muted-foreground ml-1">({action.tool})</span>
-              {action.details && Object.keys(action.details).length > 0 && (
-                <div className="text-muted-foreground mt-0.5 pl-2 border-l border-border">
-                  {Object.entries(action.details).map(([k, v]) => (
-                    <div key={k} className="break-words">
-                      <span className="text-muted-foreground">{k}:</span> {typeof v === 'string' ? v : JSON.stringify(v)}
-                    </div>
-                  ))}
-                </div>
-              )}
+          <div key={action.step} className="bg-white/60 dark:bg-black/10 rounded-lg p-3 text-xs">
+            <div className="flex items-start gap-3">
+              <span className="bg-claude-coral/10 text-claude-coral rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-[11px] font-semibold">
+                {action.step}
+              </span>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="font-medium text-foreground break-words">{action.action}</div>
+                <div className="text-muted-foreground text-[11px] mt-0.5">{action.tool}</div>
+              </div>
             </div>
+            {action.details && Object.keys(action.details).length > 0 && (
+              <div className="mt-2 pt-2 border-t border-border/30 ml-9 space-y-1">
+                {Object.entries(action.details).map(([k, v]) => (
+                  <div key={k} className="text-[11px] break-words">
+                    <span className="text-muted-foreground font-medium">{k}:</span>{' '}
+                    <span className="text-foreground/80">{typeof v === 'string' ? v : JSON.stringify(v)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
       {isAwaitingApproval && onApprove && onReject && (
-        <div className="mt-3 pt-3 border-t border-border">
+        <div className="mt-4 pt-3 border-t border-border/30">
           {!showFeedback ? (
             <div className="flex gap-2">
-              <Button size="sm" onClick={onApprove} className="bg-claude-coral hover:bg-claude-coral/90 text-white">
-                Approve
+              <Button size="sm" onClick={onApprove} className="bg-claude-coral hover:bg-claude-coral/90 text-white font-medium px-4">
+                Approve Plan
               </Button>
-              <Button size="sm" variant="outline" onClick={handleReviseClick} className="border-border text-muted-foreground">
-                Revise
+              <Button size="sm" variant="outline" onClick={handleReviseClick} className="border-border/50 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5">
+                Request Changes
               </Button>
             </div>
           ) : (

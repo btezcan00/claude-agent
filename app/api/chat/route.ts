@@ -1846,9 +1846,11 @@ When information is missing:
           while (iterations < maxIterations) {
             iterations++;
 
-            // Send phase indicator - skip 'planning' if we have an approved plan
-            if (iterations === 1) {
-              sendEvent('phase', { phase: approvedPlan ? 'executing' : 'planning' });
+            // Send phase indicator - only emit 'executing' if we have an approved plan
+            // Don't emit 'planning' here - wait until Claude actually proposes a plan
+            // This prevents the stepper from showing Planning before Clarifying
+            if (iterations === 1 && approvedPlan) {
+              sendEvent('phase', { phase: 'executing' });
             }
 
             // Let Claude decide between ask_clarification and plan_proposal based on whether required fields are present
@@ -2060,6 +2062,8 @@ When information is missing:
                   }
                 }
 
+                // Emit 'planning' phase when Claude is actually creating a plan
+                sendEvent('phase', { phase: 'planning' });
                 sendEvent('plan_proposal', {
                   summary: planInput.summary,
                   actions: planInput.actions,
