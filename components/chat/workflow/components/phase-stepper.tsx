@@ -25,7 +25,7 @@ export function PhaseStepper({ currentPhase, className = '' }: PhaseStepperProps
   const visiblePhases = PHASE_ORDER.filter(p => p !== 'complete');
 
   return (
-    <div className={`flex items-center justify-center gap-1 px-2 py-2 bg-gray-50 border-b ${className}`}>
+    <div className={`flex flex-row flex-nowrap items-center justify-center gap-1 px-3 py-2 bg-claude-beige rounded-2xl ${className}`}>
       {visiblePhases.map((phase, index) => {
         // When complete, all visible phases are completed (show checkmarks)
         const isCompleted = isComplete || index < currentIndex;
@@ -39,9 +39,9 @@ export function PhaseStepper({ currentPhase, className = '' }: PhaseStepperProps
               <div
                 className={`
                   flex items-center justify-center w-6 h-6 rounded-full border-2 transition-all duration-300
-                  ${isCompleted ? 'bg-green-500 border-green-500 text-white' : ''}
-                  ${isCurrent ? 'bg-blue-500 border-blue-500 text-white' : ''}
-                  ${isPending ? 'bg-white border-gray-300 text-gray-400' : ''}
+                  ${isCompleted ? 'bg-claude-coral border-claude-coral text-white' : ''}
+                  ${isCurrent ? 'bg-claude-coral/20 border-claude-coral text-claude-coral' : ''}
+                  ${isPending ? 'bg-white border-claude-beige-dark text-muted-foreground' : ''}
                 `}
               >
                 {isCompleted && <CheckCircle2 className="w-4 h-4" />}
@@ -51,9 +51,9 @@ export function PhaseStepper({ currentPhase, className = '' }: PhaseStepperProps
               <span
                 className={`
                   mt-0.5 text-[10px] font-medium whitespace-nowrap
-                  ${isCompleted ? 'text-green-600' : ''}
-                  ${isCurrent ? 'text-blue-600' : ''}
-                  ${isPending ? 'text-gray-400' : ''}
+                  ${isCompleted ? 'text-claude-coral' : ''}
+                  ${isCurrent ? 'text-claude-coral' : ''}
+                  ${isPending ? 'text-muted-foreground' : ''}
                 `}
               >
                 {PHASE_DISPLAY_NAMES[phase]}
@@ -65,7 +65,7 @@ export function PhaseStepper({ currentPhase, className = '' }: PhaseStepperProps
               <div
                 className={`
                   h-0.5 w-4 mx-0.5 transition-all duration-300
-                  ${isComplete || index < currentIndex ? 'bg-green-500' : 'bg-gray-300'}
+                  ${isComplete || index < currentIndex ? 'bg-claude-coral' : 'bg-claude-beige-dark'}
                 `}
               />
             )}

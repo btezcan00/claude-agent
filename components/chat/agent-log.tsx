@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Loader2, CheckCircle2, XCircle, ChevronRight, Clock, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, ChevronRight, Clock, Sparkles, Brain } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -181,12 +181,12 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
   const getIcon = () => {
     switch (entry.type) {
       case 'thinking':
-        return <span className="text-muted-foreground">{">"}</span>;
+        return <Brain className="w-3 h-3 text-claude-coral" />;
       case 'tool_call':
         return entry.status === 'pending' ? (
-          <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+          <Loader2 className="w-3 h-3 animate-spin text-claude-coral" />
         ) : (
-          <span className="text-blue-500">{">"}</span>
+          <CheckCircle2 className="w-3 h-3 text-claude-coral" />
         );
       case 'tool_result':
         return entry.status === 'success' ? (
@@ -195,11 +195,11 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
           <XCircle className="w-3 h-3 text-red-500" />
         );
       case 'reflection':
-        return <span className="text-purple-500">{">"}</span>;
+        return <Sparkles className="w-3 h-3 text-claude-coral" />;
       case 'error':
         return <XCircle className="w-3 h-3 text-red-500" />;
       case 'plan':
-        return <Clock className="w-3 h-3 text-blue-500" />;
+        return <Clock className="w-3 h-3 text-claude-coral" />;
       default:
         return null;
     }
@@ -208,23 +208,39 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
   const getTextColor = () => {
     switch (entry.type) {
       case 'thinking':
-        return 'text-muted-foreground';
+        return 'text-foreground/80';
       case 'tool_call':
-        return 'text-blue-600 dark:text-blue-400';
+        return 'text-foreground';
       case 'tool_result':
         return entry.status === 'success'
           ? 'text-green-600 dark:text-green-400'
           : 'text-red-600 dark:text-red-400';
       case 'reflection':
-        return 'text-purple-600 dark:text-purple-400';
+        return 'text-foreground/80';
       case 'error':
         return 'text-red-600 dark:text-red-400';
       case 'plan':
-        return 'text-blue-600 dark:text-blue-400';
+        return 'text-foreground';
       default:
         return 'text-foreground';
     }
   };
+
+  // Special rendering for thinking entries
+  if (entry.type === 'thinking') {
+    return (
+      <div className="flex items-start gap-2 py-1 px-2 bg-claude-coral/5 rounded-lg my-0.5">
+        <div className="mt-0.5 flex-shrink-0 w-4 flex items-center justify-center">
+          {getIcon()}
+        </div>
+        <div className="flex-1">
+          <span className="text-xs leading-relaxed text-foreground/80 italic">
+            {entry.content}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-start gap-2 py-0.5">
@@ -236,7 +252,7 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
           {entry.content}
         </span>
         {entry.type === 'tool_call' && entry.toolInput && (
-          <div className="text-[10px] text-muted-foreground/70 mt-0.5 pl-2 border-l border-muted">
+          <div className="text-[10px] text-muted-foreground/70 mt-0.5 pl-2 border-l border-claude-coral/30">
             {Object.entries(entry.toolInput).slice(0, 3).map(([k, v]) => (
               <div key={k} className="truncate">
                 {k}: {typeof v === 'string' ? v.substring(0, 50) : JSON.stringify(v).substring(0, 50)}{(typeof v === 'string' ? v.length : JSON.stringify(v).length) > 50 ? '...' : ''}

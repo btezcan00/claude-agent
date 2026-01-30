@@ -12,7 +12,7 @@ import { useAddresses } from '@/context/address-context';
 import { usePeople } from '@/context/person-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType, Signal } from '@/types/signal';
 import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus, Folder } from '@/types/folder';
-import { AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData } from './agent-log';
+import { AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData, AgentLog } from './agent-log';
 import { ClarificationDisplay } from './clarification-display';
 import { PhaseStepper } from './workflow/components/phase-stepper';
 import { ConversationPhase } from '@/types/conversation-workflow';
@@ -757,6 +757,7 @@ function ChatBotInner() {
     setInput('');
     setIsLoading(true);
     clearLog();
+    setAgentPhase('clarifying'); // Start in first phase immediately to show stepper
 
     try {
       // Fetch fresh signals to ensure we have the latest data
@@ -1822,38 +1823,103 @@ function ChatBotInner() {
 
   return (
     <>
-      {/* Phase Stepper - shows workflow progress */}
-      {agentPhase !== 'idle' && (
-        <PhaseStepper
-          currentPhase={mapToConversationPhase(agentPhase)}
-          className="shrink-0"
-        />
-      )}
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              'flex',
-              message.role === 'user' ? 'justify-end' : 'justify-start'
-            )}
-          >
+        {(() => {
+          // When agent is active, split messages to show current turn below phase stepper
+          // Current turn = last user message + any assistant response
+          const lastUserIndex = agentPhase !== 'idle'
+            ? messages.findLastIndex(m => m.role === 'user')
+            : -1;
+
+          // Messages before the current turn (historical conversation)
+          const messagesAbovePhase = lastUserIndex >= 0
+            ? messages.slice(0, lastUserIndex)
+            : messages;
+
+          // Current turn messages
+          const lastUserMessage = lastUserIndex >= 0
+            ? messages[lastUserIndex]
+            : null;
+
+          // Find assistant message after the last user message (if any)
+          const lastAssistantMessage = lastUserIndex >= 0
+            ? messages.slice(lastUserIndex + 1).find(m => m.role === 'assistant') || null
+            : null;
+
+          const renderMessage = (message: Message) => (
             <div
+              key={message.id}
               className={cn(
-                'rounded-2xl px-4 py-3 text-sm max-w-[85%]',
-                message.role === 'user'
-                  ? 'bg-claude-beige text-foreground'
-                  : 'bg-transparent text-foreground'
+                'flex',
+                message.role === 'user' ? 'justify-end' : 'justify-start'
               )}
             >
-              <div className="prose prose-sm max-w-none text-inherit [&_*]:text-inherit [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm [&>h1]:font-semibold [&>h2]:font-semibold [&>h3]:font-medium [&>h1]:mt-2 [&>h1]:mb-1 [&>h2]:mt-2 [&>h2]:mb-1 [&>h3]:mt-1 [&>h3]:mb-1">
-                <ReactMarkdown>{message.content}</ReactMarkdown>
+              <div
+                className={cn(
+                  'rounded-2xl px-4 py-3 text-sm max-w-[85%]',
+                  message.role === 'user'
+                    ? 'bg-claude-beige text-foreground'
+                    : 'bg-transparent text-foreground'
+                )}
+              >
+                <div className="prose prose-sm max-w-none text-inherit [&_*]:text-inherit [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm [&>h1]:font-semibold [&>h2]:font-semibold [&>h3]:font-medium [&>h1]:mt-2 [&>h1]:mb-1 [&>h2]:mt-2 [&>h2]:mb-1 [&>h3]:mt-1 [&>h3]:mb-1">
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                </div>
               </div>
             </div>
+          );
+
+          return (
+            <>
+              {/* Render historical messages (or all messages when idle) */}
+              {(agentPhase !== 'idle' ? messagesAbovePhase : messages).map(renderMessage)}
+
+              {/* Current turn: user message, then phase stepper, then logs, then assistant response */}
+              {agentPhase !== 'idle' && (
+                <>
+                  {/* Last user message (the one being processed) */}
+                  {lastUserMessage && renderMessage(lastUserMessage)}
+
+                  {/* Phase Stepper */}
+                  <div className="flex justify-start">
+                    <PhaseStepper
+                      currentPhase={mapToConversationPhase(agentPhase)}
+                      className="inline-flex"
+                    />
+                  </div>
+
+                  {/* Agent Log - shows tool calls and results */}
+                  {logEntries.length > 0 && (
+                    <div className="flex justify-start">
+                      <AgentLog
+                        entries={logEntries}
+                        currentPhase={agentPhase}
+                        className="max-w-[90%]"
+                        defaultExpanded={true}
+                      />
+                    </div>
+                  )}
+
+                  {/* Latest assistant message (response being generated) */}
+                  {lastAssistantMessage && renderMessage(lastAssistantMessage)}
+                </>
+              )}
+            </>
+          );
+        })()}
+
+        {/* Agent Log - shows tool calls and results when idle */}
+        {agentPhase === 'idle' && logEntries.length > 0 && (
+          <div className="flex justify-start">
+            <AgentLog
+              entries={logEntries}
+              currentPhase={agentPhase}
+              className="max-w-[90%]"
+              defaultExpanded={true}
+            />
           </div>
-        ))}
+        )}
 
         {/* Clarification Display */}
         {pendingClarification && agentPhase === 'clarifying' && (
