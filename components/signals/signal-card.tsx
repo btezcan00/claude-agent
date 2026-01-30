@@ -7,6 +7,8 @@ import { SignalTypeBadge } from './signal-type-badge';
 import { formatRelativeTime, formatDateTime } from '@/lib/date-utils';
 import { MapPin, Clock, Briefcase, Building2 } from 'lucide-react';
 import { useCases } from '@/context/case-context';
+import { useUIHighlight } from '@/context/ui-highlight-context';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { SIGNAL_SOURCE_CONFIG } from '@/lib/constants';
 
@@ -16,6 +18,8 @@ interface SignalCardProps {
 
 export function SignalCard({ signal }: SignalCardProps) {
   const { getCaseById } = useCases();
+  const { isHighlighted } = useUIHighlight();
+  const highlighted = isHighlighted('signal', signal.id);
 
   const cases = signal.caseRelations
     .map((cr) => getCaseById(cr.caseId))
@@ -23,7 +27,10 @@ export function SignalCard({ signal }: SignalCardProps) {
 
   return (
     <Link href={`/signals/${signal.id}`}>
-      <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-primary">
+      <Card className={cn(
+        "h-full hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-primary",
+        highlighted && "animate-ui-highlight"
+      )}>
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1 min-w-0">

@@ -12,6 +12,7 @@ import { OrganizationProvider } from '@/context/organization-context';
 import { AddressProvider } from '@/context/address-context';
 import { PersonProvider } from '@/context/person-context';
 import { ChatDrawerProvider } from '@/context/chat-drawer-context';
+import { UIHighlightProvider } from '@/context/ui-highlight-context';
 
 function DashboardContentInner({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -62,7 +63,9 @@ function DashboardContentInner({ children }: { children: React.ReactNode }) {
 function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <ChatDrawerProvider>
-      <DashboardContentInner>{children}</DashboardContentInner>
+      <UIHighlightProvider>
+        <DashboardContentInner>{children}</DashboardContentInner>
+      </UIHighlightProvider>
     </ChatDrawerProvider>
   );
 }

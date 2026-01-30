@@ -10,6 +10,7 @@ import { useUsers } from '@/context/user-context';
 import { useOrganizations } from '@/context/organization-context';
 import { useAddresses } from '@/context/address-context';
 import { usePeople } from '@/context/person-context';
+import { useUIHighlight } from '@/context/ui-highlight-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType, Signal } from '@/types/signal';
 import { APPLICATION_CRITERIA, ApplicationCriterion, CaseStatus, Case } from '@/types/case';
 import { AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData, AgentLog } from './agent-log';
@@ -78,6 +79,7 @@ function ChatBotInner() {
   const { organizations } = useOrganizations();
   const { addresses } = useAddresses();
   const { people } = usePeople();
+  const { triggerHighlight } = useUIHighlight();
 
   // Initialize greeting message
   useEffect(() => {
@@ -240,6 +242,7 @@ function ChatBotInner() {
           } as CreateSignalInput;
           const newSignal = await createSignal(signalData);
           setLastCreatedSignalId(newSignal.id);
+          triggerHighlight('signal', newSignal.id);
           return {
             message: `Signal created: ${newSignal.signalNumber}`,
             output: { signalId: newSignal.id, signalNumber: newSignal.signalNumber }
@@ -251,6 +254,7 @@ function ChatBotInner() {
           const targetSignal = findSignal(signal_id as string);
           if (targetSignal) {
             await updateSignal(targetSignal.id, updates as UpdateSignalInput);
+            triggerHighlight('signal', targetSignal.id);
             return { message: `Signal ${targetSignal.signalNumber} updated` };
           }
           return { message: `Signal ${signal_id} not found` };
@@ -261,6 +265,7 @@ function ChatBotInner() {
           const targetSignal = findSignal(signal_id as string);
           if (targetSignal) {
             await addNote(targetSignal.id, content as string, is_private as boolean || false);
+            triggerHighlight('signal', targetSignal.id);
             return { message: `Note added to ${targetSignal.signalNumber}` };
           }
           return { message: `Signal ${signal_id} not found` };
@@ -287,6 +292,8 @@ function ChatBotInner() {
             return { message: `Case "${case_id}" not found` };
           }
           await addSignalToCase(signal.id, caseItem.id);
+          triggerHighlight('signal', signal.id);
+          triggerHighlight('case', caseItem.id);
           return { message: `Added signal ${signal.signalNumber} to case "${caseItem.name}"` };
         }
 
@@ -323,6 +330,7 @@ function ChatBotInner() {
           pendingCasesRef.current.set(newCase.name.toLowerCase(), newCase);
           pendingCasesRef.current.set(newCase.id, newCase);
           setLastCreatedSignalId(null);
+          triggerHighlight('case', newCase.id);
           return {
             message: `Case "${newCase.name}" created with ID: ${newCase.id}`,
             output: { caseId: newCase.id, caseName: newCase.name }
@@ -354,6 +362,7 @@ function ChatBotInner() {
                 await addTag(caseItem.id, tag);
               }
             }
+            triggerHighlight('case', caseItem.id);
             return { message: `Case "${name || caseItem.name}" updated` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -374,6 +383,7 @@ function ChatBotInner() {
           const caseItem = findCase(case_id as string);
           if (caseItem) {
             await assignCaseOwner(caseItem.id, user_id as string, user_name as string);
+            triggerHighlight('case', caseItem.id);
             return { message: `${user_name} assigned as owner of "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -384,6 +394,7 @@ function ChatBotInner() {
           const caseItem = findCase(case_id as string);
           if (caseItem) {
             await addPractitioner(caseItem.id, user_id as string, user_name as string);
+            triggerHighlight('case', caseItem.id);
             return { message: `Added ${user_name} as practitioner to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -394,6 +405,7 @@ function ChatBotInner() {
           const caseItem = findCase(case_id as string);
           if (caseItem) {
             await shareCase(caseItem.id, user_id as string, user_name as string, (access_level as 'view' | 'edit' | 'admin') || 'view');
+            triggerHighlight('case', caseItem.id);
             return { message: `Shared "${caseItem.name}" with ${user_name}` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -415,6 +427,7 @@ function ChatBotInner() {
             });
             await updateApplicationData(caseItem.id, { explanation: explanation as string, criteria: fullCriteria });
             await completeApplication(caseItem.id);
+            triggerHighlight('case', caseItem.id);
             return { message: `Bibob application completed for "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -439,6 +452,7 @@ function ChatBotInner() {
               });
             }
             await updateApplicationData(caseItem.id, updatePayload);
+            triggerHighlight('case', caseItem.id);
             return { message: `Draft saved for "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -457,6 +471,7 @@ function ChatBotInner() {
               createdAt: new Date().toISOString(),
             };
             await addOrganizationToCase(caseItem.id, org);
+            triggerHighlight('case', caseItem.id);
             return { message: `Added organization "${orgName}" to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -476,6 +491,7 @@ function ChatBotInner() {
               createdAt: new Date().toISOString(),
             };
             await addAddressToCase(caseItem.id, addr);
+            triggerHighlight('case', caseItem.id);
             return { message: `Added address "${street}, ${city}" to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -495,6 +511,7 @@ function ChatBotInner() {
               createdAt: new Date().toISOString(),
             };
             await addPersonToCase(caseItem.id, person);
+            triggerHighlight('case', caseItem.id);
             return { message: `Added "${first_name} ${last_name}" to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -514,6 +531,7 @@ function ChatBotInner() {
               assignedTo: (assigned_to as string) || '',
             };
             await addFinding(caseItem.id, finding);
+            triggerHighlight('case', caseItem.id);
             return { message: `Added finding "${label}" to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -540,6 +558,7 @@ function ChatBotInner() {
               };
               await updateLetter(caseItem.id, newLetter.id, { fieldData });
             }
+            triggerHighlight('case', caseItem.id);
             return { message: `Added letter "${letterName}" to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -556,6 +575,7 @@ function ChatBotInner() {
               description: (commDesc as string) || '',
             };
             await addCommunication(caseItem.id, communication);
+            triggerHighlight('case', caseItem.id);
             return { message: `Added communication "${label}" to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -572,6 +592,7 @@ function ChatBotInner() {
               description: (vizDesc as string) || '',
             };
             await addVisualization(caseItem.id, visualization);
+            triggerHighlight('case', caseItem.id);
             return { message: `Added visualization "${label}" to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -589,6 +610,7 @@ function ChatBotInner() {
               assignedTo: (assigned_to as string) || '',
             };
             await addActivity(caseItem.id, activity);
+            triggerHighlight('case', caseItem.id);
             return { message: `Added activity "${label}" to "${caseItem.name}"` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -636,6 +658,7 @@ function ChatBotInner() {
               content: message as string,
             };
             await addChatMessage(caseItem.id, chatMessage);
+            triggerHighlight('case', caseItem.id);
             return { message: `Message sent to ${contact_name}` };
           }
           return { message: `Case "${case_id}" not found` };
@@ -737,7 +760,7 @@ function ChatBotInner() {
       console.error(`Tool ${toolName} error:`, error);
       return { message: `Error executing ${toolName}` };
     }
-  }, [signals, cases, users, findSignal, findCase, findCaseAsync, createSignal, updateSignal, addNote, deleteSignal, addSignalToCase, createCase, deleteCase, updateCase, updateCaseStatus, updateLocation, addTag, removeTag, assignCaseOwner, addPractitioner, shareCase, updateApplicationData, completeApplication, addOrganizationToCase, addAddressToCase, addPersonToCase, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForCase, getUserFullName, signalStats]);
+  }, [signals, cases, users, findSignal, findCase, findCaseAsync, createSignal, updateSignal, addNote, deleteSignal, addSignalToCase, createCase, deleteCase, updateCase, updateCaseStatus, updateLocation, addTag, removeTag, assignCaseOwner, addPractitioner, shareCase, updateApplicationData, completeApplication, addOrganizationToCase, addAddressToCase, addPersonToCase, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForCase, getUserFullName, signalStats, triggerHighlight]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;

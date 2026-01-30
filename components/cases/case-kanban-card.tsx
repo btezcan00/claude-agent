@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Case, CASE_STATUSES } from '@/types/case';
 import { useCases } from '@/context/case-context';
+import { useUIHighlight } from '@/context/ui-highlight-context';
+import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatDate } from '@/lib/date-utils';
@@ -18,7 +20,9 @@ interface CaseKanbanCardProps {
 export function CaseKanbanCard({ caseItem }: CaseKanbanCardProps) {
   const router = useRouter();
   const { getSignalCountForCase } = useCases();
+  const { isHighlighted } = useUIHighlight();
   const signalCount = getSignalCountForCase(caseItem.id);
+  const highlighted = isHighlighted('case', caseItem.id);
   const [applicationDialogOpen, setApplicationDialogOpen] = useState(false);
 
   const currentStatusConfig = CASE_STATUSES.find((s) => s.value === caseItem.status);
@@ -39,7 +43,10 @@ export function CaseKanbanCard({ caseItem }: CaseKanbanCardProps) {
 
   const cardContent = (
     <Card
-      className="p-3 hover:shadow-md transition-shadow cursor-pointer border-l-4"
+      className={cn(
+        "p-3 hover:shadow-md transition-shadow cursor-pointer border-l-4",
+        highlighted && "animate-ui-highlight"
+      )}
       style={{ borderLeftColor: caseItem.color || 'transparent' }}
       onClick={isApplicationStatus ? handleCardClick : undefined}
     >

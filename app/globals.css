@@ -52,6 +52,7 @@
 :root {
   --radius: 0.5rem;
   --background: #fbfaf7;
+  --primary-rgb: 99, 102, 241;
   --claude-beige: #f1f0e8;
   --claude-beige-dark: #c2c1b8;
   --claude-coral: oklch(0.65 0.18 25);
@@ -96,4 +97,15 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* UI Highlight animation for write actions from chat */
+@keyframes ui-highlight-glow {
+  0% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0); }
+  20% { box-shadow: 0 0 20px 4px rgba(var(--primary-rgb), 0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0); }
+}
+
+.animate-ui-highlight {
+  animation: ui-highlight-glow 2s ease-out;
 }

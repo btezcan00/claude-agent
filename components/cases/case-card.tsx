@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { Case } from '@/types/case';
 import { useCases } from '@/context/case-context';
+import { useUIHighlight } from '@/context/ui-highlight-context';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -15,11 +17,16 @@ interface CaseCardProps {
 
 export function CaseCard({ caseItem }: CaseCardProps) {
   const { getSignalCountForCase } = useCases();
+  const { isHighlighted } = useUIHighlight();
   const signalCount = getSignalCountForCase(caseItem.id);
+  const highlighted = isHighlighted('case', caseItem.id);
 
   return (
     <Link href={`/cases/${caseItem.id}`}>
-      <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border-l-4"
+      <Card className={cn(
+        "h-full hover:shadow-md transition-shadow cursor-pointer border-l-4",
+        highlighted && "animate-ui-highlight"
+      )}
         style={{ borderLeftColor: caseItem.color || 'transparent' }}
       >
         <CardHeader className="pb-2">
