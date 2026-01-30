@@ -12,7 +12,7 @@ import {
   SignalPhoto,
   ActivityEntry,
   SignalIndicator,
-  SignalFolderRelation,
+  SignalCaseRelation,
 } from '@/types/signal';
 
 interface SignalStats {
@@ -39,7 +39,7 @@ interface SignalContextValue {
   updateSignal: (id: string, data: UpdateSignalInput) => Promise<void>;
   deleteSignal: (id: string) => Promise<void>;
   getSignalById: (id: string) => Signal | undefined;
-  getSignalsByFolderId: (folderId: string) => Signal[];
+  getSignalsByCaseId: (caseId: string) => Signal[];
   refreshSignals: () => Promise<void>;
 
   // Notes Actions
@@ -56,12 +56,12 @@ interface SignalContextValue {
   // Indicator Actions
   updateIndicators: (signalId: string, indicators: SignalIndicator[]) => Promise<void>;
 
-  // Folder Actions
-  addSignalToFolder: (signalId: string, folderId: string) => Promise<void>;
-  removeSignalFromFolder: (signalId: string, folderId: string) => Promise<void>;
-  addSignalsToFolder: (signalIds: string[], folderId: string) => Promise<void>;
-  updateSignalFolderRelation: (signalId: string, folderId: string, relation: string) => Promise<void>;
-  getSignalFolderRelation: (signalId: string, folderId: string) => SignalFolderRelation | undefined;
+  // Case Actions
+  addSignalToCase: (signalId: string, caseId: string) => Promise<void>;
+  removeSignalFromCase: (signalId: string, caseId: string) => Promise<void>;
+  addSignalsToCase: (signalIds: string[], caseId: string) => Promise<void>;
+  updateSignalCaseRelation: (signalId: string, caseId: string, relation: string) => Promise<void>;
+  getSignalCaseRelation: (signalId: string, caseId: string) => SignalCaseRelation | undefined;
 
   // Selection Actions
   toggleSignalSelection: (signalId: string) => void;
@@ -80,7 +80,7 @@ interface SignalContextValue {
 const defaultFilters: SignalFilters = {
   type: [],
   receivedBy: [],
-  folderId: [],
+  caseId: [],
 };
 
 const defaultSortOption: SortOption = {
@@ -152,8 +152,8 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     if (filters.receivedBy.length > 0) {
       result = result.filter((s) => filters.receivedBy.includes(s.receivedBy));
     }
-    if (filters.folderId.length > 0) {
-      result = result.filter((s) => s.folderRelations.some((fr) => filters.folderId.includes(fr.folderId)));
+    if (filters.caseId.length > 0) {
+      result = result.filter((s) => s.caseRelations.some((cr) => filters.caseId.includes(cr.caseId)));
     }
 
     // Apply sorting
@@ -237,8 +237,8 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     return signals.find((s) => s.id === id);
   }, [signals]);
 
-  const getSignalsByFolderId = useCallback((folderId: string): Signal[] => {
-    return signals.filter((s) => s.folderRelations.some(fr => fr.folderId === folderId));
+  const getSignalsByCaseId = useCallback((caseId: string): Signal[] => {
+    return signals.filter((s) => s.caseRelations.some(cr => cr.caseId === caseId));
   }, [signals]);
 
   const addNote = useCallback(async (signalId: string, content: string, isPrivate: boolean = false) => {
@@ -481,19 +481,19 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     );
   }, [signals]);
 
-  const addSignalToFolder = useCallback(async (signalId: string, folderId: string) => {
+  const addSignalToCase = useCallback(async (signalId: string, caseId: string) => {
     // Don't check local state - let the API handle validation
     // This fixes race conditions where newly created signals aren't in local state yet
-    const response = await fetch(`/api/signals/${signalId}/folder-relations`, {
+    const response = await fetch(`/api/signals/${signalId}/case-relations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folderId }),
+      body: JSON.stringify({ caseId }),
     });
 
     if (!response.ok) {
       // 400 means already linked, which is fine
       if (response.status !== 400) {
-        throw new Error('Failed to add signal to folder');
+        throw new Error('Failed to add signal to case');
       }
       return;
     }
@@ -509,17 +509,17 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const removeSignalFromFolder = useCallback(async (signalId: string, folderId: string) => {
+  const removeSignalFromCase = useCallback(async (signalId: string, caseId: string) => {
     const signal = signals.find(s => s.id === signalId);
     if (!signal) return;
-    if (!signal.folderRelations.some(fr => fr.folderId === folderId)) return;
+    if (!signal.caseRelations.some(cr => cr.caseId === caseId)) return;
 
-    const response = await fetch(`/api/folders/${folderId}/signals/${signalId}`, {
+    const response = await fetch(`/api/cases/${caseId}/signals/${signalId}`, {
       method: 'DELETE',
     });
 
     if (!response.ok) {
-      throw new Error('Failed to remove signal from folder');
+      throw new Error('Failed to remove signal from case');
     }
 
     const data = await response.json();
@@ -528,22 +528,22 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     );
   }, [signals]);
 
-  const addSignalsToFolder = useCallback(async (signalIds: string[], folderId: string) => {
+  const addSignalsToCase = useCallback(async (signalIds: string[], caseId: string) => {
     // Don't check local state - let the API handle validation
     // This fixes race conditions where newly created signals aren't in local state yet
     await Promise.all(
       signalIds.map(async (signalId) => {
-        const response = await fetch(`/api/signals/${signalId}/folder-relations`, {
+        const response = await fetch(`/api/signals/${signalId}/case-relations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folderId }),
+          body: JSON.stringify({ caseId }),
         });
         // API returns 400 if already linked, 404 if not found - both are handled gracefully
         return response.ok ? response.json() : null;
       })
     );
 
-    // Refresh signals to get updated folder relations
+    // Refresh signals to get updated case relations
     const refreshResponse = await fetch('/api/signals');
     if (refreshResponse.ok) {
       const updatedSignals = await refreshResponse.json();
@@ -551,26 +551,26 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const updateSignalFolderRelation = useCallback(async (signalId: string, folderId: string, relation: string) => {
+  const updateSignalCaseRelation = useCallback(async (signalId: string, caseId: string, relation: string) => {
     const signal = signals.find(s => s.id === signalId);
     if (!signal) return;
 
-    const relationIndex = signal.folderRelations.findIndex(fr => fr.folderId === folderId);
+    const relationIndex = signal.caseRelations.findIndex(cr => cr.caseId === caseId);
     if (relationIndex === -1) return;
 
-    const updatedRelations = [...signal.folderRelations];
+    const updatedRelations = [...signal.caseRelations];
     updatedRelations[relationIndex] = { ...updatedRelations[relationIndex], relation };
 
     const response = await fetch(`/api/signals/${signalId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        folderRelations: updatedRelations,
+        caseRelations: updatedRelations,
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to update folder relation');
+      throw new Error('Failed to update case relation');
     }
 
     const updatedSignal = await response.json();
@@ -579,10 +579,10 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     );
   }, [signals]);
 
-  const getSignalFolderRelation = useCallback((signalId: string, folderId: string): SignalFolderRelation | undefined => {
+  const getSignalCaseRelation = useCallback((signalId: string, caseId: string): SignalCaseRelation | undefined => {
     const signal = signals.find(s => s.id === signalId);
     if (!signal) return undefined;
-    return signal.folderRelations.find(fr => fr.folderId === folderId);
+    return signal.caseRelations.find(cr => cr.caseId === caseId);
   }, [signals]);
 
   const toggleSignalSelection = useCallback((signalId: string) => {
@@ -625,7 +625,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     updateSignal,
     deleteSignal,
     getSignalById,
-    getSignalsByFolderId,
+    getSignalsByCaseId,
     refreshSignals,
     addNote,
     addPhoto,
@@ -633,11 +633,11 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     addAttachment,
     removeAttachment,
     updateIndicators,
-    addSignalToFolder,
-    removeSignalFromFolder,
-    addSignalsToFolder,
-    updateSignalFolderRelation,
-    getSignalFolderRelation,
+    addSignalToCase,
+    removeSignalFromCase,
+    addSignalsToCase,
+    updateSignalCaseRelation,
+    getSignalCaseRelation,
     toggleSignalSelection,
     selectAllSignals,
     clearSignalSelection,

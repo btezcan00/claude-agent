@@ -1,7 +1,7 @@
 'use client';
 
 import { User } from '@/types/user';
-import { Folder } from '@/types/folder';
+import { Case } from '@/types/case';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -13,14 +13,14 @@ import { Mail, Phone, FolderOpen, Building } from 'lucide-react';
 
 interface TeamMemberCardProps {
   user: User;
-  folders: Folder[];
+  cases: Case[];
 }
 
-export function TeamMemberCard({ user, folders }: TeamMemberCardProps) {
+export function TeamMemberCard({ user, cases }: TeamMemberCardProps) {
   const { getUserFullName, getUserInitials } = useUsers();
 
-  const ownedFolders = folders.filter((f) => f.ownerId === user.id);
-  const ownedFolderCount = ownedFolders.length;
+  const ownedCases = cases.filter((c) => c.ownerId === user.id);
+  const ownedCaseCount = ownedCases.length;
 
   const roleConfig = USER_ROLE_CONFIG[user.role];
 
@@ -68,14 +68,14 @@ export function TeamMemberCard({ user, folders }: TeamMemberCardProps) {
 
         <Separator />
 
-        {/* Folder Ownership */}
+        {/* Case Ownership */}
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <FolderOpen className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium">Folder Ownership</span>
+            <span className="font-medium">Case Ownership</span>
           </div>
           <span className="text-muted-foreground">
-            {ownedFolderCount} folder{ownedFolderCount !== 1 ? 's' : ''}
+            {ownedCaseCount} case{ownedCaseCount !== 1 ? 's' : ''}
           </span>
         </div>
 

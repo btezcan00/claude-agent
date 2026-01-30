@@ -5,7 +5,7 @@ import { Signal } from '@/types/signal';
 import { Button } from '@/components/ui/button';
 import { SignalTypeBadge } from './signal-type-badge';
 import { ArrowLeft, Edit, Trash2, FolderPlus } from 'lucide-react';
-import { FolderCreateDialog } from '@/components/folders/folder-create-dialog';
+import { CaseCreateDialog } from '@/components/cases/case-create-dialog';
 
 interface SignalDetailHeaderProps {
   signal: Signal;
@@ -46,12 +46,12 @@ export function SignalDetailHeader({
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <FolderCreateDialog signalIds={[signal.id]}>
+          <CaseCreateDialog signalIds={[signal.id]}>
             <Button variant="outline" size="sm">
               <FolderPlus className="w-4 h-4 mr-2" />
-              Create Folder
+              Create Case
             </Button>
-          </FolderCreateDialog>
+          </CaseCreateDialog>
           <Button variant="outline" size="sm" onClick={onEdit}>
             <Edit className="w-4 h-4 mr-2" />
             Edit

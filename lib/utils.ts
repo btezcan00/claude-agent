@@ -15,8 +15,8 @@ export function generateSignalNumber(): string {
   return `GCMP-${year}-${random}`;
 }
 
-export function generateFolderId(): string {
-  return `folder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+export function generateCaseId(): string {
+  return `case-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 export function formatFileSize(bytes: number): string {

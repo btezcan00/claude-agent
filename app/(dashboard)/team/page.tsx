@@ -2,7 +2,7 @@
 
 import { useUsers } from '@/context/user-context';
 import { useSignals } from '@/context/signal-context';
-import { useFolders } from '@/context/folder-context';
+import { useCases } from '@/context/case-context';
 import { TeamMemberCard } from '@/components/team/team-member-card';
 import { StatsCard } from '@/components/common/stats-card';
 import { Users, Radio, FolderOpen, UserCheck } from 'lucide-react';
@@ -10,10 +10,10 @@ import { Users, Radio, FolderOpen, UserCheck } from 'lucide-react';
 export default function TeamPage() {
   const { users } = useUsers();
   const { signalStats } = useSignals();
-  const { folders } = useFolders();
+  const { cases } = useCases();
 
   const activeUsers = users.filter((u) => u.isActive);
-  const ownedFoldersCount = folders.filter((f) => f.ownerId !== null).length;
+  const ownedCasesCount = cases.filter((c) => c.ownerId !== null).length;
 
   return (
     <div className="space-y-6">
@@ -21,7 +21,7 @@ export default function TeamPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Team Management</h1>
         <p className="text-muted-foreground">
-          View team members and folder ownership
+          View team members and case ownership
         </p>
       </div>
 
@@ -38,13 +38,13 @@ export default function TeamPage() {
           icon={Radio}
         />
         <StatsCard
-          title="Total Folders"
-          value={folders.length}
+          title="Total Cases"
+          value={cases.length}
           icon={FolderOpen}
         />
         <StatsCard
-          title="Owned Folders"
-          value={ownedFoldersCount}
+          title="Owned Cases"
+          value={ownedCasesCount}
           icon={UserCheck}
         />
       </div>
@@ -52,7 +52,7 @@ export default function TeamPage() {
       {/* Team Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {users.map((user) => (
-          <TeamMemberCard key={user.id} user={user} folders={folders} />
+          <TeamMemberCard key={user.id} user={user} cases={cases} />
         ))}
       </div>
     </div>

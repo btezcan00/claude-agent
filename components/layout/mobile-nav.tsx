@@ -16,7 +16,7 @@ import {
 
 const navigation = [
   { name: 'Signals', href: '/signals', icon: Radio },
-  { name: 'Folders', href: '/folders', icon: FolderOpen },
+  { name: 'Cases', href: '/cases', icon: FolderOpen },
   { name: 'Teams', href: '/team', icon: Users },
 ];
 
@@ -38,7 +38,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
               <Shield className="w-5 h-5 text-primary-foreground" />
             </div>
             <div className="text-left">
-              <h1 className="text-base font-bold">GCMP</h1>
+              <h1 className="text-base font-bold">Atlas AI</h1>
               <p className="text-xs text-muted-foreground font-normal">
                 Case Management
               </p>
@@ -51,8 +51,8 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             const isActive =
               item.href === '/signals'
                 ? pathname === '/signals' || pathname.startsWith('/signals/')
-                : item.href === '/folders'
-                ? pathname === '/folders' || pathname.startsWith('/folders/')
+                : item.href === '/cases'
+                ? pathname === '/cases' || pathname.startsWith('/cases/')
                 : pathname === item.href;
 
             return (

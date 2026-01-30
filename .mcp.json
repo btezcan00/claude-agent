@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "signal-folder-api": {
+    "signal-case-api": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
       "env": {

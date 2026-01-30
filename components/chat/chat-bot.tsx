@@ -2,23 +2,43 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { useSignals } from '@/context/signal-context';
-import { useFolders } from '@/context/folder-context';
+import { useCases } from '@/context/case-context';
 import { useUsers } from '@/context/user-context';
 import { useOrganizations } from '@/context/organization-context';
 import { useAddresses } from '@/context/address-context';
 import { usePeople } from '@/context/person-context';
 import { CreateSignalInput, UpdateSignalInput, SignalType, Signal } from '@/types/signal';
-import { APPLICATION_CRITERIA, ApplicationCriterion, FolderStatus, Folder } from '@/types/folder';
-import { AgentLog, AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData } from './agent-log';
-import { BotIcon } from './animations/avatar-expressions';
+import { APPLICATION_CRITERIA, ApplicationCriterion, CaseStatus, Case } from '@/types/case';
+import { AgentPhase, LogEntry, createLogEntry, PlanData, PlanDisplay, ClarificationData, AgentLog } from './agent-log';
 import { ClarificationDisplay } from './clarification-display';
+import { PhaseStepper } from './workflow/components/phase-stepper';
+import { ConversationPhase } from '@/types/conversation-workflow';
 
 // Generate unique message IDs
 let messageIdCounter = 0;
 const generateMessageId = () => `msg-${Date.now()}-${++messageIdCounter}`;
+
+// Map AgentPhase to ConversationPhase for the stepper display
+const mapToConversationPhase = (agentPhase: AgentPhase): ConversationPhase => {
+  switch (agentPhase) {
+    case 'clarifying':
+      return 'clarification';
+    case 'planning':
+    case 'awaiting_approval':
+      return 'planning';
+    case 'executing':
+      return 'execution';
+    case 'reflecting':
+      return 'review';
+    case 'complete':
+      return 'complete';
+    default:
+      return 'idle';
+  }
+};
 
 // Validate ISO date strings
 const isValidDate = (dateStr: unknown): boolean => {
@@ -46,14 +66,14 @@ function ChatBotInner() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Track folders created during the current execution cycle to handle race conditions
-  // when subsequent tools reference folders before React state updates
-  const pendingFoldersRef = useRef<Map<string, Folder>>(new Map());
+  // Track cases created during the current execution cycle to handle race conditions
+  // when subsequent tools reference cases before React state updates
+  const pendingCasesRef = useRef<Map<string, Case>>(new Map());
   // Track step outputs for resolving $stepN.fieldName references
   const stepOutputsRef = useRef<Map<number, Record<string, unknown>>>(new Map());
 
-  const { signals, filteredSignals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, addSignalToFolder, signalStats, refreshSignals } = useSignals();
-  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, deleteFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, refreshFolders } = useFolders();
+  const { signals, filteredSignals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, addSignalToCase, signalStats, refreshSignals } = useSignals();
+  const { cases, getSignalCountForCase, updateApplicationData, completeApplication, assignCaseOwner, updateCase, updateCaseStatus, updateLocation, addTag, removeTag, createCase, deleteCase, addPractitioner, shareCase, addOrganizationToCase, addAddressToCase, addPersonToCase, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, refreshCases } = useCases();
   const { users, getUserFullName } = useUsers();
   const { organizations } = useOrganizations();
   const { addresses } = useAddresses();
@@ -66,7 +86,7 @@ function ChatBotInner() {
         {
           id: '1',
           role: 'assistant',
-          content: "Hi! I'm your GCMP assistant. I can help you manage signals and folders - just tell me what you need and I'll take care of it.",
+          content: "Hi! I'm Atlas AI, your AI assistant. I can help you manage signals and cases - just tell me what you need and I'll take care of it.",
           isNew: true,
         },
       ]);
@@ -82,43 +102,43 @@ function ChatBotInner() {
     );
   }, [getSignalById, signals]);
 
-  const findFolder = useCallback((identifier: string) => {
-    return folders.find(f =>
-      f.id === identifier ||
-      f.name.toLowerCase().includes(identifier.toLowerCase())
+  const findCase = useCallback((identifier: string) => {
+    return cases.find(c =>
+      c.id === identifier ||
+      c.name.toLowerCase().includes(identifier.toLowerCase())
     );
-  }, [folders]);
+  }, [cases]);
 
-  // Async version that falls back to API when folder not found in state
+  // Async version that falls back to API when case not found in state
   // This is needed because React state updates are async and may not be
-  // available immediately after creating a folder
-  const findFolderAsync = useCallback(async (identifier: string) => {
-    // First check pending folders created in this execution cycle
-    const pendingFolder = pendingFoldersRef.current.get(identifier) ||
-      pendingFoldersRef.current.get(identifier.toLowerCase());
-    if (pendingFolder) return pendingFolder;
+  // available immediately after creating a case
+  const findCaseAsync = useCallback(async (identifier: string) => {
+    // First check pending cases created in this execution cycle
+    const pendingCase = pendingCasesRef.current.get(identifier) ||
+      pendingCasesRef.current.get(identifier.toLowerCase());
+    if (pendingCase) return pendingCase;
 
     // Then check local state
-    const localFolder = folders.find(f =>
-      f.id === identifier ||
-      f.name.toLowerCase().includes(identifier.toLowerCase())
+    const localCase = cases.find(c =>
+      c.id === identifier ||
+      c.name.toLowerCase().includes(identifier.toLowerCase())
     );
-    if (localFolder) return localFolder;
+    if (localCase) return localCase;
 
     // If not found locally and identifier looks like an ID, try fetching from API
-    if (identifier.startsWith('folder-') || identifier.match(/^[a-z0-9-]+$/i)) {
+    if (identifier.startsWith('case-') || identifier.match(/^[a-z0-9-]+$/i)) {
       try {
-        const response = await fetch(`/api/folders/${identifier}`);
+        const response = await fetch(`/api/cases/${identifier}`);
         if (response.ok) {
           return await response.json();
         }
       } catch (error) {
-        console.error('Failed to fetch folder from API:', error);
+        console.error('Failed to fetch case from API:', error);
       }
     }
 
     return undefined;
-  }, [folders]);
+  }, [cases]);
 
   // Function to resolve $stepN.fieldName references in tool inputs
   const resolveStepReferences = useCallback((input: Record<string, unknown>, stepOutputs: Map<number, Record<string, unknown>>): Record<string, unknown> => {
@@ -256,21 +276,21 @@ function ChatBotInner() {
           return { message: `Signal ${signal_id} not found` };
         }
 
-        case 'add_signal_to_folder': {
-          const { signal_id, folder_id } = input;
+        case 'add_signal_to_case': {
+          const { signal_id, case_id } = input;
           const signal = findSignal(signal_id as string);
           if (!signal) {
             return { message: `Signal "${signal_id}" not found` };
           }
-          const folder = findFolder(folder_id as string);
-          if (!folder) {
-            return { message: `Folder "${folder_id}" not found` };
+          const caseItem = findCase(case_id as string);
+          if (!caseItem) {
+            return { message: `Case "${case_id}" not found` };
           }
-          await addSignalToFolder(signal.id, folder.id);
-          return { message: `Added signal ${signal.signalNumber} to folder "${folder.name}"` };
+          await addSignalToCase(signal.id, caseItem.id);
+          return { message: `Added signal ${signal.signalNumber} to case "${caseItem.name}"` };
         }
 
-        case 'create_folder': {
+        case 'create_case': {
           const randomColors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899'];
           const randomColor = randomColors[Math.floor(Math.random() * randomColors.length)];
 
@@ -289,8 +309,8 @@ function ChatBotInner() {
           }
 
           const currentUser = users[0];
-          const folderData = {
-            name: (input.name as string) || 'New folder',
+          const caseData = {
+            name: (input.name as string) || 'New case',
             description: (input.description as string) || '',
             color: (input.color as string) || randomColor,
             location,
@@ -298,92 +318,92 @@ function ChatBotInner() {
             ownerName: currentUser ? getUserFullName(currentUser) : undefined,
             signalIds,
           };
-          const newFolder = await createFolder(folderData);
-          // Track the folder for subsequent tools in this execution cycle
-          pendingFoldersRef.current.set(newFolder.name.toLowerCase(), newFolder);
-          pendingFoldersRef.current.set(newFolder.id, newFolder);
+          const newCase = await createCase(caseData);
+          // Track the case for subsequent tools in this execution cycle
+          pendingCasesRef.current.set(newCase.name.toLowerCase(), newCase);
+          pendingCasesRef.current.set(newCase.id, newCase);
           setLastCreatedSignalId(null);
           return {
-            message: `Folder "${newFolder.name}" created with ID: ${newFolder.id}`,
-            output: { folderId: newFolder.id, folderName: newFolder.name }
+            message: `Case "${newCase.name}" created with ID: ${newCase.id}`,
+            output: { caseId: newCase.id, caseName: newCase.name }
           };
         }
 
-        case 'edit_folder': {
-          const { folder_id, name, description, status, location, color, tags } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'edit_case': {
+          const { case_id, name, description, status, location, color, tags } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const updates: Record<string, unknown> = {};
             if (name) updates.name = name;
             if (description) updates.description = description;
             if (color) updates.color = color;
             if (Object.keys(updates).length > 0) {
-              await updateFolder(folder.id, updates as { name?: string; description?: string; color?: string });
+              await updateCase(caseItem.id, updates as { name?: string; description?: string; color?: string });
             }
             if (status) {
-              await updateFolderStatus(folder.id, status as FolderStatus);
+              await updateCaseStatus(caseItem.id, status as CaseStatus);
             }
             if (location) {
-              await updateLocation(folder.id, location as string);
+              await updateLocation(caseItem.id, location as string);
             }
             if (tags && Array.isArray(tags)) {
-              for (const tag of folder.tags) {
-                await removeTag(folder.id, tag);
+              for (const tag of caseItem.tags) {
+                await removeTag(caseItem.id, tag);
               }
               for (const tag of (tags as string[])) {
-                await addTag(folder.id, tag);
+                await addTag(caseItem.id, tag);
               }
             }
-            return { message: `Folder "${name || folder.name}" updated` };
+            return { message: `Case "${name || caseItem.name}" updated` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'delete_folder': {
-          const { folder_id } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
-            await deleteFolder(folder.id);
-            return { message: `Folder "${folder.name}" deleted` };
+        case 'delete_case': {
+          const { case_id } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
+            await deleteCase(caseItem.id);
+            return { message: `Case "${caseItem.name}" deleted` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'assign_folder_owner': {
-          const { folder_id, user_id, user_name } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
-            await assignFolderOwner(folder.id, user_id as string, user_name as string);
-            return { message: `${user_name} assigned as owner of "${folder.name}"` };
+        case 'assign_case_owner': {
+          const { case_id, user_id, user_name } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
+            await assignCaseOwner(caseItem.id, user_id as string, user_name as string);
+            return { message: `${user_name} assigned as owner of "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_practitioner': {
-          const { folder_id, user_id, user_name } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
-            await addPractitioner(folder.id, user_id as string, user_name as string);
-            return { message: `Added ${user_name} as practitioner to "${folder.name}"` };
+        case 'add_case_practitioner': {
+          const { case_id, user_id, user_name } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
+            await addPractitioner(caseItem.id, user_id as string, user_name as string);
+            return { message: `Added ${user_name} as practitioner to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'share_folder': {
-          const { folder_id, user_id, user_name, access_level } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
-            await shareFolder(folder.id, user_id as string, user_name as string, (access_level as 'view' | 'edit' | 'admin') || 'view');
-            return { message: `Shared "${folder.name}" with ${user_name}` };
+        case 'share_case': {
+          const { case_id, user_id, user_name, access_level } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
+            await shareCase(caseItem.id, user_id as string, user_name as string, (access_level as 'view' | 'edit' | 'admin') || 'view');
+            return { message: `Shared "${caseItem.name}" with ${user_name}` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
         case 'complete_bibob_application': {
-          const { folder_id, explanation, criteria } = input;
-          // Use async version to handle race condition when folder was just created
-          const folder = await findFolderAsync(folder_id as string);
-          if (folder) {
+          const { case_id, explanation, criteria } = input;
+          // Use async version to handle race condition when case was just created
+          const caseItem = await findCaseAsync(case_id as string);
+          if (caseItem) {
             const incomingCriteria = criteria as Array<{ id: string; isMet: boolean; explanation: string }>;
             const fullCriteria: ApplicationCriterion[] = APPLICATION_CRITERIA.map(baseCrit => {
               const incoming = incomingCriteria.find(c => c.id === baseCrit.id);
@@ -393,18 +413,18 @@ function ChatBotInner() {
                 explanation: incoming?.explanation ?? '',
               };
             });
-            await updateApplicationData(folder.id, { explanation: explanation as string, criteria: fullCriteria });
-            await completeApplication(folder.id);
-            return { message: `Bibob application completed for "${folder.name}"` };
+            await updateApplicationData(caseItem.id, { explanation: explanation as string, criteria: fullCriteria });
+            await completeApplication(caseItem.id);
+            return { message: `Bibob application completed for "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
         case 'save_bibob_application_draft': {
-          const { folder_id, explanation, criteria } = input;
-          // Use async version to handle race condition when folder was just created
-          const folder = await findFolderAsync(folder_id as string);
-          if (folder) {
+          const { case_id, explanation, criteria } = input;
+          // Use async version to handle race condition when case was just created
+          const caseItem = await findCaseAsync(case_id as string);
+          if (caseItem) {
             const updatePayload: { explanation?: string; criteria?: ApplicationCriterion[] } = {};
             if (explanation) updatePayload.explanation = explanation as string;
             if (criteria) {
@@ -418,16 +438,16 @@ function ChatBotInner() {
                 };
               });
             }
-            await updateApplicationData(folder.id, updatePayload);
-            return { message: `Draft saved for "${folder.name}"` };
+            await updateApplicationData(caseItem.id, updatePayload);
+            return { message: `Draft saved for "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_organization': {
-          const { folder_id, name: orgName, kvk_number, address, type } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'add_case_organization': {
+          const { case_id, name: orgName, kvk_number, address, type } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const org = {
               id: `org-${Date.now()}`,
               name: orgName as string,
@@ -436,16 +456,16 @@ function ChatBotInner() {
               type: (type as string) || 'company',
               createdAt: new Date().toISOString(),
             };
-            await addOrganizationToFolder(folder.id, org);
-            return { message: `Added organization "${orgName}" to "${folder.name}"` };
+            await addOrganizationToCase(caseItem.id, org);
+            return { message: `Added organization "${orgName}" to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_address': {
-          const { folder_id, street, city, postal_code, country, description } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'add_case_address': {
+          const { case_id, street, city, postal_code, country, description } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const fullAddress = `${street}, ${postal_code ? postal_code + ' ' : ''}${city}, ${country || 'Netherlands'}`;
             const addr = {
               id: `addr-${Date.now()}`,
@@ -455,16 +475,16 @@ function ChatBotInner() {
               description: (description as string) || '',
               createdAt: new Date().toISOString(),
             };
-            await addAddressToFolder(folder.id, addr);
-            return { message: `Added address "${street}, ${city}" to "${folder.name}"` };
+            await addAddressToCase(caseItem.id, addr);
+            return { message: `Added address "${street}, ${city}" to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_person': {
-          const { folder_id, first_name, last_name, date_of_birth, role, notes } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'add_case_person': {
+          const { case_id, first_name, last_name, date_of_birth, role, notes } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const person = {
               id: `person-${Date.now()}`,
               firstName: first_name as string,
@@ -474,35 +494,35 @@ function ChatBotInner() {
               description: `${(role as string) || ''} ${(notes as string) || ''}`.trim() || '',
               createdAt: new Date().toISOString(),
             };
-            await addPersonToFolder(folder.id, person);
-            return { message: `Added "${first_name} ${last_name}" to "${folder.name}"` };
+            await addPersonToCase(caseItem.id, person);
+            return { message: `Added "${first_name} ${last_name}" to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_finding': {
-          const { folder_id, label, severity, assigned_to } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'add_case_finding': {
+          const { case_id, label, severity, assigned_to } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const finding = {
               date: new Date().toISOString(),
-              phase: folder.status,
+              phase: caseItem.status,
               label: label as string,
               description: '',
               isCompleted: false,
               severity: (severity as 'none' | 'low' | 'serious' | 'critical') || 'none',
               assignedTo: (assigned_to as string) || '',
             };
-            await addFinding(folder.id, finding);
-            return { message: `Added finding "${label}" to "${folder.name}"` };
+            await addFinding(caseItem.id, finding);
+            return { message: `Added finding "${label}" to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_letter': {
-          const { folder_id, letter_name, template, date, municipal_province, ...fields } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'add_case_letter': {
+          const { case_id, letter_name, template, date, municipal_province, ...fields } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const templateType = (template as string) || 'lbb_notification';
             const letterName = (letter_name as string) || `Letter - ${new Date().toLocaleDateString()}`;
             const letter = {
@@ -511,73 +531,73 @@ function ChatBotInner() {
               description: '',
               tags: [] as string[],
             };
-            const newLetter = await addLetter(folder.id, letter);
+            const newLetter = await addLetter(caseItem.id, letter);
             if (newLetter) {
               const fieldData: Record<string, string | boolean> = {
                 date: (date as string) || '',
                 municipal_province: (municipal_province as string) || '',
                 ...fields as Record<string, string | boolean>,
               };
-              await updateLetter(folder.id, newLetter.id, { fieldData });
+              await updateLetter(caseItem.id, newLetter.id, { fieldData });
             }
-            return { message: `Added letter "${letterName}" to "${folder.name}"` };
+            return { message: `Added letter "${letterName}" to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_communication': {
-          const { folder_id, label, description: commDesc, date } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'add_case_communication': {
+          const { case_id, label, description: commDesc, date } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const communication = {
               date: (date as string) || new Date().toISOString(),
-              phase: folder.status,
+              phase: caseItem.status,
               label: label as string,
               description: (commDesc as string) || '',
             };
-            await addCommunication(folder.id, communication);
-            return { message: `Added communication "${label}" to "${folder.name}"` };
+            await addCommunication(caseItem.id, communication);
+            return { message: `Added communication "${label}" to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_visualization': {
-          const { folder_id, label, description: vizDesc } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'add_case_visualization': {
+          const { case_id, label, description: vizDesc } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const visualization = {
               date: new Date().toISOString(),
-              phase: folder.status,
+              phase: caseItem.status,
               label: label as string,
               description: (vizDesc as string) || '',
             };
-            await addVisualization(folder.id, visualization);
-            return { message: `Added visualization "${label}" to "${folder.name}"` };
+            await addVisualization(caseItem.id, visualization);
+            return { message: `Added visualization "${label}" to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'add_folder_activity': {
-          const { folder_id, label, description: actDesc, assigned_to, date } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'add_case_activity': {
+          const { case_id, label, description: actDesc, assigned_to, date } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             const activity = {
               date: (date as string) || new Date().toISOString(),
-              phase: folder.status,
+              phase: caseItem.status,
               label: label as string,
               description: (actDesc as string) || '',
               assignedTo: (assigned_to as string) || '',
             };
-            await addActivity(folder.id, activity);
-            return { message: `Added activity "${label}" to "${folder.name}"` };
+            await addActivity(caseItem.id, activity);
+            return { message: `Added activity "${label}" to "${caseItem.name}"` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'get_folder_messages': {
-          const { folder_id, contact_id, contact_name, contact_type, limit: msgLimit } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'get_case_messages': {
+          const { case_id, contact_id, contact_name, contact_type, limit: msgLimit } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             let conversationId = contact_id as string;
             switch (contact_type) {
               case 'practitioner': conversationId = `practitioner-${contact_id}`; break;
@@ -585,7 +605,7 @@ function ChatBotInner() {
               case 'organization': conversationId = `org-${contact_id}`; break;
               case 'person': conversationId = `person-${contact_id}`; break;
             }
-            const msgs = (folder.chatMessages || [])
+            const msgs = (caseItem.chatMessages || [])
               .filter(m => m.conversationId === conversationId)
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .slice(0, (msgLimit as number) || 5);
@@ -594,13 +614,13 @@ function ChatBotInner() {
             }
             return { message: `Messages with ${contact_name}: ${msgs.map(m => `${m.senderName}: ${m.content}`).join('; ')}` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
-        case 'send_folder_message': {
-          const { folder_id, contact_id, contact_name, contact_type, message } = input;
-          const folder = findFolder(folder_id as string);
-          if (folder) {
+        case 'send_case_message': {
+          const { case_id, contact_id, contact_name, contact_type, message } = input;
+          const caseItem = findCase(case_id as string);
+          if (caseItem) {
             let conversationId = contact_id as string;
             switch (contact_type) {
               case 'practitioner': conversationId = `practitioner-${contact_id}`; break;
@@ -615,10 +635,10 @@ function ChatBotInner() {
               senderName: currentUser ? getUserFullName(currentUser) : 'Unknown',
               content: message as string,
             };
-            await addChatMessage(folder.id, chatMessage);
+            await addChatMessage(caseItem.id, chatMessage);
             return { message: `Message sent to ${contact_name}` };
           }
-          return { message: `Folder "${folder_id}" not found` };
+          return { message: `Case "${case_id}" not found` };
         }
 
         // Read-only tools return data summaries
@@ -640,26 +660,26 @@ function ChatBotInner() {
           };
         }
 
-        case 'summarize_folder': {
-          const folderId = input.folder_id as string | undefined;
-          if (folderId) {
-            const f = findFolder(folderId);
-            if (f) {
-              const signalCount = getSignalCountForFolder(f.id);
+        case 'summarize_case': {
+          const caseId = input.case_id as string | undefined;
+          if (caseId) {
+            const c = findCase(caseId);
+            if (c) {
+              const signalCount = getSignalCountForCase(c.id);
               return {
-                message: `${f.name}: ${f.description.substring(0, 80)}... | Status: ${f.status} | Location: ${f.location || 'N/A'} | Signals: ${signalCount} | Practitioners: ${f.practitioners?.length || 0} | Organizations: ${f.organizations?.length || 0}`
+                message: `${c.name}: ${c.description.substring(0, 80)}... | Status: ${c.status} | Location: ${c.location || 'N/A'} | Signals: ${signalCount} | Practitioners: ${c.practitioners?.length || 0} | Organizations: ${c.organizations?.length || 0}`
               };
             }
-            return { message: `Folder "${folderId}" not found` };
+            return { message: `Case "${caseId}" not found` };
           }
-          return { message: `${folders.length} folders: ${folders.map(f => `${f.name} (${f.status})`).join('; ')}` };
+          return { message: `${cases.length} cases: ${cases.map(c => `${c.name} (${c.status})`).join('; ')}` };
         }
 
-        case 'list_folders':
+        case 'list_cases':
           return {
-            message: folders.length > 0
-              ? folders.map(f => `${f.name} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`).join('; ')
-              : 'No folders'
+            message: cases.length > 0
+              ? cases.map(c => `${c.name} (${c.status}, ${getSignalCountForCase(c.id)} signals)`).join('; ')
+              : 'No cases'
           };
 
         case 'list_team_members':
@@ -668,8 +688,8 @@ function ChatBotInner() {
         case 'get_signal_stats':
           return { message: `Total signals: ${signalStats.total}` };
 
-        case 'get_folder_stats':
-          return { message: `Total folders: ${folders.length}` };
+        case 'get_case_stats':
+          return { message: `Total cases: ${cases.length}` };
 
         case 'search_signals': {
           let results = [...signals];
@@ -723,13 +743,13 @@ function ChatBotInner() {
       console.error(`Tool ${toolName} error:`, error);
       return { message: `Error executing ${toolName}` };
     }
-  }, [signals, folders, users, findSignal, findFolder, findFolderAsync, createSignal, updateSignal, addNote, deleteSignal, addSignalToFolder, createFolder, deleteFolder, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, assignFolderOwner, addPractitioner, shareFolder, updateApplicationData, completeApplication, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForFolder, getUserFullName, signalStats]);
+  }, [signals, cases, users, findSignal, findCase, findCaseAsync, createSignal, updateSignal, addNote, deleteSignal, addSignalToCase, createCase, deleteCase, updateCase, updateCaseStatus, updateLocation, addTag, removeTag, assignCaseOwner, addPractitioner, shareCase, updateApplicationData, completeApplication, addOrganizationToCase, addAddressToCase, addPersonToCase, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, getSignalCountForCase, getUserFullName, signalStats]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    // Clear pending folders and step outputs from previous execution cycle
-    pendingFoldersRef.current.clear();
+    // Clear pending cases and step outputs from previous execution cycle
+    pendingCasesRef.current.clear();
     stepOutputsRef.current.clear();
 
     const userMessage: Message = {
@@ -743,6 +763,7 @@ function ChatBotInner() {
     setInput('');
     setIsLoading(true);
     clearLog();
+    setAgentPhase('clarifying'); // Start in first phase immediately to show stepper
 
     try {
       // Fetch fresh signals to ensure we have the latest data
@@ -779,19 +800,19 @@ function ChatBotInner() {
         })),
       }));
 
-      const folderData = folders.map((f) => ({
-        id: f.id,
-        name: f.name,
-        description: f.description,
-        status: f.status,
-        ownerId: f.ownerId,
-        ownerName: f.ownerName,
-        signalCount: getSignalCountForFolder(f.id),
-        tags: f.tags,
-        practitioners: (f.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
-        sharedWith: (f.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
-        organizations: (f.organizations || []).map(o => ({ id: o.id, name: o.name })),
-        peopleInvolved: (f.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
+      const caseData = cases.map((c) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        status: c.status,
+        ownerId: c.ownerId,
+        ownerName: c.ownerName,
+        signalCount: getSignalCountForCase(c.id),
+        tags: c.tags,
+        practitioners: (c.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
+        sharedWith: (c.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
+        organizations: (c.organizations || []).map(o => ({ id: o.id, name: o.name })),
+        peopleInvolved: (c.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
       }));
 
       const teamMembersData = users.map((u) => ({
@@ -800,7 +821,7 @@ function ChatBotInner() {
         lastName: u.lastName,
         title: u.title,
         role: u.role,
-        ownedFolderCount: folders.filter((f) => f.ownerId === u.id).length,
+        ownedCaseCount: cases.filter((c) => c.ownerId === u.id).length,
       }));
 
       const currentUser = users[0];
@@ -825,7 +846,7 @@ function ChatBotInner() {
         body: JSON.stringify({
           messages: conversationHistory,
           signals: signalData,
-          folders: folderData,
+          cases: caseData,
           teamMembers: teamMembersData,
           currentUser: currentUserData,
           lastCreatedSignalId,
@@ -1001,7 +1022,7 @@ function ChatBotInner() {
       // This ensures React state is synced with backend after server-side tool calls
       if (executedTools.length > 0) {
         try {
-          await Promise.all([refreshSignals(), refreshFolders()]);
+          await Promise.all([refreshSignals(), refreshCases()]);
         } catch (refreshError) {
           console.warn('Failed to refresh state after tool execution:', refreshError);
         }
@@ -1026,8 +1047,8 @@ function ChatBotInner() {
   const handleApprovePlan = useCallback(async () => {
     if (!pendingPlan) return;
 
-    // Clear pending folders and step outputs from previous execution cycle
-    pendingFoldersRef.current.clear();
+    // Clear pending cases and step outputs from previous execution cycle
+    pendingCasesRef.current.clear();
     stepOutputsRef.current.clear();
 
     // Store the plan before clearing it
@@ -1071,19 +1092,19 @@ function ChatBotInner() {
         })),
       }));
 
-      const folderData = folders.map((f) => ({
-        id: f.id,
-        name: f.name,
-        description: f.description,
-        status: f.status,
-        ownerId: f.ownerId,
-        ownerName: f.ownerName,
-        signalCount: getSignalCountForFolder(f.id),
-        tags: f.tags,
-        practitioners: (f.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
-        sharedWith: (f.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
-        organizations: (f.organizations || []).map(o => ({ id: o.id, name: o.name })),
-        peopleInvolved: (f.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
+      const caseData = cases.map((c) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        status: c.status,
+        ownerId: c.ownerId,
+        ownerName: c.ownerName,
+        signalCount: getSignalCountForCase(c.id),
+        tags: c.tags,
+        practitioners: (c.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
+        sharedWith: (c.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
+        organizations: (c.organizations || []).map(o => ({ id: o.id, name: o.name })),
+        peopleInvolved: (c.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
       }));
 
       const teamMembersData = users.map((u) => ({
@@ -1092,7 +1113,7 @@ function ChatBotInner() {
         lastName: u.lastName,
         title: u.title,
         role: u.role,
-        ownedFolderCount: folders.filter((f) => f.ownerId === u.id).length,
+        ownedCaseCount: cases.filter((c) => c.ownerId === u.id).length,
       }));
 
       const currentUser = users[0];
@@ -1117,7 +1138,7 @@ function ChatBotInner() {
         body: JSON.stringify({
           messages: conversationHistory,
           signals: signalData,
-          folders: folderData,
+          cases: caseData,
           teamMembers: teamMembersData,
           currentUser: currentUserData,
           lastCreatedSignalId,
@@ -1268,7 +1289,7 @@ function ChatBotInner() {
       // Refresh frontend state after MCP tool execution
       if (executedTools.length > 0) {
         try {
-          await Promise.all([refreshSignals(), refreshFolders()]);
+          await Promise.all([refreshSignals(), refreshCases()]);
         } catch (refreshError) {
           console.warn('Failed to refresh state after tool execution:', refreshError);
         }
@@ -1288,13 +1309,274 @@ function ChatBotInner() {
     } finally {
       setIsLoading(false);
     }
-  }, [pendingPlan, messages, signals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences, refreshSignals, refreshFolders]);
+  }, [pendingPlan, messages, signals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences, refreshSignals, refreshCases]);
 
-  const handleRejectPlan = useCallback(() => {
+  const handleRejectPlan = useCallback((feedback: string) => {
+    if (!feedback.trim()) return;
+
+    // Create a user message with the feedback
+    const userMessage: Message = {
+      id: generateMessageId(),
+      role: 'user',
+      content: `Please revise the plan: ${feedback}`,
+      isNew: true,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
     setPendingPlan(null);
-    setAgentPhase('idle');
-    // User can type feedback naturally in the input
-  }, []);
+    setAgentPhase('planning');
+    setIsLoading(true);
+
+    // Clear pending cases and step outputs
+    pendingCasesRef.current.clear();
+    stepOutputsRef.current.clear();
+
+    // Trigger API call with the feedback
+    (async () => {
+      try {
+        // Fetch fresh signals
+        let freshSignals = filteredSignals;
+        try {
+          const signalsResponse = await fetch('/api/signals');
+          if (signalsResponse.ok) {
+            const fetchedSignals: Signal[] = await signalsResponse.json();
+            freshSignals = fetchedSignals.sort((a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          }
+        } catch (error) {
+          console.error('Failed to refresh signals:', error);
+        }
+
+        const signalData = freshSignals.map((s) => ({
+          id: s.id,
+          signalNumber: s.signalNumber,
+          description: s.description,
+          types: s.types,
+          placeOfObservation: s.placeOfObservation,
+          timeOfObservation: s.timeOfObservation,
+          receivedBy: s.receivedBy,
+          attachments: s.attachments.map((a) => ({
+            id: a.id,
+            fileName: a.fileName,
+            fileType: a.fileType,
+            content: a.content,
+            textContent: a.textContent,
+          })),
+        }));
+
+        const caseData = cases.map((c) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          status: c.status,
+          ownerId: c.ownerId,
+          ownerName: c.ownerName,
+          signalCount: getSignalCountForCase(c.id),
+          tags: c.tags,
+          practitioners: (c.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
+          sharedWith: (c.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
+          organizations: (c.organizations || []).map(o => ({ id: o.id, name: o.name })),
+          peopleInvolved: (c.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
+        }));
+
+        const teamMembersData = users.map((u) => ({
+          id: u.id,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          title: u.title,
+          role: u.role,
+          ownedCaseCount: cases.filter((c) => c.ownerId === u.id).length,
+        }));
+
+        const currentUser = users[0];
+        const currentUserData = currentUser ? {
+          id: currentUser.id,
+          firstName: currentUser.firstName,
+          lastName: currentUser.lastName,
+          fullName: getUserFullName(currentUser),
+          title: currentUser.title,
+          role: currentUser.role,
+        } : null;
+
+        // Build conversation history including the feedback
+        const conversationHistory = messages
+          .filter((m) => !m.isNew || m.role === 'user')
+          .map((m) => ({ role: m.role, content: m.content }));
+        conversationHistory.push({ role: 'user', content: `Please revise the plan: ${feedback}` });
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: conversationHistory,
+            signals: signalData,
+            cases: caseData,
+            teamMembers: teamMembersData,
+            currentUser: currentUserData,
+            lastCreatedSignalId,
+            organizations: organizations.map((o) => ({
+              id: o.id,
+              name: o.name,
+              type: o.type,
+              address: o.address,
+              chamberOfCommerce: o.chamberOfCommerce,
+            })),
+            addresses: addresses.map((a) => ({
+              id: a.id,
+              street: a.street,
+              buildingType: a.buildingType,
+              isActive: a.isActive,
+              description: a.description,
+            })),
+            people: people.map((p) => ({
+              id: p.id,
+              firstName: p.firstName,
+              surname: p.surname,
+              dateOfBirth: p.dateOfBirth,
+              address: p.address,
+              description: p.description,
+            })),
+            stream: true,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get response');
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalResponse = '';
+        const executedTools: string[] = [];
+        let currentStep = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const event = JSON.parse(data);
+
+                switch (event.type) {
+                  case 'phase':
+                    setAgentPhase(event.phase);
+                    break;
+
+                  case 'thinking':
+                    addLogEntry(createLogEntry('thinking', event.text));
+                    break;
+
+                  case 'tool_call':
+                    if (event.tool === 'plan_proposal') {
+                      addLogEntry(createLogEntry('plan', `Planning: ${event.tool}`, { status: 'success', toolName: event.tool }));
+                      break;
+                    }
+                    currentStep++;
+                    const resolvedInput = resolveStepReferences(event.input, stepOutputsRef.current);
+                    const toolCallEntry = createLogEntry('tool_call', `Calling ${event.tool}...`, { status: 'pending', toolName: event.tool, toolInput: resolvedInput });
+                    addLogEntry(toolCallEntry);
+                    const result = await executeTool(event.tool, resolvedInput);
+                    executedTools.push(`${event.tool}: ${result.message}`);
+                    if (result.output) {
+                      stepOutputsRef.current.set(currentStep, result.output);
+                    }
+                    updateLogEntry(toolCallEntry.id, { status: 'success' });
+                    addLogEntry(createLogEntry('tool_result', result.message, { status: 'success', toolName: event.tool }));
+                    break;
+
+                  case 'tool_result':
+                    if (event.tool === 'summarize_attachments') {
+                      addLogEntry(createLogEntry('tool_result', event.result.substring(0, 100) + '...', { status: 'success', toolName: event.tool }));
+                    }
+                    break;
+
+                  case 'clarification':
+                    setPendingClarification({
+                      summary: event.summary,
+                      questions: event.questions,
+                    });
+                    addLogEntry(createLogEntry('clarification', `Clarification needed: ${event.summary}`, { clarificationData: event as ClarificationData }));
+                    setAgentPhase('clarifying');
+                    setIsLoading(false);
+                    break;
+
+                  case 'plan_proposal':
+                    setPendingPlan(event as PlanData);
+                    addLogEntry(createLogEntry('plan', `Plan: ${event.summary}`, { planData: event as PlanData }));
+                    setAgentPhase('awaiting_approval');
+                    setIsLoading(false);
+                    break;
+
+                  case 'response':
+                    finalResponse = event.text;
+                    if (event.awaitingApproval) {
+                      break;
+                    }
+                    if (!finalResponse && executedTools.length > 0) {
+                      finalResponse = `Done! ${executedTools.join('. ')}`;
+                    }
+                    break;
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+
+        if (finalResponse) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: generateMessageId(),
+              role: 'assistant',
+              content: finalResponse,
+              isNew: true,
+            },
+          ]);
+
+          if (finalResponse.includes('completed successfully') || finalResponse.startsWith('Done!')) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: generateMessageId(),
+                role: 'assistant',
+                content: '[WORKFLOW_BOUNDARY: The above workflow is complete. New requests are independent - only include actions explicitly requested.]',
+                isNew: false,
+              },
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error('Revision request error:', error);
+        setAgentPhase('idle');
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: generateMessageId(),
+            role: 'assistant',
+            content: 'Sorry, I encountered an error. Please try again.',
+            isNew: true,
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [messages, filteredSignals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences]);
 
   const handleClarificationSubmit = useCallback(async (answers: Record<string, string | string[]>) => {
     if (!pendingClarification) return;
@@ -1356,19 +1638,19 @@ function ChatBotInner() {
         })),
       }));
 
-      const folderData = folders.map((f) => ({
-        id: f.id,
-        name: f.name,
-        description: f.description,
-        status: f.status,
-        ownerId: f.ownerId,
-        ownerName: f.ownerName,
-        signalCount: getSignalCountForFolder(f.id),
-        tags: f.tags,
-        practitioners: (f.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
-        sharedWith: (f.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
-        organizations: (f.organizations || []).map(o => ({ id: o.id, name: o.name })),
-        peopleInvolved: (f.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
+      const caseData = cases.map((c) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        status: c.status,
+        ownerId: c.ownerId,
+        ownerName: c.ownerName,
+        signalCount: getSignalCountForCase(c.id),
+        tags: c.tags,
+        practitioners: (c.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
+        sharedWith: (c.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
+        organizations: (c.organizations || []).map(o => ({ id: o.id, name: o.name })),
+        peopleInvolved: (c.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
       }));
 
       const teamMembersData = users.map((u) => ({
@@ -1377,7 +1659,7 @@ function ChatBotInner() {
         lastName: u.lastName,
         title: u.title,
         role: u.role,
-        ownedFolderCount: folders.filter((f) => f.ownerId === u.id).length,
+        ownedCaseCount: cases.filter((c) => c.ownerId === u.id).length,
       }));
 
       const currentUser = users[0];
@@ -1402,7 +1684,7 @@ function ChatBotInner() {
         body: JSON.stringify({
           messages: conversationHistory,
           signals: signalData,
-          folders: folderData,
+          cases: caseData,
           teamMembers: teamMembersData,
           currentUser: currentUserData,
           lastCreatedSignalId,
@@ -1562,7 +1844,7 @@ function ChatBotInner() {
       // Refresh frontend state after MCP tool execution
       if (executedTools.length > 0) {
         try {
-          await Promise.all([refreshSignals(), refreshFolders()]);
+          await Promise.all([refreshSignals(), refreshCases()]);
         } catch (refreshError) {
           console.warn('Failed to refresh state after tool execution:', refreshError);
         }
@@ -1582,7 +1864,7 @@ function ChatBotInner() {
     } finally {
       setIsLoading(false);
     }
-  }, [pendingClarification, messages, filteredSignals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences, refreshSignals, refreshFolders]);
+  }, [pendingClarification, messages, filteredSignals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences, refreshSignals, refreshCases]);
 
   const handleClarificationCancel = useCallback(() => {
     setPendingClarification(null);
@@ -1598,44 +1880,102 @@ function ChatBotInner() {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
-        <div className="flex items-center gap-3">
-          <BotIcon size="sm" className="bg-primary/20" />
-          <p className="text-xs text-muted-foreground">GCMP Assistant</p>
-        </div>
-      </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              'flex',
-              message.role === 'user' ? 'justify-end' : 'justify-start'
-            )}
-          >
+        {(() => {
+          // When agent is active, split messages to show current turn below phase stepper
+          // Current turn = last user message + any assistant response
+          const lastUserIndex = agentPhase !== 'idle'
+            ? messages.findLastIndex(m => m.role === 'user')
+            : -1;
+
+          // Messages before the current turn (historical conversation)
+          const messagesAbovePhase = lastUserIndex >= 0
+            ? messages.slice(0, lastUserIndex)
+            : messages;
+
+          // Current turn messages
+          const lastUserMessage = lastUserIndex >= 0
+            ? messages[lastUserIndex]
+            : null;
+
+          // Find assistant message after the last user message (if any)
+          const lastAssistantMessage = lastUserIndex >= 0
+            ? messages.slice(lastUserIndex + 1).find(m => m.role === 'assistant') || null
+            : null;
+
+          const renderMessage = (message: Message) => (
             <div
+              key={message.id}
               className={cn(
-                'rounded-lg px-3 py-2 text-sm max-w-[85%]',
-                message.role === 'user'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-foreground'
+                'flex',
+                message.role === 'user' ? 'justify-end' : 'justify-start'
               )}
             >
-              <div className="whitespace-pre-wrap">{message.content}</div>
+              <div
+                className={cn(
+                  'rounded-2xl px-4 py-3 text-sm max-w-[85%]',
+                  message.role === 'user'
+                    ? 'bg-claude-beige text-foreground'
+                    : 'bg-transparent text-foreground'
+                )}
+              >
+                <div className="prose prose-sm max-w-none text-inherit [&_*]:text-inherit [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm [&>h1]:font-semibold [&>h2]:font-semibold [&>h3]:font-medium [&>h1]:mt-2 [&>h1]:mb-1 [&>h2]:mt-2 [&>h2]:mb-1 [&>h3]:mt-1 [&>h3]:mb-1">
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
 
-        {/* Agent Log */}
-        {(isLoading || agentPhase !== 'idle') && (
-          <AgentLog
-            entries={logEntries}
-            currentPhase={agentPhase}
-            className="mx-auto max-w-[90%]"
-          />
+          return (
+            <>
+              {/* Render historical messages (or all messages when idle) */}
+              {(agentPhase !== 'idle' ? messagesAbovePhase : messages).map(renderMessage)}
+
+              {/* Current turn: user message, then phase stepper, then logs, then assistant response */}
+              {agentPhase !== 'idle' && (
+                <>
+                  {/* Last user message (the one being processed) */}
+                  {lastUserMessage && renderMessage(lastUserMessage)}
+
+                  {/* Phase Stepper */}
+                  <div className="flex justify-start">
+                    <PhaseStepper
+                      currentPhase={mapToConversationPhase(agentPhase)}
+                      className="inline-flex"
+                    />
+                  </div>
+
+                  {/* Agent Log - shows tool calls and results */}
+                  {logEntries.length > 0 && (
+                    <div className="flex justify-start">
+                      <AgentLog
+                        entries={logEntries}
+                        currentPhase={agentPhase}
+                        className="max-w-[90%]"
+                        defaultExpanded={true}
+                      />
+                    </div>
+                  )}
+
+                  {/* Latest assistant message (response being generated) */}
+                  {lastAssistantMessage && renderMessage(lastAssistantMessage)}
+                </>
+              )}
+            </>
+          );
+        })()}
+
+        {/* Agent Log - shows tool calls and results when idle */}
+        {agentPhase === 'idle' && logEntries.length > 0 && (
+          <div className="flex justify-start">
+            <AgentLog
+              entries={logEntries}
+              currentPhase={agentPhase}
+              className="max-w-[90%]"
+              defaultExpanded={true}
+            />
+          </div>
         )}
 
         {/* Clarification Display */}
@@ -1664,7 +2004,7 @@ function ChatBotInner() {
         {/* Loading indicator when no log entries yet */}
         {isLoading && logEntries.length === 0 && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-lg px-3 py-2">
+            <div className="bg-claude-beige rounded-2xl px-4 py-3">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" />
                 <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1678,7 +2018,7 @@ function ChatBotInner() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border p-3 shrink-0">
+      <div className="border-t border-border p-3 shrink-0 space-y-2">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -1692,17 +2032,17 @@ function ChatBotInner() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
+            placeholder="Reply to Atlas AI..."
             disabled={isLoading}
-            className="flex-1 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 text-sm bg-muted/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
           />
-          <Button
+          <button
             type="submit"
-            size="icon"
             disabled={!input.trim() || isLoading}
+            className="h-10 w-10 rounded-full bg-claude-coral hover:bg-claude-coral-hover text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
-          </Button>
+          </button>
         </form>
       </div>
     </>

@@ -12,19 +12,15 @@ import { mcpLogger } from './utils/logger.js';
  * allowing Claude Desktop and other MCP clients to interact with
  * the system through natural language.
  *
- * Total Tools: 29
+ * Total Tools: 23
  *
  * Signal Tools (7):
  * - signal_list, signal_get, signal_create, signal_update, signal_delete
- * - signal_add_to_folder, signal_remove_from_folder
- *
- * Folder Tools (6):
- * - folder_list, folder_get, folder_create, folder_update, folder_delete
- * - folder_submit_application
+ * - signal_add_to_case, signal_remove_from_case
  *
  * Case Management Tools (16):
  * Read Operations (9):
- * - summarize_cases: Get case/folder overview
+ * - summarize_cases: Get case overview
  * - list_team_members: Team with workload
  * - get_case_stats: Dashboard statistics
  * - search_cases: Search by filters
@@ -47,7 +43,7 @@ import { mcpLogger } from './utils/logger.js';
 async function main(): Promise<void> {
   // Create MCP server instance
   const server = new McpServer({
-    name: 'signal-folder-api',
+    name: 'signal-case-api',
     version: '1.0.0',
   });
 
@@ -71,7 +67,7 @@ async function main(): Promise<void> {
   await server.connect(transport);
 
   // Log server start (to stderr to not interfere with stdio protocol)
-  console.error('MCP Server started - Signal & Folder API');
+  console.error('MCP Server started - Signal & Case API');
   console.error(`API Base URL: ${process.env.API_BASE_URL || 'http://localhost:3000'}`);
 }
 

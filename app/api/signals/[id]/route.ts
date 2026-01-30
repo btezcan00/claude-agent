@@ -34,7 +34,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       photos?: unknown[];
       attachments?: unknown[];
       indicators?: unknown[];
-      folderRelations?: unknown[];
+      caseRelations?: unknown[];
       activities?: unknown[];
     } = await request.json();
 

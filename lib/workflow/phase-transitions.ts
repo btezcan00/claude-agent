@@ -25,6 +25,10 @@ const TRANSITION_MAP: Record<ConversationPhase, Partial<Record<PhaseTransitionEv
     REQUEST_NEW_TASK: 'clarification',
     EXIT_WORKFLOW: 'idle',
   },
+  complete: {
+    REQUEST_NEW_TASK: 'clarification',
+    EXIT_WORKFLOW: 'idle',
+  },
 };
 
 // Check if a transition is valid
@@ -63,7 +67,8 @@ export const PHASE_DISPLAY_NAMES: Record<ConversationPhase, string> = {
   clarification: 'Clarifying',
   planning: 'Planning',
   execution: 'Executing',
-  review: 'Complete',
+  review: 'Reviewing',
+  complete: 'Complete',
 };
 
 // Phase descriptions for UI
@@ -73,6 +78,7 @@ export const PHASE_DESCRIPTIONS: Record<ConversationPhase, string> = {
   planning: 'Creating a detailed execution plan',
   execution: 'Executing the planned tasks',
   review: 'Reviewing results and next steps',
+  complete: 'Workflow completed successfully',
 };
 
 // Phase order for stepper UI
@@ -81,6 +87,7 @@ export const PHASE_ORDER: ConversationPhase[] = [
   'planning',
   'execution',
   'review',
+  'complete',
 ];
 
 // Get phase index (for stepper)
@@ -163,6 +170,10 @@ export function validatePhaseCompletion(
 
     case 'review':
       // Review phase can always be exited
+      break;
+
+    case 'complete':
+      // Complete phase - workflow finished
       break;
 
     case 'idle':

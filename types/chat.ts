@@ -11,13 +11,13 @@ export interface DailyProgress {
   messagesExchanged: number;
   signalsCreated: number;
   signalsEdited: number;
-  foldersManaged: number;
+  casesManaged: number;
 }
 
 export type AchievementId =
   | 'first_signal'
   | 'signal_master'
-  | 'folder_organizer'
+  | 'case_organizer'
   | 'week_warrior'
   | 'month_champion'
   | 'note_taker'
@@ -62,9 +62,9 @@ export const ACHIEVEMENT_DEFINITIONS: Omit<Achievement, 'unlockedAt' | 'progress
     target: 10,
   },
   {
-    id: 'folder_organizer',
-    name: 'Folder Organizer',
-    description: 'Managed 5 folders',
+    id: 'case_organizer',
+    name: 'Case Organizer',
+    description: 'Managed 5 cases',
     icon: '📁',
     target: 5,
   },
@@ -99,7 +99,7 @@ export const ACHIEVEMENT_DEFINITIONS: Omit<Achievement, 'unlockedAt' | 'progress
   {
     id: 'team_player',
     name: 'Team Player',
-    description: 'Assigned 3 folder owners',
+    description: 'Assigned 3 case owners',
     icon: '🤝',
     target: 3,
   },
@@ -144,7 +144,7 @@ export interface MessageReaction {
 export type QuickActionType =
   | 'create_signal'
   | 'search_signals'
-  | 'list_folders'
+  | 'list_cases'
   | 'signal_stats'
   | 'team_members';
 
@@ -169,10 +169,10 @@ export const QUICK_ACTIONS: QuickAction[] = [
     prompt: 'Search for signals',
   },
   {
-    id: 'list_folders',
-    label: 'View Folders',
+    id: 'list_cases',
+    label: 'View Cases',
     icon: '📁',
-    prompt: 'List all folders',
+    prompt: 'List all cases',
   },
   {
     id: 'signal_stats',
@@ -203,7 +203,7 @@ export type TrackedActionType =
   | 'signal_edited'
   | 'signal_deleted'
   | 'note_added'
-  | 'folder_assigned'
-  | 'folder_edited'
+  | 'case_assigned'
+  | 'case_edited'
   | 'search_performed'
   | 'message_sent';

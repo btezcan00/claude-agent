@@ -35,7 +35,7 @@ const CreateSignalSchema = z.object({
   timeOfObservation: z.string().describe('ISO timestamp when the signal was observed'),
   receivedBy: SignalSourceSchema.describe('Source of the signal'),
   contactPerson: ContactPersonSchema.describe('Contact person details'),
-  folderIds: z.array(z.string()).optional().describe('IDs of folders to link this signal to'),
+  caseIds: z.array(z.string()).optional().describe('IDs of cases to link this signal to'),
 });
 
 const UpdateSignalSchema = z.object({
@@ -141,21 +141,21 @@ export function registerSignalTools(server: McpServer): void {
     }
   );
 
-  // Signal Add to Folder - POST /api/signals/{id}/folder-relations
+  // Signal Add to Case - POST /api/signals/{id}/case-relations
   server.tool(
-    'signal_add_to_folder',
-    'Link a signal to a folder',
+    'signal_add_to_case',
+    'Link a signal to a case',
     {
       signalId: z.string().describe('The ID of the signal'),
-      folderId: z.string().describe('The ID of the folder to link to'),
+      caseId: z.string().describe('The ID of the case to link to'),
       relation: z.string().optional().describe('Optional relation description'),
     },
-    async ({ signalId, folderId, relation }) => {
+    async ({ signalId, caseId, relation }) => {
       const response = await apiRequest({
         method: 'POST',
-        path: '/api/signals/{id}/folder-relations',
+        path: '/api/signals/{id}/case-relations',
         pathParams: { id: signalId },
-        body: { folderId, relation },
+        body: { caseId, relation },
       });
       return {
         content: [{ type: 'text', text: formatResponse(response) }],
@@ -163,19 +163,19 @@ export function registerSignalTools(server: McpServer): void {
     }
   );
 
-  // Signal Remove from Folder - DELETE /api/folders/{folderId}/signals/{signalId}
+  // Signal Remove from Case - DELETE /api/cases/{caseId}/signals/{signalId}
   server.tool(
-    'signal_remove_from_folder',
-    'Unlink a signal from a folder',
+    'signal_remove_from_case',
+    'Unlink a signal from a case',
     {
-      folderId: z.string().describe('The ID of the folder'),
+      caseId: z.string().describe('The ID of the case'),
       signalId: z.string().describe('The ID of the signal to unlink'),
     },
-    async ({ folderId, signalId }) => {
+    async ({ caseId, signalId }) => {
       const response = await apiRequest({
         method: 'DELETE',
-        path: '/api/folders/{folderId}/signals/{signalId}',
-        pathParams: { folderId, signalId },
+        path: '/api/cases/{caseId}/signals/{signalId}',
+        pathParams: { caseId, signalId },
       });
       return {
         content: [{ type: 'text', text: formatResponse(response) }],

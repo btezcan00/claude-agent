@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Loader2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, ChevronRight, Clock, Sparkles, Brain } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -46,64 +46,134 @@ export interface LogEntry {
   clarificationData?: ClarificationData;
 }
 
-interface PhaseIndicatorProps {
-  phase: AgentPhase;
+interface StepsIndicatorProps {
+  stepCount: number;
+  isProcessing: boolean;
+  isExpanded: boolean;
 }
 
-function PhaseIndicator({ phase }: PhaseIndicatorProps) {
-  const phases: { key: AgentPhase; label: string }[] = [
-    { key: 'clarifying', label: 'Clarify' },
-    { key: 'planning', label: 'Plan' },
-    { key: 'awaiting_approval', label: 'Approve' },
-    { key: 'executing', label: 'Execute' },
-    { key: 'reflecting', label: 'Reflect' },
-    { key: 'complete', label: 'Done' },
-  ];
-
-  if (phase === 'idle') return null;
-
+function StepsIndicator({ stepCount, isProcessing, isExpanded }: StepsIndicatorProps) {
   return (
-    <div className="flex items-center gap-1.5">
-      {phases.map((p, i) => {
-        const isActive = p.key === phase;
-        const isPast = phases.findIndex(x => x.key === phase) > i;
-        const isComplete = phase === 'complete';
+    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      {isProcessing && (
+        <Sparkles className="w-4 h-4 text-[--claude-coral] animate-pulse" />
+      )}
+      <span className="font-medium">
+        {stepCount} {stepCount === 1 ? 'step' : 'steps'}
+      </span>
+      <ChevronRight
+        className={cn(
+          'w-4 h-4 transition-transform duration-200',
+          isExpanded && 'rotate-90'
+        )}
+      />
+    </div>
+  );
+}
 
-        return (
-          <div key={p.key} className="flex items-center gap-1.5">
-            <div
-              className={cn(
-                'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors',
-                isActive && !isComplete && 'bg-primary/20 text-primary',
-                isPast && 'bg-muted text-muted-foreground',
-                isComplete && p.key === 'complete' && 'bg-green-500/20 text-green-600',
-                !isActive && !isPast && !isComplete && 'text-muted-foreground/50'
-              )}
-            >
-              {isActive && !isComplete && (
-                <Loader2 className="w-2.5 h-2.5 animate-spin" />
-              )}
-              {(isPast || (isComplete && p.key !== 'complete')) && (
-                <CheckCircle2 className="w-2.5 h-2.5 text-green-500" />
-              )}
-              {isComplete && p.key === 'complete' && (
-                <CheckCircle2 className="w-2.5 h-2.5" />
-              )}
-              {p.label}
-            </div>
-            {i < phases.length - 1 && (
+// Helper function to render values based on type
+function renderDetailValue(value: unknown): React.ReactNode {
+  // Arrays - check if it's a criteria-like array
+  if (Array.isArray(value)) {
+    // Check if this looks like criteria (objects with isMet, id/label, explanation)
+    const isCriteriaArray = value.length > 0 && value.every(
+      item => typeof item === 'object' && item !== null && 'isMet' in item
+    );
+
+    if (isCriteriaArray) {
+      return (
+        <div className="mt-1.5 space-y-1.5 overflow-hidden">
+          {value.map((item, i) => {
+            const criterion = item as { id?: string; label?: string; name?: string; isMet: boolean; explanation?: string };
+            const label = criterion.label || criterion.name || criterion.id || `Item ${i + 1}`;
+            const displayLabel = label
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, c => c.toUpperCase());
+
+            return (
               <div
+                key={i}
                 className={cn(
-                  'w-3 h-px',
-                  isPast || (isActive && i < phases.findIndex(x => x.key === phase))
-                    ? 'bg-green-500'
-                    : 'bg-border'
+                  "flex items-start gap-2 p-2 rounded-md text-[11px]",
+                  criterion.isMet
+                    ? "bg-green-500/10 dark:bg-green-500/20"
+                    : "bg-muted/50"
                 )}
-              />
-            )}
+              >
+                <span className="flex-shrink-0 mt-0.5">
+                  {criterion.isMet ? '✓' : '○'}
+                </span>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="font-medium text-foreground">{displayLabel}</div>
+                  {criterion.explanation && (
+                    <div className="text-muted-foreground mt-0.5 break-words">
+                      {criterion.explanation}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Regular arrays - render as inline tags
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1 overflow-hidden">
+        {value.map((item, i) => (
+          <span
+            key={i}
+            className="inline-flex px-2 py-0.5 bg-black/5 dark:bg-white/10 text-foreground rounded text-[11px] break-all max-w-full"
+          >
+            {typeof item === 'string' ? item : JSON.stringify(item)}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // Objects - render key-value pairs in a readable format
+  if (typeof value === 'object' && value !== null) {
+    const entries = Object.entries(value);
+    return (
+      <div className="mt-1.5 space-y-1 overflow-hidden">
+        {entries.map(([key, val]) => (
+          <div key={key} className="flex gap-2 text-[11px]">
+            <span className="text-muted-foreground flex-shrink-0">
+              {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}:
+            </span>
+            <span className="text-foreground break-words min-w-0">
+              {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val)}
+            </span>
           </div>
-        );
-      })}
+        ))}
+      </div>
+    );
+  }
+
+  // Boolean values - show Yes/No
+  if (typeof value === 'boolean') {
+    return (
+      <div className="mt-0.5 text-foreground">
+        {value ? 'Yes' : 'No'}
+      </div>
+    );
+  }
+
+  // ID-like strings - subtle styling
+  if (typeof value === 'string' && /^[a-zA-Z0-9_-]+$/.test(value) && value.length > 3) {
+    return (
+      <code className="mt-0.5 inline-block px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-[11px] text-foreground break-all max-w-full">
+        {value}
+      </code>
+    );
+  }
+
+  // Regular strings
+  return (
+    <div className="mt-0.5 text-foreground leading-relaxed break-all">
+      {String(value)}
     </div>
   );
 }
@@ -111,50 +181,103 @@ function PhaseIndicator({ phase }: PhaseIndicatorProps) {
 interface PlanDisplayProps {
   plan: PlanData;
   onApprove?: () => void;
-  onReject?: () => void;
+  onReject?: (feedback: string) => void;
   isAwaitingApproval?: boolean;
 }
 
 export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: PlanDisplayProps) {
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
+  const handleReviseClick = () => {
+    setShowFeedback(true);
+  };
+
+  const handleSubmitFeedback = () => {
+    if (feedback.trim() && onReject) {
+      onReject(feedback.trim());
+    }
+  };
+
+  const handleCancelFeedback = () => {
+    setShowFeedback(false);
+    setFeedback('');
+  };
+
   return (
-    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-      <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-        <Clock className="w-4 h-4" />
+    <div className="bg-claude-beige rounded-xl p-4 border border-border/50 overflow-hidden shadow-sm">
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-1">
+        <Clock className="w-4 h-4 text-claude-coral" />
         Proposed Plan
       </div>
-      <div className="text-xs text-blue-800 dark:text-blue-200 mb-3">
+      <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
         {plan.summary}
-      </div>
+      </p>
       <div className="space-y-2">
         {plan.actions.map((action) => (
-          <div key={action.step} className="flex items-start gap-2 text-xs">
-            <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px] font-medium">
-              {action.step}
-            </span>
-            <div className="flex-1">
-              <span className="font-medium">{action.action}</span>
-              <span className="text-blue-500 dark:text-blue-400 ml-1">({action.tool})</span>
-              {action.details && Object.keys(action.details).length > 0 && (
-                <div className="text-blue-600 dark:text-blue-400 mt-0.5 pl-2 border-l border-blue-300 dark:border-blue-700">
+          <div key={action.step} className="bg-white/60 dark:bg-black/10 rounded-lg p-3 text-xs">
+            <div className="flex items-start gap-3">
+              <span className="bg-claude-coral/10 text-claude-coral rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-[11px] font-semibold">
+                {action.step}
+              </span>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="font-medium text-foreground break-words">{action.action}</div>
+                <div className="text-muted-foreground text-[11px] mt-0.5">{action.tool}</div>
+              </div>
+            </div>
+            {action.details && Object.keys(action.details).length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/50 ml-9 overflow-hidden">
+                <div className="bg-background/50 dark:bg-background/30 rounded-md p-2.5 space-y-2.5 overflow-hidden">
                   {Object.entries(action.details).map(([k, v]) => (
-                    <div key={k} className="truncate">
-                      <span className="text-blue-500">{k}:</span> {typeof v === 'string' ? v.substring(0, 60) : JSON.stringify(v).substring(0, 60)}{(typeof v === 'string' ? v.length : JSON.stringify(v).length) > 60 ? '...' : ''}
+                    <div key={k} className="text-xs overflow-hidden">
+                      <span className="text-muted-foreground font-semibold uppercase tracking-wide text-[10px]">
+                        {k}
+                      </span>
+                      {renderDetailValue(v)}
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
       {isAwaitingApproval && onApprove && onReject && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
-          <Button size="sm" onClick={onApprove} className="bg-blue-600 hover:bg-blue-700">
-            Approve
-          </Button>
-          <Button size="sm" variant="outline" onClick={onReject} className="border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">
-            Revise
-          </Button>
+        <div className="mt-4 pt-3 border-t border-border/30">
+          {!showFeedback ? (
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onApprove} className="bg-claude-coral hover:bg-claude-coral/90 text-white font-medium px-4">
+                Approve Plan
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleReviseClick} className="border-border/50 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5">
+                Request Changes
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="What changes would you like?"
+                className="w-full px-2 py-1.5 text-xs bg-white dark:bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                rows={3}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSubmitFeedback}
+                  disabled={!feedback.trim()}
+                  className="bg-claude-coral hover:bg-claude-coral/90 text-white"
+                >
+                  Submit Feedback
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleCancelFeedback} className="border-border text-muted-foreground">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -169,25 +292,25 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
   const getIcon = () => {
     switch (entry.type) {
       case 'thinking':
-        return <span className="text-muted-foreground">{">"}</span>;
+        return <Brain className="w-3 h-3 text-claude-coral" />;
       case 'tool_call':
         return entry.status === 'pending' ? (
-          <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+          <Loader2 className="w-3 h-3 animate-spin text-claude-coral" />
         ) : (
-          <span className="text-blue-500">{">"}</span>
+          <CheckCircle2 className="w-3 h-3 text-claude-coral" />
         );
       case 'tool_result':
         return entry.status === 'success' ? (
-          <CheckCircle2 className="w-3 h-3 text-green-500" />
+          <CheckCircle2 className="w-3 h-3 text-claude-coral" />
         ) : (
-          <XCircle className="w-3 h-3 text-red-500" />
+          <XCircle className="w-3 h-3 text-claude-coral" />
         );
       case 'reflection':
-        return <span className="text-purple-500">{">"}</span>;
+        return <Sparkles className="w-3 h-3 text-claude-coral" />;
       case 'error':
-        return <XCircle className="w-3 h-3 text-red-500" />;
+        return <XCircle className="w-3 h-3 text-claude-coral" />;
       case 'plan':
-        return <Clock className="w-3 h-3 text-blue-500" />;
+        return <Clock className="w-3 h-3 text-claude-coral" />;
       default:
         return null;
     }
@@ -196,23 +319,37 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
   const getTextColor = () => {
     switch (entry.type) {
       case 'thinking':
-        return 'text-muted-foreground';
+        return 'text-foreground/80';
       case 'tool_call':
-        return 'text-blue-600 dark:text-blue-400';
+        return 'text-foreground';
       case 'tool_result':
-        return entry.status === 'success'
-          ? 'text-green-600 dark:text-green-400'
-          : 'text-red-600 dark:text-red-400';
+        return 'text-foreground';
       case 'reflection':
-        return 'text-purple-600 dark:text-purple-400';
+        return 'text-foreground/80';
       case 'error':
-        return 'text-red-600 dark:text-red-400';
+        return 'text-foreground';
       case 'plan':
-        return 'text-blue-600 dark:text-blue-400';
+        return 'text-foreground';
       default:
         return 'text-foreground';
     }
   };
+
+  // Special rendering for thinking entries
+  if (entry.type === 'thinking') {
+    return (
+      <div className="flex items-start gap-2 py-1 px-2 bg-claude-coral/5 rounded-lg my-0.5">
+        <div className="mt-0.5 flex-shrink-0 w-4 flex items-center justify-center">
+          {getIcon()}
+        </div>
+        <div className="flex-1">
+          <span className="text-xs leading-relaxed text-foreground/80 italic">
+            {entry.content}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-start gap-2 py-0.5">
@@ -224,7 +361,7 @@ function LogEntryItem({ entry }: LogEntryItemProps) {
           {entry.content}
         </span>
         {entry.type === 'tool_call' && entry.toolInput && (
-          <div className="text-[10px] text-muted-foreground/70 mt-0.5 pl-2 border-l border-muted">
+          <div className="text-[10px] text-muted-foreground/70 mt-0.5 pl-2 border-l border-claude-coral/30">
             {Object.entries(entry.toolInput).slice(0, 3).map(([k, v]) => (
               <div key={k} className="truncate">
                 {k}: {typeof v === 'string' ? v.substring(0, 50) : JSON.stringify(v).substring(0, 50)}{(typeof v === 'string' ? v.length : JSON.stringify(v).length) > 50 ? '...' : ''}
@@ -248,7 +385,7 @@ export function AgentLog({
   entries,
   currentPhase,
   className,
-  defaultExpanded = true
+  defaultExpanded = false
 }: AgentLogProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -256,26 +393,25 @@ export function AgentLog({
     return null;
   }
 
+  const isProcessing = currentPhase !== 'idle' && currentPhase !== 'complete';
+
   return (
-    <div className={cn('bg-muted/50 rounded-lg border border-border overflow-hidden', className)}>
-      {/* Header with phase indicator and collapse toggle */}
+    <div className={cn('bg-claude-beige rounded-2xl overflow-hidden', className)}>
+      {/* Header with steps indicator */}
       <div
-        className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/70 transition-colors"
+        className="flex items-center px-4 py-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <PhaseIndicator phase={currentPhase} />
-        <button className="p-0.5 hover:bg-muted rounded">
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </button>
+        <StepsIndicator
+          stepCount={entries.length}
+          isProcessing={isProcessing}
+          isExpanded={isExpanded}
+        />
       </div>
 
       {/* Log entries */}
       {isExpanded && entries.length > 0 && (
-        <div className="px-3 pb-3 pt-1 border-t border-border/50 space-y-0.5 max-h-48 overflow-y-auto">
+        <div className="px-4 pb-3 pt-1 border-t border-black/5 dark:border-white/10 space-y-0.5 max-h-48 overflow-y-auto">
           {entries.map((entry) => (
             <LogEntryItem key={entry.id} entry={entry} />
           ))}

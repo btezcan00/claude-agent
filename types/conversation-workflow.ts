@@ -7,7 +7,8 @@ export type ConversationPhase =
   | 'clarification'
   | 'planning'
   | 'execution'
-  | 'review';
+  | 'review'
+  | 'complete';
 
 // Phase transition events
 export type PhaseTransitionEvent =

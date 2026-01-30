@@ -11,7 +11,7 @@ const SUGGESTION_MAP: Record<string, ContextualSuggestion[]> = {
     { label: 'Add a note', prompt: 'Add a note to the signal I just created' },
     { label: 'Create another', prompt: 'Create another signal' },
     { label: 'View all signals', prompt: 'Show me all signals' },
-    { label: 'Assign to folder', prompt: 'Assign this signal to a folder' },
+    { label: 'Assign to case', prompt: 'Assign this signal to a case' },
   ],
   signal_edited: [
     { label: 'Add a note', prompt: 'Add a note to the edited signal' },
@@ -28,15 +28,15 @@ const SUGGESTION_MAP: Record<string, ContextualSuggestion[]> = {
     { label: 'View all notes', prompt: 'Show all notes for this signal' },
     { label: 'Edit the signal', prompt: 'Edit this signal' },
   ],
-  folder_assigned: [
-    { label: 'View folder', prompt: 'Show details of this folder' },
-    { label: 'Edit folder', prompt: 'Edit folder details' },
-    { label: 'Assign another', prompt: 'Assign another folder' },
+  case_assigned: [
+    { label: 'View case', prompt: 'Show details of this case' },
+    { label: 'Edit case', prompt: 'Edit case details' },
+    { label: 'Assign another', prompt: 'Assign another case' },
   ],
-  folder_listed: [
-    { label: 'Create folder', prompt: 'Help me create a new folder' },
-    { label: 'Folder stats', prompt: 'Show folder statistics' },
-    { label: 'Assign owner', prompt: 'Assign an owner to a folder' },
+  case_listed: [
+    { label: 'Create case', prompt: 'Help me create a new case' },
+    { label: 'Case stats', prompt: 'Show case statistics' },
+    { label: 'Assign owner', prompt: 'Assign an owner to a case' },
   ],
   search_performed: [
     { label: 'Refine search', prompt: 'Refine my search with more filters' },
@@ -45,17 +45,17 @@ const SUGGESTION_MAP: Record<string, ContextualSuggestion[]> = {
   ],
   stats_shown: [
     { label: 'View signals', prompt: 'Show me all signals' },
-    { label: 'View folders', prompt: 'Show me all folders' },
+    { label: 'View cases', prompt: 'Show me all cases' },
     { label: 'Team overview', prompt: 'Show team members' },
   ],
   team_listed: [
-    { label: 'Assign folder', prompt: 'Assign a folder to a team member' },
-    { label: 'View folders', prompt: 'List all folders' },
-    { label: 'Folder stats', prompt: 'Show folder statistics' },
+    { label: 'Assign case', prompt: 'Assign a case to a team member' },
+    { label: 'View cases', prompt: 'List all cases' },
+    { label: 'Case stats', prompt: 'Show case statistics' },
   ],
   default: [
     { label: 'Create signal', prompt: 'Create a new signal' },
-    { label: 'View folders', prompt: 'List all folders' },
+    { label: 'View cases', prompt: 'List all cases' },
     { label: 'Signal stats', prompt: 'Show signal statistics' },
   ],
 };
@@ -123,12 +123,12 @@ export function detectActionType(toolName?: string): string | undefined {
     edit_signal: 'signal_edited',
     delete_signal: 'signal_deleted',
     add_note: 'note_added',
-    assign_folder_owner: 'folder_assigned',
-    edit_folder: 'folder_assigned',
-    list_folders: 'folder_listed',
+    assign_case_owner: 'case_assigned',
+    edit_case: 'case_assigned',
+    list_cases: 'case_listed',
     search_signals: 'search_performed',
     get_signal_stats: 'stats_shown',
-    get_folder_stats: 'stats_shown',
+    get_case_stats: 'stats_shown',
     list_team_members: 'team_listed',
     summarize_signals: 'stats_shown',
   };

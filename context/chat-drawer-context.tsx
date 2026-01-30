@@ -4,7 +4,9 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 
 interface ChatDrawerContextValue {
   isOpen: boolean;
+  isExpanded: boolean;
   toggle: () => void;
+  toggleExpanded: () => void;
   open: () => void;
   close: () => void;
 }
@@ -12,6 +14,7 @@ interface ChatDrawerContextValue {
 const ChatDrawerContext = createContext<ChatDrawerContextValue | undefined>(undefined);
 
 const STORAGE_KEY = 'chat-drawer-open';
+const EXPANDED_STORAGE_KEY = 'chat-drawer-expanded';
 
 interface ChatDrawerProviderProps {
   children: ReactNode;
@@ -19,6 +22,7 @@ interface ChatDrawerProviderProps {
 
 export function ChatDrawerProvider({ children }: ChatDrawerProviderProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   // Load initial state from localStorage after mount
@@ -28,14 +32,19 @@ export function ChatDrawerProvider({ children }: ChatDrawerProviderProps) {
     if (stored !== null) {
       setIsOpen(stored === 'true');
     }
+    const storedExpanded = localStorage.getItem(EXPANDED_STORAGE_KEY);
+    if (storedExpanded !== null) {
+      setIsExpanded(storedExpanded === 'true');
+    }
   }, []);
 
   // Persist state to localStorage
   useEffect(() => {
     if (mounted) {
       localStorage.setItem(STORAGE_KEY, String(isOpen));
+      localStorage.setItem(EXPANDED_STORAGE_KEY, String(isExpanded));
     }
-  }, [isOpen, mounted]);
+  }, [isOpen, isExpanded, mounted]);
 
   // Keyboard shortcut: Cmd/Ctrl + /
   useEffect(() => {
@@ -62,8 +71,12 @@ export function ChatDrawerProvider({ children }: ChatDrawerProviderProps) {
     setIsOpen(false);
   }, []);
 
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
   return (
-    <ChatDrawerContext.Provider value={{ isOpen, toggle, open, close }}>
+    <ChatDrawerContext.Provider value={{ isOpen, isExpanded, toggle, toggleExpanded, open, close }}>
       {children}
     </ChatDrawerContext.Provider>
   );
