@@ -66,7 +66,7 @@ function ChatBotInner() {
   const [pendingClarification, setPendingClarification] = useState<ClarificationData | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   // Track cases created during the current execution cycle to handle race conditions
   // when subsequent tools reference cases before React state updates
   const pendingCasesRef = useRef<Map<string, Case>>(new Map());
@@ -194,6 +194,24 @@ function ChatBotInner() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Auto-resize textarea up to 10 lines
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+
+    // Calculate line height (approximately 20px for text-sm)
+    const lineHeight = 20;
+    const maxLines = 10;
+    const maxHeight = lineHeight * maxLines;
+
+    // Set the height to scrollHeight, but cap at maxHeight
+    const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${newHeight}px`;
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, logEntries]);
@@ -203,6 +221,11 @@ function ChatBotInner() {
       inputRef.current.focus();
     }
   }, []);
+
+  // Adjust textarea height when input changes (including when cleared after send)
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input, adjustTextareaHeight]);
 
   const addLogEntry = useCallback((entry: LogEntry) => {
     setLogEntries(prev => [...prev, entry]);
@@ -1839,7 +1862,7 @@ function ChatBotInner() {
     setAgentPhase('idle');
   }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -1992,22 +2015,26 @@ function ChatBotInner() {
             e.preventDefault();
             handleSendMessage();
           }}
-          className="flex items-center gap-2"
+          className="flex items-end gap-2"
         >
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              adjustTextareaHeight();
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Reply to Atlas AI..."
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 text-sm bg-muted/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            rows={1}
+            className="flex-1 px-4 py-2.5 text-sm bg-muted/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 resize-none overflow-y-auto leading-5"
+            style={{ minHeight: '40px', maxHeight: '200px' }}
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="h-10 w-10 rounded-full bg-claude-coral hover:bg-claude-coral-hover text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="h-10 w-10 shrink-0 rounded-full bg-claude-coral hover:bg-claude-coral-hover text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>
