@@ -118,8 +118,8 @@ export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: P
               {action.details && Object.keys(action.details).length > 0 && (
                 <div className="text-muted-foreground mt-0.5 pl-2 border-l border-border">
                   {Object.entries(action.details).map(([k, v]) => (
-                    <div key={k} className="truncate">
-                      <span className="text-muted-foreground">{k}:</span> {typeof v === 'string' ? v.substring(0, 60) : JSON.stringify(v).substring(0, 60)}{(typeof v === 'string' ? v.length : JSON.stringify(v).length) > 60 ? '...' : ''}
+                    <div key={k} className="break-words">
+                      <span className="text-muted-foreground">{k}:</span> {typeof v === 'string' ? v : JSON.stringify(v)}
                     </div>
                   ))}
                 </div>
