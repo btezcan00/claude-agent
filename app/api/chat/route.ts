@@ -1860,6 +1860,7 @@ When information is missing:
               system: systemPrompt,
               tools,
               messages: currentMessages,
+              temperature: 0,
             });
             const toolUses: Anthropic.ToolUseBlock[] = [];
 
@@ -2018,6 +2019,7 @@ When information is missing:
                     tools,
                     tool_choice: { type: 'tool', name: 'ask_clarification' },
                     messages: currentMessages,
+                    temperature: 0,
                   });
 
                   // Process retry response for ask_clarification
@@ -2206,6 +2208,7 @@ When information is missing:
       system: systemPrompt,
       tools,
       messages: anthropicMessages,
+      temperature: 0,
     });
 
     // Process the response
