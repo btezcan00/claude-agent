@@ -71,6 +71,113 @@ function StepsIndicator({ stepCount, isProcessing, isExpanded }: StepsIndicatorP
   );
 }
 
+// Helper function to render values based on type
+function renderDetailValue(value: unknown): React.ReactNode {
+  // Arrays - check if it's a criteria-like array
+  if (Array.isArray(value)) {
+    // Check if this looks like criteria (objects with isMet, id/label, explanation)
+    const isCriteriaArray = value.length > 0 && value.every(
+      item => typeof item === 'object' && item !== null && 'isMet' in item
+    );
+
+    if (isCriteriaArray) {
+      return (
+        <div className="mt-1.5 space-y-1.5 overflow-hidden">
+          {value.map((item, i) => {
+            const criterion = item as { id?: string; label?: string; name?: string; isMet: boolean; explanation?: string };
+            const label = criterion.label || criterion.name || criterion.id || `Item ${i + 1}`;
+            const displayLabel = label
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, c => c.toUpperCase());
+
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex items-start gap-2 p-2 rounded-md text-[11px]",
+                  criterion.isMet
+                    ? "bg-green-500/10 dark:bg-green-500/20"
+                    : "bg-muted/50"
+                )}
+              >
+                <span className="flex-shrink-0 mt-0.5">
+                  {criterion.isMet ? '✓' : '○'}
+                </span>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="font-medium text-foreground">{displayLabel}</div>
+                  {criterion.explanation && (
+                    <div className="text-muted-foreground mt-0.5 break-words">
+                      {criterion.explanation}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Regular arrays - render as inline tags
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1 overflow-hidden">
+        {value.map((item, i) => (
+          <span
+            key={i}
+            className="inline-flex px-2 py-0.5 bg-black/5 dark:bg-white/10 text-foreground rounded text-[11px] break-all max-w-full"
+          >
+            {typeof item === 'string' ? item : JSON.stringify(item)}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // Objects - render key-value pairs in a readable format
+  if (typeof value === 'object' && value !== null) {
+    const entries = Object.entries(value);
+    return (
+      <div className="mt-1.5 space-y-1 overflow-hidden">
+        {entries.map(([key, val]) => (
+          <div key={key} className="flex gap-2 text-[11px]">
+            <span className="text-muted-foreground flex-shrink-0">
+              {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}:
+            </span>
+            <span className="text-foreground break-words min-w-0">
+              {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Boolean values - show Yes/No
+  if (typeof value === 'boolean') {
+    return (
+      <div className="mt-0.5 text-foreground">
+        {value ? 'Yes' : 'No'}
+      </div>
+    );
+  }
+
+  // ID-like strings - subtle styling
+  if (typeof value === 'string' && /^[a-zA-Z0-9_-]+$/.test(value) && value.length > 3) {
+    return (
+      <code className="mt-0.5 inline-block px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-[11px] text-foreground break-all max-w-full">
+        {value}
+      </code>
+    );
+  }
+
+  // Regular strings
+  return (
+    <div className="mt-0.5 text-foreground leading-relaxed break-all">
+      {String(value)}
+    </div>
+  );
+}
+
 interface PlanDisplayProps {
   plan: PlanData;
   onApprove?: () => void;
@@ -119,13 +226,17 @@ export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: P
               </div>
             </div>
             {action.details && Object.keys(action.details).length > 0 && (
-              <div className="mt-2 pt-2 border-t border-border/30 ml-9 space-y-1">
-                {Object.entries(action.details).map(([k, v]) => (
-                  <div key={k} className="text-[11px] break-words">
-                    <span className="text-muted-foreground font-medium">{k}:</span>{' '}
-                    <span className="text-foreground/80">{typeof v === 'string' ? v : JSON.stringify(v)}</span>
-                  </div>
-                ))}
+              <div className="mt-3 pt-3 border-t border-border/50 ml-9 overflow-hidden">
+                <div className="bg-background/50 dark:bg-background/30 rounded-md p-2.5 space-y-2.5 overflow-hidden">
+                  {Object.entries(action.details).map(([k, v]) => (
+                    <div key={k} className="text-xs overflow-hidden">
+                      <span className="text-muted-foreground font-semibold uppercase tracking-wide text-[10px]">
+                        {k}
+                      </span>
+                      {renderDetailValue(v)}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
