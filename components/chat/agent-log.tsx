@@ -80,28 +80,28 @@ interface PlanDisplayProps {
 
 export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: PlanDisplayProps) {
   return (
-    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-      <div className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+    <div className="bg-claude-beige rounded-lg p-3 border border-border">
+      <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
         <Clock className="w-4 h-4" />
         Proposed Plan
       </div>
-      <div className="text-xs text-blue-800 dark:text-blue-200 mb-3">
+      <div className="text-xs text-muted-foreground mb-3">
         {plan.summary}
       </div>
       <div className="space-y-2">
         {plan.actions.map((action) => (
           <div key={action.step} className="flex items-start gap-2 text-xs">
-            <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px] font-medium">
+            <span className="bg-claude-beige-dark text-foreground rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px] font-medium">
               {action.step}
             </span>
             <div className="flex-1">
               <span className="font-medium">{action.action}</span>
-              <span className="text-blue-500 dark:text-blue-400 ml-1">({action.tool})</span>
+              <span className="text-muted-foreground ml-1">({action.tool})</span>
               {action.details && Object.keys(action.details).length > 0 && (
-                <div className="text-blue-600 dark:text-blue-400 mt-0.5 pl-2 border-l border-blue-300 dark:border-blue-700">
+                <div className="text-muted-foreground mt-0.5 pl-2 border-l border-border">
                   {Object.entries(action.details).map(([k, v]) => (
                     <div key={k} className="truncate">
-                      <span className="text-blue-500">{k}:</span> {typeof v === 'string' ? v.substring(0, 60) : JSON.stringify(v).substring(0, 60)}{(typeof v === 'string' ? v.length : JSON.stringify(v).length) > 60 ? '...' : ''}
+                      <span className="text-muted-foreground">{k}:</span> {typeof v === 'string' ? v.substring(0, 60) : JSON.stringify(v).substring(0, 60)}{(typeof v === 'string' ? v.length : JSON.stringify(v).length) > 60 ? '...' : ''}
                     </div>
                   ))}
                 </div>
@@ -111,11 +111,11 @@ export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: P
         ))}
       </div>
       {isAwaitingApproval && onApprove && onReject && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
-          <Button size="sm" onClick={onApprove} className="bg-blue-600 hover:bg-blue-700">
+        <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+          <Button size="sm" onClick={onApprove} className="bg-claude-coral hover:bg-claude-coral/90 text-white">
             Approve
           </Button>
-          <Button size="sm" variant="outline" onClick={onReject} className="border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">
+          <Button size="sm" variant="outline" onClick={onReject} className="border-border text-muted-foreground">
             Revise
           </Button>
         </div>
