@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, ReactNode, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface HighlightTarget {
   type: 'signal' | 'case';
@@ -11,6 +12,7 @@ interface HighlightTarget {
 interface UIHighlightContextValue {
   triggerHighlight: (type: 'signal' | 'case', id: string) => void;
   isHighlighted: (type: 'signal' | 'case', id: string) => boolean;
+  navigateAndHighlight: (type: 'signal' | 'case', id: string) => void;
 }
 
 const UIHighlightContext = createContext<UIHighlightContextValue | undefined>(undefined);
@@ -24,6 +26,7 @@ interface UIHighlightProviderProps {
 export function UIHighlightProvider({ children }: UIHighlightProviderProps) {
   const [activeHighlights, setActiveHighlights] = useState<Map<string, HighlightTarget>>(new Map());
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const router = useRouter();
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -67,8 +70,20 @@ export function UIHighlightProvider({ children }: UIHighlightProviderProps) {
     return activeHighlights.has(key);
   }, [activeHighlights]);
 
+  const navigateAndHighlight = useCallback((type: 'signal' | 'case', id: string) => {
+    const targetPath = type === 'signal' ? '/signals' : '/cases';
+
+    // Navigate to the list page
+    router.push(targetPath);
+
+    // Trigger highlight after a small delay for page transition
+    setTimeout(() => {
+      triggerHighlight(type, id);
+    }, 100);
+  }, [router, triggerHighlight]);
+
   return (
-    <UIHighlightContext.Provider value={{ triggerHighlight, isHighlighted }}>
+    <UIHighlightContext.Provider value={{ triggerHighlight, isHighlighted, navigateAndHighlight }}>
       {children}
     </UIHighlightContext.Provider>
   );
