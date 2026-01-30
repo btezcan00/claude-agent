@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Sparkles, Plus, ChevronDown } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -71,7 +72,7 @@ function ChatBotInner() {
         {
           id: '1',
           role: 'assistant',
-          content: "Hi! I'm Claude, your AI assistant. I can help you manage signals and folders - just tell me what you need and I'll take care of it.",
+          content: "Hi! I'm Atlas AI, your AI assistant. I can help you manage signals and folders - just tell me what you need and I'll take care of it.",
           isNew: true,
         },
       ]);
@@ -1564,7 +1565,9 @@ function ChatBotInner() {
                   : 'bg-transparent text-foreground'
               )}
             >
-              <div className="whitespace-pre-wrap">{message.content}</div>
+              <div className="prose prose-sm max-w-none text-inherit [&_*]:text-inherit [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm [&>h1]:font-semibold [&>h2]:font-semibold [&>h3]:font-medium [&>h1]:mt-2 [&>h1]:mb-1 [&>h2]:mt-2 [&>h2]:mb-1 [&>h3]:mt-1 [&>h3]:mb-1">
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </div>
             </div>
           </div>
         ))}
@@ -1623,7 +1626,7 @@ function ChatBotInner() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Reply to Claude..."
+            placeholder="Reply to Atlas AI..."
             disabled={isLoading}
             className="flex-1 px-4 py-2.5 text-sm bg-muted/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
           />
