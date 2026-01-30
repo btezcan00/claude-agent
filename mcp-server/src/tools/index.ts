@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerSignalTools } from './signals.js';
 import { registerFolderTools } from './folders.js';
 import { registerCaseTools } from './cases.js';
+import { mcpLogger } from '../utils/logger.js';
 
 /**
  * Register all tools with the MCP server
@@ -37,13 +38,18 @@ import { registerCaseTools } from './cases.js';
  *   - delete_case: Delete case
  *   - change_status: Update status
  */
-export function registerAllTools(server: McpServer): void {
+export function registerAllTools(server: McpServer): number {
   // Register signal CRUD tools (7 tools)
   registerSignalTools(server);
+  mcpLogger.toolRegistered('signal_*', 'signals');
 
   // Register folder CRUD tools (6 tools)
   registerFolderTools(server);
+  mcpLogger.toolRegistered('folder_*', 'folders');
 
   // Register case management tools (16 tools)
   registerCaseTools(server);
+  mcpLogger.toolRegistered('case_*', 'cases');
+
+  return 29; // Total tools registered
 }

@@ -2,6 +2,8 @@
  * API Client for making HTTP requests to the Next.js backend
  */
 
+import { mcpLogger } from './logger.js';
+
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 
 export interface ApiResponse<T = unknown> {
@@ -15,6 +17,7 @@ export interface RequestOptions {
   path: string;
   body?: unknown;
   pathParams?: Record<string, string>;
+  requestId?: string; // For logging correlation
 }
 
 /**
@@ -35,8 +38,11 @@ function substitutePathParams(path: string, params?: Record<string, string>): st
  * Makes an HTTP request to the API
  */
 export async function apiRequest<T = unknown>(options: RequestOptions): Promise<ApiResponse<T>> {
-  const { method, path, body, pathParams } = options;
+  const { method, path, body, pathParams, requestId } = options;
   const url = `${API_BASE_URL}${substitutePathParams(path, pathParams)}`;
+
+  // Log API request
+  mcpLogger.apiRequest(method, url, requestId);
 
   try {
     const fetchOptions: RequestInit = {
@@ -52,6 +58,9 @@ export async function apiRequest<T = unknown>(options: RequestOptions): Promise<
 
     const response = await fetch(url, fetchOptions);
     const status = response.status;
+
+    // Log API response
+    mcpLogger.apiResponse(method, url, status, requestId);
 
     // Handle empty responses (e.g., 204 No Content)
     const text = await response.text();
@@ -70,6 +79,7 @@ export async function apiRequest<T = unknown>(options: RequestOptions): Promise<
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    mcpLogger.apiResponse(method, url, 500, requestId);
     return {
       error: `API request failed: ${message}`,
       status: 500,

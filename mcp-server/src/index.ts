@@ -3,6 +3,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerAllTools } from './tools/index.js';
+import { mcpLogger } from './utils/logger.js';
 
 /**
  * MCP Server for Government Case Management Platform
@@ -50,8 +51,18 @@ async function main(): Promise<void> {
     version: '1.0.0',
   });
 
+  // Log server start
+  mcpLogger.serverStart('signal-folder-api', '1.0.0');
+
   // Register all tools
-  registerAllTools(server);
+  const toolCount = registerAllTools(server);
+
+  // Log tools registered
+  mcpLogger.allToolsRegistered(toolCount, {
+    signals: 7,
+    folders: 6,
+    cases: 16,
+  });
 
   // Create stdio transport
   const transport = new StdioServerTransport();
