@@ -6,7 +6,7 @@ import { Header } from '@/components/layout/header';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { ChatDrawer } from '@/components/chat/chat-drawer';
 import { SignalProvider } from '@/context/signal-context';
-import { FolderProvider } from '@/context/folder-context';
+import { CaseProvider } from '@/context/case-context';
 import { UserProvider } from '@/context/user-context';
 import { OrganizationProvider } from '@/context/organization-context';
 import { AddressProvider } from '@/context/address-context';
@@ -75,7 +75,7 @@ export default function DashboardLayout({
   return (
     <UserProvider>
       <SignalProvider>
-        <FolderProvider>
+        <CaseProvider>
           <OrganizationProvider>
             <AddressProvider>
               <PersonProvider>
@@ -83,7 +83,7 @@ export default function DashboardLayout({
               </PersonProvider>
             </AddressProvider>
           </OrganizationProvider>
-        </FolderProvider>
+        </CaseProvider>
       </SignalProvider>
     </UserProvider>
   );

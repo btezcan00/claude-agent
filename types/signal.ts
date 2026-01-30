@@ -58,8 +58,8 @@ export type ActivityAction =
   | 'photo-removed'
   | 'attachment-added'
   | 'attachment-removed'
-  | 'folder-added'
-  | 'folder-removed';
+  | 'case-added'
+  | 'case-removed';
 
 export interface ActivityEntry {
   id: string;
@@ -84,8 +84,8 @@ export interface SignalAttachment {
   textContent?: string;
 }
 
-export interface SignalFolderRelation {
-  folderId: string;
+export interface SignalCaseRelation {
+  caseId: string;
   relation?: string;
 }
 
@@ -147,14 +147,14 @@ export interface Signal {
   photos: SignalPhoto[];
   attachments: SignalAttachment[];
   tags?: string[];
-  folderRelations: SignalFolderRelation[];
+  caseRelations: SignalCaseRelation[];
   indicators: SignalIndicator[];
 }
 
 export interface SignalFilters {
   type: SignalType[];
   receivedBy: SignalSource[];
-  folderId: string[];
+  caseId: string[];
 }
 
 export type SortField = 'createdAt' | 'updatedAt' | 'timeOfObservation';
@@ -173,7 +173,7 @@ export interface CreateSignalInput {
   timeOfObservation: string;
   receivedBy: SignalSource;
   contactPerson?: ContactPerson;
-  folderIds?: string[];
+  caseIds?: string[];
 }
 
 export interface UpdateSignalInput {
@@ -184,5 +184,5 @@ export interface UpdateSignalInput {
   timeOfObservation?: string;
   receivedBy?: SignalSource;
   contactPerson?: ContactPerson;
-  folderIds?: string[];
+  caseIds?: string[];
 }

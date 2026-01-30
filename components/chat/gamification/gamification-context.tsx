@@ -39,7 +39,7 @@ const defaultDailyProgress: DailyProgress = {
   messagesExchanged: 0,
   signalsCreated: 0,
   signalsEdited: 0,
-  foldersManaged: 0,
+  casesManaged: 0,
 };
 
 const defaultStreak: UserStreak = {
@@ -227,9 +227,9 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         case 'signal_edited':
           newProgress.signalsEdited += 1;
           break;
-        case 'folder_assigned':
-        case 'folder_edited':
-          newProgress.foldersManaged += 1;
+        case 'case_assigned':
+        case 'case_edited':
+          newProgress.casesManaged += 1;
           break;
         case 'message_sent':
           newProgress.messagesExchanged += 1;

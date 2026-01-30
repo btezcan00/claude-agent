@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 
 const navigation = [
   { name: 'Signals', href: '/signals', icon: Radio },
-  { name: 'Folders', href: '/folders', icon: FolderOpen },
+  { name: 'Cases', href: '/cases', icon: FolderOpen },
   { name: 'Teams', href: '/team', icon: Users },
 ];
 
@@ -58,8 +58,8 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
           const isActive =
             item.href === '/signals'
               ? pathname === '/signals' || pathname.startsWith('/signals/')
-              : item.href === '/folders'
-              ? pathname === '/folders' || pathname.startsWith('/folders/')
+              : item.href === '/cases'
+              ? pathname === '/cases' || pathname.startsWith('/cases/')
               : pathname === item.href;
 
           return (

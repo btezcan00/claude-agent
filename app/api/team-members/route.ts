@@ -4,30 +4,30 @@ import { mockUsers, mockTeams } from '@/data/mock-users';
 
 // GET /api/team-members - Get all team members with their workload
 export async function GET() {
-  const folders = store.getFolders();
+  const cases = store.getCases();
   const signals = store.getSignals();
 
   // Calculate workload for each user
   const teamMembersWithWorkload = mockUsers.map((user) => {
-    const ownedFolders = folders.filter((f) => f.ownerId === user.id);
+    const ownedCases = cases.filter((c) => c.ownerId === user.id);
     const assignedSignals = signals.filter((s) =>
-      s.folderRelations.some((fr) => {
-        const folder = folders.find((f) => f.id === fr.folderId);
-        return folder?.ownerId === user.id;
+      s.caseRelations.some((cr) => {
+        const caseItem = cases.find((c) => c.id === cr.caseId);
+        return caseItem?.ownerId === user.id;
       })
     );
 
-    // Get folder breakdown by status
-    const foldersByStatus = {
-      application: ownedFolders.filter((f) => f.status === 'application').length,
-      research: ownedFolders.filter((f) => f.status === 'research').length,
-      national_office: ownedFolders.filter((f) => f.status === 'national_office').length,
-      decision: ownedFolders.filter((f) => f.status === 'decision').length,
-      archive: ownedFolders.filter((f) => f.status === 'archive').length,
+    // Get case breakdown by status
+    const casesByStatus = {
+      application: ownedCases.filter((c) => c.status === 'application').length,
+      research: ownedCases.filter((c) => c.status === 'research').length,
+      national_office: ownedCases.filter((c) => c.status === 'national_office').length,
+      decision: ownedCases.filter((c) => c.status === 'decision').length,
+      archive: ownedCases.filter((c) => c.status === 'archive').length,
     };
 
     // Calculate active cases (non-archived)
-    const activeCases = ownedFolders.filter((f) => f.status !== 'archive').length;
+    const activeCases = ownedCases.filter((c) => c.status !== 'archive').length;
 
     return {
       id: user.id,
@@ -41,9 +41,9 @@ export async function GET() {
       title: user.title,
       isActive: user.isActive,
       workload: {
-        totalFolders: ownedFolders.length,
+        totalCases: ownedCases.length,
         activeCases,
-        foldersByStatus,
+        casesByStatus,
         relatedSignals: assignedSignals.length,
       },
     };

@@ -1,24 +1,19 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerSignalTools } from './signals.js';
-import { registerFolderTools } from './folders.js';
 import { registerCaseTools } from './cases.js';
 
 /**
  * Register all tools with the MCP server
  *
- * Total Tools: 29
+ * Total Tools: 23
  *
  * Signal Tools (7):
  *   - signal_list, signal_get, signal_create, signal_update, signal_delete
- *   - signal_add_to_folder, signal_remove_from_folder
- *
- * Folder Tools (6):
- *   - folder_list, folder_get, folder_create, folder_update, folder_delete
- *   - folder_submit_application
+ *   - signal_add_to_case, signal_remove_from_case
  *
  * Case Management Tools (16):
  *   Read Operations (9):
- *   - summarize_cases: Get case/folder overview
+ *   - summarize_cases: Get case overview
  *   - list_team_members: Team with workload
  *   - get_case_stats: Dashboard statistics
  *   - search_cases: Search by filters
@@ -40,9 +35,6 @@ import { registerCaseTools } from './cases.js';
 export function registerAllTools(server: McpServer): void {
   // Register signal CRUD tools (7 tools)
   registerSignalTools(server);
-
-  // Register folder CRUD tools (6 tools)
-  registerFolderTools(server);
 
   // Register case management tools (16 tools)
   registerCaseTools(server);

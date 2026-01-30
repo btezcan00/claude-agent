@@ -1,14 +1,14 @@
 'use client';
 
 import { Signal } from '@/types/signal';
-import { useFolders } from '@/context/folder-context';
+import { useCases } from '@/context/case-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
   MapPin,
   FileText,
-  FolderOpen,
+  Briefcase,
   User,
   Mail,
   Phone,
@@ -21,10 +21,10 @@ interface SignalDetailInfoProps {
 }
 
 export function SignalDetailInfo({ signal }: SignalDetailInfoProps) {
-  const { getFolderById } = useFolders();
+  const { getCaseById } = useCases();
 
-  const folders = signal.folderRelations
-    .map((fr) => getFolderById(fr.folderId))
+  const cases = signal.caseRelations
+    .map((cr) => getCaseById(cr.caseId))
     .filter(Boolean);
 
   return (
@@ -115,33 +115,33 @@ export function SignalDetailInfo({ signal }: SignalDetailInfoProps) {
           </>
         )}
 
-        {/* Folders Section */}
-        {folders.length > 0 && (
+        {/* Cases Section */}
+        {cases.length > 0 && (
           <>
             <Separator />
             <div>
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <FolderOpen className="w-4 h-4" />
-                Folders
+                <Briefcase className="w-4 h-4" />
+                Cases
               </h4>
               <div className="flex flex-wrap gap-2 pl-6">
-                {folders.map((folder) => (
-                  <Link key={folder!.id} href={`/folders/${folder!.id}`}>
+                {cases.map((caseItem) => (
+                  <Link key={caseItem!.id} href={`/cases/${caseItem!.id}`}>
                     <Badge
                       variant="outline"
                       className="cursor-pointer hover:bg-muted gap-1.5"
                       style={{
-                        borderColor: folder!.color || undefined,
-                        color: folder!.color || undefined,
+                        borderColor: caseItem!.color || undefined,
+                        color: caseItem!.color || undefined,
                       }}
                     >
-                      {folder!.color && (
+                      {caseItem!.color && (
                         <div
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: folder!.color }}
+                          style={{ backgroundColor: caseItem!.color }}
                         />
                       )}
-                      {folder!.name}
+                      {caseItem!.name}
                     </Badge>
                   </Link>
                 ))}

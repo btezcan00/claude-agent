@@ -5,8 +5,8 @@ import { Signal } from '@/types/signal';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { SignalTypeBadge } from './signal-type-badge';
 import { formatRelativeTime, formatDateTime } from '@/lib/date-utils';
-import { MapPin, Clock, FolderOpen, Building2 } from 'lucide-react';
-import { useFolders } from '@/context/folder-context';
+import { MapPin, Clock, Briefcase, Building2 } from 'lucide-react';
+import { useCases } from '@/context/case-context';
 import { Badge } from '@/components/ui/badge';
 import { SIGNAL_SOURCE_CONFIG } from '@/lib/constants';
 
@@ -15,10 +15,10 @@ interface SignalCardProps {
 }
 
 export function SignalCard({ signal }: SignalCardProps) {
-  const { getFolderById } = useFolders();
+  const { getCaseById } = useCases();
 
-  const folders = signal.folderRelations
-    .map((fr) => getFolderById(fr.folderId))
+  const cases = signal.caseRelations
+    .map((cr) => getCaseById(cr.caseId))
     .filter(Boolean);
 
   return (
@@ -43,25 +43,25 @@ export function SignalCard({ signal }: SignalCardProps) {
             ))}
           </div>
 
-          {folders.length > 0 && (
+          {cases.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {folders.slice(0, 2).map((folder) => (
+              {cases.slice(0, 2).map((caseItem) => (
                 <Badge
-                  key={folder!.id}
+                  key={caseItem!.id}
                   variant="outline"
                   className="text-xs gap-1"
                   style={{
-                    borderColor: folder!.color || undefined,
-                    color: folder!.color || undefined,
+                    borderColor: caseItem!.color || undefined,
+                    color: caseItem!.color || undefined,
                   }}
                 >
-                  <FolderOpen className="w-3 h-3" />
-                  {folder!.name}
+                  <Briefcase className="w-3 h-3" />
+                  {caseItem!.name}
                 </Badge>
               ))}
-              {folders.length > 2 && (
+              {cases.length > 2 && (
                 <Badge variant="outline" className="text-xs">
-                  +{folders.length - 2}
+                  +{cases.length - 2}
                 </Badge>
               )}
             </div>

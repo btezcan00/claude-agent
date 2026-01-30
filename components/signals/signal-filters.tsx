@@ -1,13 +1,13 @@
 'use client';
 
 import { useSignals } from '@/context/signal-context';
-import { useFolders } from '@/context/folder-context';
+import { useCases } from '@/context/case-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter, FolderOpen } from 'lucide-react';
+import { X, Filter, Briefcase } from 'lucide-react';
 import {
   SIGNAL_TYPES,
   SIGNAL_SOURCES,
@@ -19,12 +19,12 @@ import { cn } from '@/lib/utils';
 
 export function SignalFilters() {
   const { filters, setFilters, clearFilters } = useSignals();
-  const { folders } = useFolders();
+  const { cases } = useCases();
 
   const activeFilterCount =
     filters.type.length +
     filters.receivedBy.length +
-    filters.folderId.length;
+    filters.caseId.length;
 
   const toggleType = (type: SignalType) => {
     const newTypes = filters.type.includes(type)
@@ -40,11 +40,11 @@ export function SignalFilters() {
     setFilters({ receivedBy: newSources });
   };
 
-  const toggleFolder = (folderId: string) => {
-    const newFolders = filters.folderId.includes(folderId)
-      ? filters.folderId.filter((id) => id !== folderId)
-      : [...filters.folderId, folderId];
-    setFilters({ folderId: newFolders });
+  const toggleCase = (caseId: string) => {
+    const newCases = filters.caseId.includes(caseId)
+      ? filters.caseId.filter((id) => id !== caseId)
+      : [...filters.caseId, caseId];
+    setFilters({ caseId: newCases });
   };
 
   return (
@@ -74,21 +74,21 @@ export function SignalFilters() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Folder Filter */}
-        {folders.length > 0 && (
+        {/* Case Filter */}
+        {cases.length > 0 && (
           <>
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-1">
-                <FolderOpen className="w-4 h-4" />
-                Folders
+                <Briefcase className="w-4 h-4" />
+                Cases
               </Label>
               <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
-                {folders.map((folder) => {
-                  const isActive = filters.folderId.includes(folder.id);
+                {cases.map((caseItem) => {
+                  const isActive = filters.caseId.includes(caseItem.id);
                   return (
                     <button
-                      key={folder.id}
-                      onClick={() => toggleFolder(folder.id)}
+                      key={caseItem.id}
+                      onClick={() => toggleCase(caseItem.id)}
                       className={cn(
                         'px-3 py-2 text-xs font-medium rounded-md border transition-all text-left flex items-center gap-2',
                         isActive
@@ -96,13 +96,13 @@ export function SignalFilters() {
                           : 'bg-muted text-muted-foreground hover:bg-muted/80'
                       )}
                     >
-                      {folder.color && (
+                      {caseItem.color && (
                         <div
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: folder.color }}
+                          style={{ backgroundColor: caseItem.color }}
                         />
                       )}
-                      {folder.name}
+                      {caseItem.name}
                     </button>
                   );
                 })}

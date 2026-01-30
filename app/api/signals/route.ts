@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
       createdAt: now,
       updatedAt: now,
-      folderRelations: (data.folderIds || []).map(folderId => ({ folderId })),
+      caseRelations: (data.caseIds || []).map(caseId => ({ caseId })),
       notes: [],
       activities: [
         {

@@ -31,8 +31,8 @@ const actionIcons: Record<ActivityAction, React.ElementType> = {
   'photo-removed': Trash,
   'attachment-added': Paperclip,
   'attachment-removed': Trash,
-  'folder-added': FolderPlus,
-  'folder-removed': FolderMinus,
+  'case-added': FolderPlus,
+  'case-removed': FolderMinus,
 };
 
 const actionColors: Record<ActivityAction, string> = {
@@ -45,8 +45,8 @@ const actionColors: Record<ActivityAction, string> = {
   'photo-removed': 'bg-red-100 text-red-600',
   'attachment-added': 'bg-green-100 text-green-600',
   'attachment-removed': 'bg-red-100 text-red-600',
-  'folder-added': 'bg-indigo-100 text-indigo-600',
-  'folder-removed': 'bg-gray-100 text-gray-600',
+  'case-added': 'bg-indigo-100 text-indigo-600',
+  'case-removed': 'bg-gray-100 text-gray-600',
 };
 
 export function SignalActivityTimeline({ signal }: SignalActivityTimelineProps) {

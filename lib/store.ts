@@ -1,10 +1,10 @@
 import { Signal } from '@/types/signal';
-import { Folder } from '@/types/folder';
+import { Case } from '@/types/case';
 import { Organization } from '@/types/organization';
 import { Address } from '@/types/address';
 import { Person } from '@/types/person';
 import { mockSignals } from '@/data/mock-signals';
-import { mockFolders } from '@/data/mock-folders';
+import { mockCases } from '@/data/mock-cases';
 import { mockOrganizations } from '@/data/mock-organizations';
 import { mockAddresses } from '@/data/mock-addresses';
 import { mockPeople, mockBrpData } from '@/data/mock-people';
@@ -21,7 +21,7 @@ declare global {
 
 class Store {
   private signals: Signal[] = [...mockSignals];
-  private folders: Folder[] = [...mockFolders];
+  private cases: Case[] = [...mockCases];
   private organizations: Organization[] = [...mockOrganizations];
   private addresses: Address[] = [...mockAddresses];
   private people: Person[] = [...mockPeople];
@@ -55,42 +55,42 @@ class Store {
     return true;
   }
 
-  // Folders
-  getFolders(): Folder[] {
-    return this.folders;
+  // Cases
+  getCases(): Case[] {
+    return this.cases;
   }
 
-  getFolderById(id: string): Folder | undefined {
-    return this.folders.find((f) => f.id === id);
+  getCaseById(id: string): Case | undefined {
+    return this.cases.find((c) => c.id === id);
   }
 
-  createFolder(folder: Folder): Folder {
-    this.folders.unshift(folder);
-    return folder;
+  createCase(caseItem: Case): Case {
+    this.cases.unshift(caseItem);
+    return caseItem;
   }
 
-  updateFolder(id: string, data: Partial<Folder>): Folder | undefined {
-    const index = this.folders.findIndex((f) => f.id === id);
+  updateCase(id: string, data: Partial<Case>): Case | undefined {
+    const index = this.cases.findIndex((c) => c.id === id);
     if (index === -1) return undefined;
-    this.folders[index] = { ...this.folders[index], ...data };
-    return this.folders[index];
+    this.cases[index] = { ...this.cases[index], ...data };
+    return this.cases[index];
   }
 
-  deleteFolder(id: string): boolean {
-    const index = this.folders.findIndex((f) => f.id === id);
+  deleteCase(id: string): boolean {
+    const index = this.cases.findIndex((c) => c.id === id);
     if (index === -1) return false;
-    this.folders.splice(index, 1);
+    this.cases.splice(index, 1);
     return true;
   }
 
-  // Helper: Remove signal from folder
-  removeSignalFromFolder(signalId: string, folderId: string): Signal | undefined {
+  // Helper: Remove signal from case
+  removeSignalFromCase(signalId: string, caseId: string): Signal | undefined {
     const signal = this.getSignalById(signalId);
     if (!signal) return undefined;
 
-    const updatedRelations = signal.folderRelations.filter((fr) => fr.folderId !== folderId);
+    const updatedRelations = signal.caseRelations.filter((cr) => cr.caseId !== caseId);
     return this.updateSignal(signalId, {
-      folderRelations: updatedRelations,
+      caseRelations: updatedRelations,
       updatedAt: new Date().toISOString()
     });
   }
