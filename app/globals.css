@@ -6,6 +6,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-claude-beige: var(--claude-beige);
+  --color-claude-beige-dark: var(--claude-beige-dark);
   --color-claude-coral: var(--claude-coral);
   --color-claude-coral-hover: var(--claude-coral-hover);
   --font-sans: var(--font-geist-sans);
@@ -52,6 +53,7 @@
   --radius: 0.5rem;
   --background: #fbfaf7;
   --claude-beige: #f1f0e8;
+  --claude-beige-dark: #c2c1b8;
   --claude-coral: oklch(0.65 0.18 25);
   --claude-coral-hover: oklch(0.60 0.20 25);
   --foreground: oklch(0.145 0.02 250);

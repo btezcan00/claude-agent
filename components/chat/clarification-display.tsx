@@ -74,28 +74,28 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
     });
 
   return (
-    <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+    <div className="bg-claude-beige rounded-2xl px-4 py-3">
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-amber-900 dark:text-amber-100">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <HelpCircle className="w-4 h-4" />
           Need More Information
         </div>
         <button
           onClick={onCancel}
-          className="p-1 hover:bg-amber-100 dark:hover:bg-amber-900 rounded"
+          className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded"
         >
-          <X className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+          <X className="w-3 h-3 text-muted-foreground" />
         </button>
       </div>
 
-      <div className="text-xs text-amber-800 dark:text-amber-200 mb-3">
+      <div className="text-xs text-muted-foreground mb-3">
         {data.summary}
       </div>
 
       <div className="space-y-3">
         {data.questions.map((question) => (
           <div key={question.id} className="space-y-1.5">
-            <label className="text-xs font-medium text-amber-900 dark:text-amber-100">
+            <label className="text-xs font-medium text-foreground">
               {question.question}
               {question.required && <span className="text-red-500 ml-0.5">*</span>}
             </label>
@@ -106,7 +106,7 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
                 value={(answers[question.id] as string) || ''}
                 onChange={(e) => handleTextChange(question.id, e.target.value)}
                 placeholder="Type your answer..."
-                className="w-full px-2 py-1.5 text-xs bg-white dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full px-2 py-1.5 text-xs bg-white dark:bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-ring"
               />
             )}
 
@@ -119,8 +119,8 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
                     className={cn(
                       'px-2 py-1 text-xs rounded-full border transition-colors',
                       answers[question.id] === option
-                        ? 'bg-amber-500 text-white border-amber-500'
-                        : 'bg-white dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                        ? 'bg-claude-coral text-white border-claude-coral'
+                        : 'bg-white dark:bg-background border-border text-foreground hover:bg-muted'
                     )}
                   >
                     {option}
@@ -140,8 +140,8 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
                       className={cn(
                         'px-2 py-1 text-xs rounded-full border transition-colors',
                         selected
-                          ? 'bg-amber-500 text-white border-amber-500'
-                          : 'bg-white dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                          ? 'bg-claude-coral text-white border-claude-coral'
+                          : 'bg-white dark:bg-background border-border text-foreground hover:bg-muted'
                       )}
                     >
                       {option}
@@ -154,12 +154,12 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
         ))}
       </div>
 
-      <div className="flex gap-2 mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
+      <div className="flex gap-2 mt-3 pt-3 border-t border-border">
         <Button
           size="sm"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50"
+          className="bg-claude-coral hover:bg-claude-coral/90 text-white disabled:opacity-50"
         >
           Continue
         </Button>
@@ -167,7 +167,7 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
           size="sm"
           variant="outline"
           onClick={onCancel}
-          className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300"
+          className="border-border text-muted-foreground"
         >
           Cancel
         </Button>
