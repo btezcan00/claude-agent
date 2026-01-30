@@ -74,18 +74,36 @@ function StepsIndicator({ stepCount, isProcessing, isExpanded }: StepsIndicatorP
 interface PlanDisplayProps {
   plan: PlanData;
   onApprove?: () => void;
-  onReject?: () => void;
+  onReject?: (feedback: string) => void;
   isAwaitingApproval?: boolean;
 }
 
 export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: PlanDisplayProps) {
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
+  const handleReviseClick = () => {
+    setShowFeedback(true);
+  };
+
+  const handleSubmitFeedback = () => {
+    if (feedback.trim() && onReject) {
+      onReject(feedback.trim());
+    }
+  };
+
+  const handleCancelFeedback = () => {
+    setShowFeedback(false);
+    setFeedback('');
+  };
+
   return (
-    <div className="bg-claude-beige rounded-lg p-3 border border-border">
+    <div className="bg-claude-beige rounded-lg p-3 border border-border overflow-hidden">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
         <Clock className="w-4 h-4" />
         Proposed Plan
       </div>
-      <div className="text-xs text-muted-foreground mb-3">
+      <div className="text-xs text-muted-foreground mb-3 break-words">
         {plan.summary}
       </div>
       <div className="space-y-2">
@@ -94,8 +112,8 @@ export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: P
             <span className="bg-claude-beige-dark text-foreground rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px] font-medium">
               {action.step}
             </span>
-            <div className="flex-1">
-              <span className="font-medium">{action.action}</span>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium break-words">{action.action}</span>
               <span className="text-muted-foreground ml-1">({action.tool})</span>
               {action.details && Object.keys(action.details).length > 0 && (
                 <div className="text-muted-foreground mt-0.5 pl-2 border-l border-border">
@@ -111,13 +129,41 @@ export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: P
         ))}
       </div>
       {isAwaitingApproval && onApprove && onReject && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-          <Button size="sm" onClick={onApprove} className="bg-claude-coral hover:bg-claude-coral/90 text-white">
-            Approve
-          </Button>
-          <Button size="sm" variant="outline" onClick={onReject} className="border-border text-muted-foreground">
-            Revise
-          </Button>
+        <div className="mt-3 pt-3 border-t border-border">
+          {!showFeedback ? (
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onApprove} className="bg-claude-coral hover:bg-claude-coral/90 text-white">
+                Approve
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleReviseClick} className="border-border text-muted-foreground">
+                Revise
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="What changes would you like?"
+                className="w-full px-2 py-1.5 text-xs bg-white dark:bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                rows={3}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSubmitFeedback}
+                  disabled={!feedback.trim()}
+                  className="bg-claude-coral hover:bg-claude-coral/90 text-white"
+                >
+                  Submit Feedback
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleCancelFeedback} className="border-border text-muted-foreground">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1248,11 +1248,272 @@ function ChatBotInner() {
     }
   }, [pendingPlan, messages, signals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences]);
 
-  const handleRejectPlan = useCallback(() => {
+  const handleRejectPlan = useCallback((feedback: string) => {
+    if (!feedback.trim()) return;
+
+    // Create a user message with the feedback
+    const userMessage: Message = {
+      id: generateMessageId(),
+      role: 'user',
+      content: `Please revise the plan: ${feedback}`,
+      isNew: true,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
     setPendingPlan(null);
-    setAgentPhase('idle');
-    // User can type feedback naturally in the input
-  }, []);
+    setAgentPhase('planning');
+    setIsLoading(true);
+
+    // Clear pending folders and step outputs
+    pendingFoldersRef.current.clear();
+    stepOutputsRef.current.clear();
+
+    // Trigger API call with the feedback
+    (async () => {
+      try {
+        // Fetch fresh signals
+        let freshSignals = filteredSignals;
+        try {
+          const signalsResponse = await fetch('/api/signals');
+          if (signalsResponse.ok) {
+            const fetchedSignals: Signal[] = await signalsResponse.json();
+            freshSignals = fetchedSignals.sort((a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          }
+        } catch (error) {
+          console.error('Failed to refresh signals:', error);
+        }
+
+        const signalData = freshSignals.map((s) => ({
+          id: s.id,
+          signalNumber: s.signalNumber,
+          description: s.description,
+          types: s.types,
+          placeOfObservation: s.placeOfObservation,
+          timeOfObservation: s.timeOfObservation,
+          receivedBy: s.receivedBy,
+          attachments: s.attachments.map((a) => ({
+            id: a.id,
+            fileName: a.fileName,
+            fileType: a.fileType,
+            content: a.content,
+            textContent: a.textContent,
+          })),
+        }));
+
+        const folderData = folders.map((f) => ({
+          id: f.id,
+          name: f.name,
+          description: f.description,
+          status: f.status,
+          ownerId: f.ownerId,
+          ownerName: f.ownerName,
+          signalCount: getSignalCountForFolder(f.id),
+          tags: f.tags,
+          practitioners: (f.practitioners || []).map(p => ({ userId: p.userId, userName: p.userName })),
+          sharedWith: (f.sharedWith || []).map(s => ({ userId: s.userId, userName: s.userName, accessLevel: s.accessLevel })),
+          organizations: (f.organizations || []).map(o => ({ id: o.id, name: o.name })),
+          peopleInvolved: (f.peopleInvolved || []).map(p => ({ id: p.id, firstName: p.firstName, surname: p.surname })),
+        }));
+
+        const teamMembersData = users.map((u) => ({
+          id: u.id,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          title: u.title,
+          role: u.role,
+          ownedFolderCount: folders.filter((f) => f.ownerId === u.id).length,
+        }));
+
+        const currentUser = users[0];
+        const currentUserData = currentUser ? {
+          id: currentUser.id,
+          firstName: currentUser.firstName,
+          lastName: currentUser.lastName,
+          fullName: getUserFullName(currentUser),
+          title: currentUser.title,
+          role: currentUser.role,
+        } : null;
+
+        // Build conversation history including the feedback
+        const conversationHistory = messages
+          .filter((m) => !m.isNew || m.role === 'user')
+          .map((m) => ({ role: m.role, content: m.content }));
+        conversationHistory.push({ role: 'user', content: `Please revise the plan: ${feedback}` });
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: conversationHistory,
+            signals: signalData,
+            folders: folderData,
+            teamMembers: teamMembersData,
+            currentUser: currentUserData,
+            lastCreatedSignalId,
+            organizations: organizations.map((o) => ({
+              id: o.id,
+              name: o.name,
+              type: o.type,
+              address: o.address,
+              chamberOfCommerce: o.chamberOfCommerce,
+            })),
+            addresses: addresses.map((a) => ({
+              id: a.id,
+              street: a.street,
+              buildingType: a.buildingType,
+              isActive: a.isActive,
+              description: a.description,
+            })),
+            people: people.map((p) => ({
+              id: p.id,
+              firstName: p.firstName,
+              surname: p.surname,
+              dateOfBirth: p.dateOfBirth,
+              address: p.address,
+              description: p.description,
+            })),
+            stream: true,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get response');
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalResponse = '';
+        const executedTools: string[] = [];
+        let currentStep = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const event = JSON.parse(data);
+
+                switch (event.type) {
+                  case 'phase':
+                    setAgentPhase(event.phase);
+                    break;
+
+                  case 'thinking':
+                    addLogEntry(createLogEntry('thinking', event.text));
+                    break;
+
+                  case 'tool_call':
+                    if (event.tool === 'plan_proposal') {
+                      addLogEntry(createLogEntry('plan', `Planning: ${event.tool}`, { status: 'success', toolName: event.tool }));
+                      break;
+                    }
+                    currentStep++;
+                    const resolvedInput = resolveStepReferences(event.input, stepOutputsRef.current);
+                    const toolCallEntry = createLogEntry('tool_call', `Calling ${event.tool}...`, { status: 'pending', toolName: event.tool, toolInput: resolvedInput });
+                    addLogEntry(toolCallEntry);
+                    const result = await executeTool(event.tool, resolvedInput);
+                    executedTools.push(`${event.tool}: ${result.message}`);
+                    if (result.output) {
+                      stepOutputsRef.current.set(currentStep, result.output);
+                    }
+                    updateLogEntry(toolCallEntry.id, { status: 'success' });
+                    addLogEntry(createLogEntry('tool_result', result.message, { status: 'success', toolName: event.tool }));
+                    break;
+
+                  case 'tool_result':
+                    if (event.tool === 'summarize_attachments') {
+                      addLogEntry(createLogEntry('tool_result', event.result.substring(0, 100) + '...', { status: 'success', toolName: event.tool }));
+                    }
+                    break;
+
+                  case 'clarification':
+                    setPendingClarification({
+                      summary: event.summary,
+                      questions: event.questions,
+                    });
+                    addLogEntry(createLogEntry('clarification', `Clarification needed: ${event.summary}`, { clarificationData: event as ClarificationData }));
+                    setAgentPhase('clarifying');
+                    setIsLoading(false);
+                    break;
+
+                  case 'plan_proposal':
+                    setPendingPlan(event as PlanData);
+                    addLogEntry(createLogEntry('plan', `Plan: ${event.summary}`, { planData: event as PlanData }));
+                    setAgentPhase('awaiting_approval');
+                    setIsLoading(false);
+                    break;
+
+                  case 'response':
+                    finalResponse = event.text;
+                    if (event.awaitingApproval) {
+                      break;
+                    }
+                    if (!finalResponse && executedTools.length > 0) {
+                      finalResponse = `Done! ${executedTools.join('. ')}`;
+                    }
+                    break;
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+
+        if (finalResponse) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: generateMessageId(),
+              role: 'assistant',
+              content: finalResponse,
+              isNew: true,
+            },
+          ]);
+
+          if (finalResponse.includes('completed successfully') || finalResponse.startsWith('Done!')) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: generateMessageId(),
+                role: 'assistant',
+                content: '[WORKFLOW_BOUNDARY: The above workflow is complete. New requests are independent - only include actions explicitly requested.]',
+                isNew: false,
+              },
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error('Revision request error:', error);
+        setAgentPhase('idle');
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: generateMessageId(),
+            role: 'assistant',
+            content: 'Sorry, I encountered an error. Please try again.',
+            isNew: true,
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [messages, filteredSignals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences]);
 
   const handleClarificationSubmit = useCallback(async (answers: Record<string, string | string[]>) => {
     if (!pendingClarification) return;
