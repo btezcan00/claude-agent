@@ -52,8 +52,8 @@ function ChatBotInner() {
   // Track step outputs for resolving $stepN.fieldName references
   const stepOutputsRef = useRef<Map<number, Record<string, unknown>>>(new Map());
 
-  const { signals, filteredSignals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, addSignalToFolder, signalStats } = useSignals();
-  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, deleteFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity } = useFolders();
+  const { signals, filteredSignals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, addSignalToFolder, signalStats, refreshSignals } = useSignals();
+  const { folders, getSignalCountForFolder, updateApplicationData, completeApplication, assignFolderOwner, updateFolder, updateFolderStatus, updateLocation, addTag, removeTag, createFolder, deleteFolder, addPractitioner, shareFolder, addOrganizationToFolder, addAddressToFolder, addPersonToFolder, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity, refreshFolders } = useFolders();
   const { users, getUserFullName } = useUsers();
   const { organizations } = useOrganizations();
   const { addresses } = useAddresses();
@@ -631,7 +631,13 @@ function ChatBotInner() {
             }
             return { message: `Signal ${signalId} not found` };
           }
-          return { message: `${signals.length} signals in system` };
+          // Return a more detailed summary when no specific signal is requested
+          const summary = signals.slice(0, 5).map(s =>
+            `• ${s.signalNumber}: ${s.description.substring(0, 50)}... (${s.types.join(', ')})`
+          ).join('\n');
+          return {
+            message: `${signals.length} signals in system:\n${summary}${signals.length > 5 ? `\n... and ${signals.length - 5} more` : ''}`
+          };
         }
 
         case 'summarize_folder': {
@@ -650,9 +656,11 @@ function ChatBotInner() {
         }
 
         case 'list_folders':
-          return { message: folders.length > 0
-            ? folders.map(f => `${f.name} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`).join('; ')
-            : 'No folders' };
+          return {
+            message: folders.length > 0
+              ? folders.map(f => `${f.name} (${f.status}, ${getSignalCountForFolder(f.id)} signals)`).join('; ')
+              : 'No folders'
+          };
 
         case 'list_team_members':
           return { message: users.map(u => `${getUserFullName(u)} (${u.title})`).join('; ') };
@@ -676,18 +684,22 @@ function ChatBotInner() {
           }
           if (type) results = results.filter(s => s.types.includes(type as SignalType));
           if (receivedBy) results = results.filter(s => s.receivedBy === receivedBy);
-          return { message: results.length > 0
-            ? `Found ${results.length}: ${results.map(s => s.signalNumber).join(', ')}`
-            : 'No signals found' };
+          return {
+            message: results.length > 0
+              ? `Found ${results.length}: ${results.map(s => s.signalNumber).join(', ')}`
+              : 'No signals found'
+          };
         }
 
         case 'get_signal_activity': {
           const s = findSignal(input.signal_id as string);
           if (s) {
             const activities = s.activities.slice(0, 5);
-            return { message: activities.length > 0
-              ? activities.map(a => `${a.details} by ${a.userName}`).join('; ')
-              : 'No activity' };
+            return {
+              message: activities.length > 0
+                ? activities.map(a => `${a.details} by ${a.userName}`).join('; ')
+                : 'No activity'
+            };
           }
           return { message: 'Signal not found' };
         }
@@ -695,9 +707,11 @@ function ChatBotInner() {
         case 'get_signal_notes': {
           const s = findSignal(input.signal_id as string);
           if (s) {
-            return { message: s.notes.length > 0
-              ? s.notes.map(n => `${n.authorName}: ${n.content.substring(0, 50)}`).join('; ')
-              : 'No notes' };
+            return {
+              message: s.notes.length > 0
+                ? s.notes.map(n => `${n.authorName}: ${n.content.substring(0, 50)}`).join('; ')
+                : 'No notes'
+            };
           }
           return { message: 'Signal not found' };
         }
@@ -907,9 +921,16 @@ function ChatBotInner() {
                   break;
 
                 case 'tool_result':
-                  // Server-side tool result (like summarize_attachments)
-                  if (event.tool === 'summarize_attachments') {
-                    addLogEntry(createLogEntry('tool_result', event.result.substring(0, 100) + '...', { status: 'success', toolName: event.tool }));
+                  // Server-side tool result (MCP executed tools)
+                  // Track that a tool was executed so we can refresh state later
+                  if (event.tool) {
+                    executedTools.push(`${event.tool}: executed`);
+                    addLogEntry(createLogEntry('tool_result',
+                      typeof event.result === 'string'
+                        ? event.result.substring(0, 100) + (event.result.length > 100 ? '...' : '')
+                        : `${event.tool} completed`,
+                      { status: 'success', toolName: event.tool }
+                    ));
                   }
                   break;
 
@@ -919,12 +940,14 @@ function ChatBotInner() {
                     questions: event.questions,
                   });
                   addLogEntry(createLogEntry('clarification', `Clarification needed: ${event.summary}`, { clarificationData: event as ClarificationData }));
+                  setAgentPhase('clarifying'); // Ensure phase is set
                   setIsLoading(false);
                   break;
 
                 case 'plan_proposal':
                   setPendingPlan(event as PlanData);
                   addLogEntry(createLogEntry('plan', `Plan: ${event.summary}`, { planData: event as PlanData }));
+                  setAgentPhase('awaiting_approval');
                   setIsLoading(false);
                   break;
 
@@ -971,6 +994,16 @@ function ChatBotInner() {
               isNew: false,
             },
           ]);
+        }
+      }
+
+      // Refresh frontend state after MCP tool execution
+      // This ensures React state is synced with backend after server-side tool calls
+      if (executedTools.length > 0) {
+        try {
+          await Promise.all([refreshSignals(), refreshFolders()]);
+        } catch (refreshError) {
+          console.warn('Failed to refresh state after tool execution:', refreshError);
         }
       }
     } catch (error) {
@@ -1181,8 +1214,15 @@ function ChatBotInner() {
                   break;
 
                 case 'tool_result':
-                  if (event.tool === 'summarize_attachments') {
-                    addLogEntry(createLogEntry('tool_result', event.result.substring(0, 100) + '...', { status: 'success', toolName: event.tool }));
+                  // Server-side tool result (MCP executed tools)
+                  if (event.tool) {
+                    executedTools.push(`${event.tool}: executed`);
+                    addLogEntry(createLogEntry('tool_result',
+                      typeof event.result === 'string'
+                        ? event.result.substring(0, 100) + (event.result.length > 100 ? '...' : '')
+                        : `${event.tool} completed`,
+                      { status: 'success', toolName: event.tool }
+                    ));
                   }
                   break;
 
@@ -1224,6 +1264,15 @@ function ChatBotInner() {
           ]);
         }
       }
+
+      // Refresh frontend state after MCP tool execution
+      if (executedTools.length > 0) {
+        try {
+          await Promise.all([refreshSignals(), refreshFolders()]);
+        } catch (refreshError) {
+          console.warn('Failed to refresh state after tool execution:', refreshError);
+        }
+      }
     } catch (error) {
       console.error('Approval execution error:', error);
       setAgentPhase('idle');
@@ -1239,7 +1288,7 @@ function ChatBotInner() {
     } finally {
       setIsLoading(false);
     }
-  }, [pendingPlan, messages, signals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences]);
+  }, [pendingPlan, messages, signals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences, refreshSignals, refreshFolders]);
 
   const handleRejectPlan = useCallback(() => {
     setPendingPlan(null);
@@ -1440,8 +1489,15 @@ function ChatBotInner() {
                   break;
 
                 case 'tool_result':
-                  if (event.tool === 'summarize_attachments') {
-                    addLogEntry(createLogEntry('tool_result', event.result.substring(0, 100) + '...', { status: 'success', toolName: event.tool }));
+                  // Server-side tool result (MCP executed tools)
+                  if (event.tool) {
+                    executedTools.push(`${event.tool}: executed`);
+                    addLogEntry(createLogEntry('tool_result',
+                      typeof event.result === 'string'
+                        ? event.result.substring(0, 100) + (event.result.length > 100 ? '...' : '')
+                        : `${event.tool} completed`,
+                      { status: 'success', toolName: event.tool }
+                    ));
                   }
                   break;
 
@@ -1502,6 +1558,15 @@ function ChatBotInner() {
           ]);
         }
       }
+
+      // Refresh frontend state after MCP tool execution
+      if (executedTools.length > 0) {
+        try {
+          await Promise.all([refreshSignals(), refreshFolders()]);
+        } catch (refreshError) {
+          console.warn('Failed to refresh state after tool execution:', refreshError);
+        }
+      }
     } catch (error) {
       console.error('Clarification submission error:', error);
       setAgentPhase('idle');
@@ -1517,7 +1582,7 @@ function ChatBotInner() {
     } finally {
       setIsLoading(false);
     }
-  }, [pendingClarification, messages, filteredSignals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences]);
+  }, [pendingClarification, messages, filteredSignals, folders, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForFolder, getUserFullName, resolveStepReferences, refreshSignals, refreshFolders]);
 
   const handleClarificationCancel = useCallback(() => {
     setPendingClarification(null);

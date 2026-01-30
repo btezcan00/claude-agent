@@ -93,8 +93,8 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
       </div>
 
       <div className="space-y-3">
-        {data.questions.map((question) => (
-          <div key={question.id} className="space-y-1.5">
+        {data.questions.map((question, index) => (
+          <div key={question.id || question.fieldName || `question-${index}`} className="space-y-1.5">
             <label className="text-xs font-medium text-amber-900 dark:text-amber-100">
               {question.question}
               {question.required && <span className="text-red-500 ml-0.5">*</span>}
