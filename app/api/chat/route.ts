@@ -1488,34 +1488,95 @@ When a user mentions moving a signal to a case:
 
 ## SMART CASE MATCHING FOR NEW SIGNALS
 
-When proposing to create a signal, AUTOMATICALLY check for matching cases based on signal type:
+When creating a signal, AUTOMATICALLY analyze and match to existing cases using BOTH type matching AND content analysis:
 
-**Signal Type to Case signalTypes Mapping:**
-- human-trafficking → human_trafficking
-- drug-trafficking → drug_trafficking
-- money-laundering → money_laundering
-- fraud → fraud
-- bogus-scheme → bogus_scheme
+### Step 1: Analyze Signal Content
+Extract key indicators from the signal description:
+- **Crime type keywords**: trafficking, drugs, fraud, money laundering, smuggling, exploitation
+- **Location references**: addresses, cities, areas
+- **Entity mentions**: organizations, people, vehicles
 
-**Process:**
-1. When creating a signal, note its type(s)
-2. Convert to underscore format (drug-trafficking → drug_trafficking)
-3. Check Cases in Current Data for matching signalTypes
-4. If match exists, PROPOSE adding signal to that case as step 2
+### Step 2: Match Against Existing Cases
 
-**Example:**
-User: "Create a signal about drug activity at Port Area"
+**Priority 1 - Type Match:**
+Check if signal's explicit type matches a case's signalTypes:
+- human-trafficking → case with signalTypes containing human_trafficking
+- drug-trafficking → case with signalTypes containing drug_trafficking
+- money-laundering → case with signalTypes containing money_laundering
+- fraud → case with signalTypes containing fraud
+- bogus-scheme → case with signalTypes containing bogus_scheme
 
-If "Narcotics Operations" case has signalTypes: [drug_trafficking]:
+**Priority 2 - Content Match:**
+If no type match, analyze signal description against case data:
+- Match keywords in description against case NAMES (e.g., "trafficking" in description → "Human Trafficking Priority" case)
+- Match keywords against case DESCRIPTIONS
+- Match location against case locations (e.g., "Amsterdam" signal → Amsterdam-based case)
+
+### Step 3: Propose Action
+
+**If matching case found:**
+Propose a 2-step plan:
+1. Create the signal
+2. Add signal to the matched case
+
+Include reasoning in the plan summary explaining WHY this case was matched.
+
+**If NO matching case but content strongly suggests a specific investigation type:**
+Propose a 2-step plan:
+1. Create the signal
+2. Create a new case for this investigation type
+
+Suggest case name based on content (e.g., "Human Trafficking Investigation - [Location]")
+
+**If content is generic/unclear:**
+Create only the signal (single step). Ask user if they want to link it to a case.
+
+### Keyword to Case Type Mapping
+
+| Keywords in Description | Likely Case Type |
+|------------------------|------------------|
+| trafficking, smuggling, exploitation, forced labor, victims | Human Trafficking |
+| drugs, narcotics, cocaine, heroin, dealing, pills | Drug Trafficking |
+| money laundering, cash, suspicious transactions, shell company | Money Laundering |
+| fraud, scam, fake, impersonation, bogus | Fraud |
+
+### Example
+
+User provides signal about "human trafficking at Prinsengracht 247, Amsterdam":
+
+1. **Content Analysis**: Keywords "human trafficking", "Amsterdam" detected
+2. **Case Check**: "Human Trafficking Priority" case exists with:
+   - signalTypes: [human_trafficking, forced_labor]
+   - location: Amsterdam, Netherlands
+3. **Match Found**: Both keyword AND location match
+4. **Proposal**:
 {
-  "summary": "Create drug trafficking signal and link to Narcotics Operations case",
+  "summary": "Create human trafficking signal and link to Human Trafficking Priority case (matched by content keywords and location)",
   "actions": [
-    { "step": 1, "tool": "create_signal", "action": "Create drug trafficking signal", "details": { ... } },
-    { "step": 2, "tool": "add_signal_to_case", "action": "Link to Narcotics Operations case", "details": { "signal_id": "$step1.signalId", "case_id": "[case ID from Current Data]" } }
+    { "step": 1, "tool": "create_signal", "action": "Create human trafficking signal", "details": { ... } },
+    { "step": 2, "tool": "add_signal_to_case", "action": "Link to Human Trafficking Priority case", "details": { "signal_id": "$step1.signalId", "case_id": "[case ID from Current Data]" } }
   ]
 }
 
-**When NO matching case:** Create only the signal (single step). Do NOT propose creating a new case unless user explicitly asks.
+## CRITICAL: INDEPENDENT WORKFLOW HANDLING
+
+**Each new signal/email request is COMPLETELY INDEPENDENT.**
+
+When a user sends a new message with a different signal or email:
+1. **ONLY propose actions for THIS specific signal** - never include tasks from previous signals
+2. **Ignore completed tasks** - if a previous plan was executed, those tasks are DONE and should NOT appear in new plans
+3. **Look for [WORKFLOW_BOUNDARY]** markers in the conversation - everything before a boundary is complete and irrelevant to new requests
+4. **Fresh context** - treat each new signal as if it's the first one, even if the conversation has history
+
+**Example - WRONG:**
+User sends Email 1 (human trafficking) → Plan creates signal + links to case → Executed
+User sends Email 2 (money laundering) → Plan shows tasks from Email 1 + tasks for Email 2 ← WRONG!
+
+**Example - CORRECT:**
+User sends Email 1 (human trafficking) → Plan creates signal + links to case → Executed
+User sends Email 2 (money laundering) → Plan ONLY shows: create money laundering signal ← CORRECT!
+
+**Rule: If you see a [WORKFLOW_BOUNDARY] marker, everything before it is complete. Your new plan must ONLY address the content AFTER the boundary.**
 
 ## USING EXISTING SIGNALS
 
@@ -1882,9 +1943,44 @@ When information is missing:
 
 - Be concise and action-oriented
 - After completing actions, summarize what was done
-- Suggest logical next steps when appropriate`;
+- Suggest logical next steps when appropriate
 
-    const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
+## Signal-to-Case Matching (IMPORTANT)
+
+When creating a signal, ALWAYS check for case matching and include it in the plan:
+1. Look at the signal's types (e.g., human-trafficking, money-laundering, fraud)
+2. Check if any existing case has matching signalTypes in the Current Data
+3. If a matching case exists:
+   - Include "add_signal_to_case" as a step in the plan
+4. If NO matching case exists:
+   - Include "create_case" as a step in the plan to create a new case for this signal type
+   - Keep case names SHORT and generic (e.g., "Money Laundering Investigation", "Human Trafficking Case", "Fraud Investigation")
+   - Do NOT include location names, business names, or other specifics in the case name
+   - Link the signal to the new case using add_signal_to_case
+
+**ALWAYS include case assignment in your plan when creating signals. Never create a signal without proposing to link it to a case (existing or new).**`;
+
+    // Filter messages to only include those after the last WORKFLOW_BOUNDARY
+    // This ensures completed workflows don't affect new requests
+    const filterMessagesAfterBoundary = (msgs: Message[]): Message[] => {
+      let lastBoundaryIndex = -1;
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].content.includes('[WORKFLOW_BOUNDARY:')) {
+          lastBoundaryIndex = i;
+          break;
+        }
+      }
+      // If no boundary found, return all messages
+      if (lastBoundaryIndex === -1) {
+        return msgs;
+      }
+      // Return only messages after the boundary (excluding the boundary itself)
+      return msgs.slice(lastBoundaryIndex + 1);
+    };
+
+    const filteredMessages = filterMessagesAfterBoundary(messages);
+
+    const anthropicMessages: Anthropic.MessageParam[] = filteredMessages.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     }));

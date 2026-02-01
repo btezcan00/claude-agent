@@ -72,6 +72,8 @@ function ChatBotInner() {
   const pendingCasesRef = useRef<Map<string, Case>>(new Map());
   // Track step outputs for resolving $stepN.fieldName references
   const stepOutputsRef = useRef<Map<number, Record<string, unknown>>>(new Map());
+  // Track latest messages for access in async callbacks (avoids stale closure issues)
+  const messagesRef = useRef<Message[]>([]);
 
   const { signals, filteredSignals, createSignal, updateSignal, getSignalById, addNote, deleteSignal, addSignalToCase, signalStats } = useSignals();
   const { cases, getSignalCountForCase, updateApplicationData, completeApplication, assignCaseOwner, updateCase, updateCaseStatus, updateLocation, addTag, removeTag, createCase, deleteCase, addPractitioner, shareCase, addOrganizationToCase, addAddressToCase, addPersonToCase, addFinding, addLetter, updateLetter, addCommunication, addChatMessage, addVisualization, addActivity } = useCases();
@@ -101,6 +103,12 @@ function ChatBotInner() {
       ]);
     }
   }, [messages.length]);
+
+  // Sync messagesRef with messages state for access in async callbacks
+  // This avoids stale closure issues when handlers reference messages
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const findSignal = useCallback((identifier: string) => {
     return getSignalById(identifier) || signals.find(s =>
@@ -148,6 +156,27 @@ function ChatBotInner() {
 
     return undefined;
   }, [cases]);
+
+  // Helper function to filter messages after the last workflow boundary
+  // This ensures new requests don't include completed workflow context
+  const getMessagesAfterLastBoundary = useCallback((msgs: Message[]): Message[] => {
+    // Find the index of the last WORKFLOW_BOUNDARY message
+    let lastBoundaryIndex = -1;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].content.includes('[WORKFLOW_BOUNDARY:')) {
+        lastBoundaryIndex = i;
+        break;
+      }
+    }
+
+    // If no boundary found, return all messages
+    if (lastBoundaryIndex === -1) {
+      return msgs;
+    }
+
+    // Return only messages after the boundary (excluding the boundary itself)
+    return msgs.slice(lastBoundaryIndex + 1);
+  }, []);
 
   // Function to resolve $stepN.fieldName references in tool inputs
   const resolveStepReferences = useCallback((input: Record<string, unknown>, stepOutputs: Map<number, Record<string, unknown>>): Record<string, unknown> => {
@@ -883,7 +912,9 @@ function ChatBotInner() {
         role: currentUser.role,
       } : null;
 
-      const conversationHistory = messages
+      // Filter messages to only include those after the last workflow boundary
+      const relevantMessages = getMessagesAfterLastBoundary(messagesRef.current);
+      const conversationHistory = relevantMessages
         .filter((m) => !m.isNew || m.role === 'user')
         .map((m) => ({ role: m.role, content: m.content }));
       conversationHistory.push({ role: 'user', content: input });
@@ -1032,30 +1063,35 @@ function ChatBotInner() {
         }
       }
 
-      // Add the final assistant message
+      // Add the final assistant message and workflow boundary atomically
       if (finalResponse) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: generateMessageId(),
-            role: 'assistant',
-            content: finalResponse,
-            isNew: true,
-          },
-        ]);
+        // Add boundary if any tools were executed (write operations completed)
+        const shouldAddBoundary = executedTools.length > 0;
 
-        // Add workflow boundary marker when workflow completes
-        if (finalResponse.includes('completed successfully') || finalResponse.startsWith('Done!')) {
-          setMessages((prev) => [
+        setMessages((prev) => {
+          const newMessages: Message[] = [
             ...prev,
             {
               id: generateMessageId(),
               role: 'assistant',
+              content: finalResponse,
+              isNew: true,
+            },
+          ];
+
+          if (shouldAddBoundary) {
+            newMessages.push({
+              id: generateMessageId(),
+              role: 'assistant',
               content: '[WORKFLOW_BOUNDARY: The above workflow is complete. New requests are independent - only include actions explicitly requested.]',
               isNew: false,
-            },
-          ]);
-        }
+            });
+          }
+
+          // Sync ref immediately so next submission sees the boundary
+          messagesRef.current = newMessages;
+          return newMessages;
+        });
       }
     } catch (error) {
       console.error('Chat error:', error);
@@ -1156,8 +1192,9 @@ function ChatBotInner() {
         role: currentUser.role,
       } : null;
 
-      // Build conversation history including the approval
-      const conversationHistory = messages
+      // Build conversation history including the approval (filter after last boundary)
+      const relevantMessages = getMessagesAfterLastBoundary(messagesRef.current);
+      const conversationHistory = relevantMessages
         .filter((m) => !m.isNew || m.role === 'user')
         .map((m) => ({ role: m.role, content: m.content }));
       conversationHistory.push({ role: 'user', content: approvalMessage });
@@ -1285,28 +1322,32 @@ function ChatBotInner() {
       }
 
       if (finalResponse) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: generateMessageId(),
-            role: 'assistant',
-            content: finalResponse,
-            isNew: true,
-          },
-        ]);
+        const shouldAddBoundary = executedTools.length > 0;
 
-        // Add workflow boundary marker when workflow completes
-        if (finalResponse.includes('completed successfully') || finalResponse.startsWith('Done!')) {
-          setMessages((prev) => [
+        setMessages((prev) => {
+          const newMessages: Message[] = [
             ...prev,
             {
               id: generateMessageId(),
               role: 'assistant',
+              content: finalResponse,
+              isNew: true,
+            },
+          ];
+
+          if (shouldAddBoundary) {
+            newMessages.push({
+              id: generateMessageId(),
+              role: 'assistant',
               content: '[WORKFLOW_BOUNDARY: The above workflow is complete. New requests are independent - only include actions explicitly requested.]',
               isNew: false,
-            },
-          ]);
-        }
+            });
+          }
+
+          // Sync ref immediately so next submission sees the boundary
+          messagesRef.current = newMessages;
+          return newMessages;
+        });
       }
     } catch (error) {
       console.error('Approval execution error:', error);
@@ -1323,7 +1364,7 @@ function ChatBotInner() {
     } finally {
       setIsLoading(false);
     }
-  }, [pendingPlan, messages, signals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences]);
+  }, [pendingPlan, messages, signals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences, getMessagesAfterLastBoundary]);
 
   const handleRejectPlan = useCallback((feedback: string) => {
     if (!feedback.trim()) return;
@@ -1413,8 +1454,9 @@ function ChatBotInner() {
           role: currentUser.role,
         } : null;
 
-        // Build conversation history including the feedback
-        const conversationHistory = messages
+        // Build conversation history including the feedback (filter after last boundary)
+        const relevantMessages = getMessagesAfterLastBoundary(messagesRef.current);
+        const conversationHistory = relevantMessages
           .filter((m) => !m.isNew || m.role === 'user')
           .map((m) => ({ role: m.role, content: m.content }));
         conversationHistory.push({ role: 'user', content: `Please revise the plan: ${feedback}` });
@@ -1552,27 +1594,32 @@ function ChatBotInner() {
         }
 
         if (finalResponse) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: generateMessageId(),
-              role: 'assistant',
-              content: finalResponse,
-              isNew: true,
-            },
-          ]);
+          const shouldAddBoundary = executedTools.length > 0;
 
-          if (finalResponse.includes('completed successfully') || finalResponse.startsWith('Done!')) {
-            setMessages((prev) => [
+          setMessages((prev) => {
+            const newMessages: Message[] = [
               ...prev,
               {
                 id: generateMessageId(),
                 role: 'assistant',
+                content: finalResponse,
+                isNew: true,
+              },
+            ];
+
+            if (shouldAddBoundary) {
+              newMessages.push({
+                id: generateMessageId(),
+                role: 'assistant',
                 content: '[WORKFLOW_BOUNDARY: The above workflow is complete. New requests are independent - only include actions explicitly requested.]',
                 isNew: false,
-              },
-            ]);
-          }
+              });
+            }
+
+            // Sync ref immediately so next submission sees the boundary
+            messagesRef.current = newMessages;
+            return newMessages;
+          });
         }
       } catch (error) {
         console.error('Revision request error:', error);
@@ -1590,7 +1637,7 @@ function ChatBotInner() {
         setIsLoading(false);
       }
     })();
-  }, [messages, filteredSignals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences]);
+  }, [messages, filteredSignals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences, getMessagesAfterLastBoundary]);
 
   const handleClarificationSubmit = useCallback(async (answers: Record<string, string | string[]>) => {
     if (!pendingClarification) return;
@@ -1686,8 +1733,9 @@ function ChatBotInner() {
         role: currentUser.role,
       } : null;
 
-      // Build conversation history including the clarification answers
-      const conversationHistory = messages
+      // Build conversation history including the clarification answers (filter after last boundary)
+      const relevantMessages = getMessagesAfterLastBoundary(messagesRef.current);
+      const conversationHistory = relevantMessages
         .filter((m) => !m.isNew || m.role === 'user')
         .map((m) => ({ role: m.role, content: m.content }));
       conversationHistory.push({ role: 'user', content: `Here are the details:\n${answerText}` });
@@ -1825,27 +1873,32 @@ function ChatBotInner() {
       }
 
       if (finalResponse) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: generateMessageId(),
-            role: 'assistant',
-            content: finalResponse,
-            isNew: true,
-          },
-        ]);
+        const shouldAddBoundary = executedTools.length > 0;
 
-        if (finalResponse.includes('completed successfully') || finalResponse.startsWith('Done!')) {
-          setMessages((prev) => [
+        setMessages((prev) => {
+          const newMessages: Message[] = [
             ...prev,
             {
               id: generateMessageId(),
               role: 'assistant',
+              content: finalResponse,
+              isNew: true,
+            },
+          ];
+
+          if (shouldAddBoundary) {
+            newMessages.push({
+              id: generateMessageId(),
+              role: 'assistant',
               content: '[WORKFLOW_BOUNDARY: The above workflow is complete. New requests are independent - only include actions explicitly requested.]',
               isNew: false,
-            },
-          ]);
-        }
+            });
+          }
+
+          // Sync ref immediately so next submission sees the boundary
+          messagesRef.current = newMessages;
+          return newMessages;
+        });
       }
     } catch (error) {
       console.error('Clarification submission error:', error);
@@ -1862,7 +1915,7 @@ function ChatBotInner() {
     } finally {
       setIsLoading(false);
     }
-  }, [pendingClarification, messages, filteredSignals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences]);
+  }, [pendingClarification, messages, filteredSignals, cases, users, organizations, addresses, people, lastCreatedSignalId, executeTool, addLogEntry, updateLogEntry, getSignalCountForCase, getUserFullName, resolveStepReferences, getMessagesAfterLastBoundary]);
 
   const handleClarificationCancel = useCallback(() => {
     setPendingClarification(null);
