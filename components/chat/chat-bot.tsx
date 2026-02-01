@@ -876,6 +876,7 @@ function ChatBotInner() {
           content: a.content,
           textContent: a.textContent,
         })),
+        caseRelations: s.caseRelations?.map((cr) => ({ caseId: cr.caseId })),
       }));
 
       const caseData = cases.map((c) => ({
@@ -1156,6 +1157,7 @@ function ChatBotInner() {
           content: a.content,
           textContent: a.textContent,
         })),
+        caseRelations: s.caseRelations?.map((cr) => ({ caseId: cr.caseId })),
       }));
 
       const caseData = cases.map((c) => ({
@@ -1418,6 +1420,7 @@ function ChatBotInner() {
             content: a.content,
             textContent: a.textContent,
           })),
+          caseRelations: s.caseRelations?.map((cr) => ({ caseId: cr.caseId })),
         }));
 
         const caseData = cases.map((c) => ({
@@ -1697,6 +1700,7 @@ function ChatBotInner() {
           content: a.content,
           textContent: a.textContent,
         })),
+        caseRelations: s.caseRelations?.map((cr) => ({ caseId: cr.caseId })),
       }));
 
       const caseData = cases.map((c) => ({

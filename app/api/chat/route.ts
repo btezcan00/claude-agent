@@ -34,6 +34,7 @@ interface SignalData {
   activitiesCount: number;
   photosCount: number;
   attachments?: AttachmentData[];
+  caseRelations?: { caseId: string }[];
 }
 
 interface TeamMember {
@@ -1316,8 +1317,12 @@ export async function POST(request: NextRequest) {
 
     const signalSummary = (signals || [])
       .map(
-        (s) =>
-          `- ${s.signalNumber}: ${s.placeOfObservation} (${s.types.join(', ')}, received by: ${s.receivedBy})`
+        (s) => {
+          const caseInfo = s.caseRelations?.length
+            ? `, assigned to: ${s.caseRelations.map(cr => cr.caseId).join(', ')}`
+            : ', not assigned to case';
+          return `- ${s.signalNumber}: ${s.placeOfObservation} (${s.types.join(', ')}, received by: ${s.receivedBy}${caseInfo})`;
+        }
       )
       .join('\n');
 
