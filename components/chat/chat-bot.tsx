@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
@@ -80,6 +80,13 @@ function ChatBotInner() {
   const { addresses } = useAddresses();
   const { people } = usePeople();
   const { triggerHighlight, navigateAndHighlight } = useUIHighlight();
+
+  // Create a map of case IDs to names for display in plan proposals
+  const casesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    cases.forEach(c => map.set(c.id, c.name));
+    return map;
+  }, [cases]);
 
   // Initialize greeting message
   useEffect(() => {
@@ -1985,6 +1992,7 @@ function ChatBotInner() {
           <div className="mx-auto max-w-[90%]">
             <PlanDisplay
               plan={pendingPlan}
+              casesMap={casesMap}
               onApprove={handleApprovePlan}
               onReject={handleRejectPlan}
               isAwaitingApproval={true}

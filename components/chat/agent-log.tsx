@@ -72,7 +72,18 @@ function StepsIndicator({ stepCount, isProcessing, isExpanded }: StepsIndicatorP
 }
 
 // Helper function to render values based on type
-function renderDetailValue(value: unknown): React.ReactNode {
+function renderDetailValue(value: unknown, key?: string, casesMap?: Map<string, string>): React.ReactNode {
+  // Special handling for case_id - resolve to case name
+  if (key === 'case_id' && typeof value === 'string' && casesMap?.has(value)) {
+    const caseName = casesMap.get(value);
+    return (
+      <div className="mt-0.5 text-foreground">
+        {caseName}
+        <span className="text-muted-foreground ml-1">({value})</span>
+      </div>
+    );
+  }
+
   // Arrays - check if it's a criteria-like array
   if (Array.isArray(value)) {
     // Check if this looks like criteria (objects with isMet, id/label, explanation)
@@ -180,12 +191,13 @@ function renderDetailValue(value: unknown): React.ReactNode {
 
 interface PlanDisplayProps {
   plan: PlanData;
+  casesMap?: Map<string, string>; // case_id -> case_name
   onApprove?: () => void;
   onReject?: (feedback: string) => void;
   isAwaitingApproval?: boolean;
 }
 
-export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: PlanDisplayProps) {
+export function PlanDisplay({ plan, casesMap, onApprove, onReject, isAwaitingApproval }: PlanDisplayProps) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState('');
 
@@ -233,7 +245,7 @@ export function PlanDisplay({ plan, onApprove, onReject, isAwaitingApproval }: P
                       <span className="text-muted-foreground font-semibold uppercase tracking-wide text-[10px]">
                         {k}
                       </span>
-                      {renderDetailValue(v)}
+                      {renderDetailValue(v, k, casesMap)}
                     </div>
                   ))}
                 </div>

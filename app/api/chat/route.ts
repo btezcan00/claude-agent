@@ -1328,7 +1328,8 @@ export async function POST(request: NextRequest) {
           const sharedNames = (c.sharedWith || []).map(s => `${s.userName} (${s.accessLevel})`).join(', ');
           const orgNames = (c.organizations || []).map(o => o.name).join(', ');
           const peopleNames = (c.peopleInvolved || []).map(p => `${p.firstName} ${p.surname}`).join(', ');
-          return `- ${c.name} (${c.id}): ${c.description} (status: ${c.status}, location: ${c.location || 'none'}, ${c.signalCount} signals, owner: ${c.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'}, organizations: ${orgNames || 'none'}, people involved: ${peopleNames || 'none'})`;
+          const signalTypesStr = (c.signalTypes || []).join(', ');
+          return `- ${c.name} (${c.id}): ${c.description} (status: ${c.status}, location: ${c.location || 'none'}, ${c.signalCount} signals, signalTypes: [${signalTypesStr}], owner: ${c.ownerName || 'none'}, practitioners: ${practitionerNames || 'none'}, shared with: ${sharedNames || 'none'}, organizations: ${orgNames || 'none'}, people involved: ${peopleNames || 'none'})`;
         }
       )
       .join('\n');
@@ -1452,6 +1453,7 @@ When you see "[WORKFLOW_BOUNDARY: ...]" in conversation history:
 - Agent proposes: ONLY create_signal ✓ CORRECT
 
 RULE: Only include actions the user EXPLICITLY mentions in their CURRENT message.
+EXCEPTION: When creating a signal, you MAY propose linking to an existing case if the signal's type matches the case's signalTypes (see SMART CASE MATCHING section).
 
 Each new user message is an INDEPENDENT request. When creating a plan:
 - ONLY include actions the user EXPLICITLY requests in their CURRENT message
@@ -1484,6 +1486,37 @@ When a user mentions moving a signal to a case:
 - Use the existing case's ID from the Current Data section
 - Do NOT create a new case when one already exists with the same or similar name
 
+## SMART CASE MATCHING FOR NEW SIGNALS
+
+When proposing to create a signal, AUTOMATICALLY check for matching cases based on signal type:
+
+**Signal Type to Case signalTypes Mapping:**
+- human-trafficking → human_trafficking
+- drug-trafficking → drug_trafficking
+- money-laundering → money_laundering
+- fraud → fraud
+- bogus-scheme → bogus_scheme
+
+**Process:**
+1. When creating a signal, note its type(s)
+2. Convert to underscore format (drug-trafficking → drug_trafficking)
+3. Check Cases in Current Data for matching signalTypes
+4. If match exists, PROPOSE adding signal to that case as step 2
+
+**Example:**
+User: "Create a signal about drug activity at Port Area"
+
+If "Narcotics Operations" case has signalTypes: [drug_trafficking]:
+{
+  "summary": "Create drug trafficking signal and link to Narcotics Operations case",
+  "actions": [
+    { "step": 1, "tool": "create_signal", "action": "Create drug trafficking signal", "details": { ... } },
+    { "step": 2, "tool": "add_signal_to_case", "action": "Link to Narcotics Operations case", "details": { "signal_id": "$step1.signalId", "case_id": "[case ID from Current Data]" } }
+  ]
+}
+
+**When NO matching case:** Create only the signal (single step). Do NOT propose creating a new case unless user explicitly asks.
+
 ## USING EXISTING SIGNALS
 
 When a user mentions "this signal", "the signal", "the latest signal", or refers to a specific signal:
@@ -1499,9 +1532,10 @@ When a user mentions "this signal", "the signal", "the latest signal", or refers
 
 **IMPORTANT:** If lastCreatedSignalId is provided, use it when the user says "this signal" or "the signal" without specifying which one.
 
-## EXAMPLE - Creating a Signal
+## EXAMPLE - Creating a Signal (No Matching Case)
 
 User: "Create a signal about suspicious activity at Main Street"
+(Check Current Data - no case has signalTypes matching "bogus-scheme" or "bogus_scheme")
 
 Your response MUST be to call plan_proposal:
 {
@@ -1515,6 +1549,38 @@ Your response MUST be to call plan_proposal:
         "description": "Suspicious activity reported",
         "types": ["bogus-scheme"],
         "placeOfObservation": "Main Street"
+      }
+    }
+  ]
+}
+
+## EXAMPLE - Creating a Signal (With Matching Case)
+
+User: "Create a signal about drug dealing at Rotterdam Harbor"
+(Check Current Data - "Narcotics Operations" case has signalTypes: [drug_trafficking])
+
+Your response MUST be to call plan_proposal:
+{
+  "summary": "Create drug trafficking signal and link to Narcotics Operations case",
+  "actions": [
+    {
+      "step": 1,
+      "action": "Create signal with type 'drug-trafficking', location 'Rotterdam Harbor'",
+      "tool": "create_signal",
+      "details": {
+        "description": "Drug dealing activity reported at Rotterdam Harbor",
+        "types": ["drug-trafficking"],
+        "placeOfObservation": "Rotterdam Harbor",
+        "receivedBy": "municipal-department"
+      }
+    },
+    {
+      "step": 2,
+      "action": "Add signal to Narcotics Operations case",
+      "tool": "add_signal_to_case",
+      "details": {
+        "signal_id": "$step1.signalId",
+        "case_id": "[USE ACTUAL CASE ID FROM CURRENT DATA]"
       }
     }
   ]
