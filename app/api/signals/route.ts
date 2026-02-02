@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { store } from '@/lib/store';
 import { Signal, CreateSignalInput } from '@/types/signal';
 import { currentUser } from '@/data/mock-users';
-import { generateId, generateSignalNumber } from '@/lib/utils';
+import { generateId, generateSignalId } from '@/lib/utils';
 
 // Validate ISO date strings
 const isValidDate = (dateStr: unknown): boolean => {
@@ -26,9 +26,12 @@ export async function POST(request: NextRequest) {
       ? data.timeOfObservation
       : now;
 
+    // Generate a single ID in GCMP format for both id and signalNumber
+    const signalId = generateSignalId();
+
     const newSignal: Signal = {
-      id: generateId(),
-      signalNumber: generateSignalNumber(),
+      id: signalId,
+      signalNumber: signalId,
       description: data.description,
       types: data.types,
       placeOfObservation: data.placeOfObservation,

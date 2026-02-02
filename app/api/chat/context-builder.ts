@@ -6,7 +6,7 @@
 
 import {
     SignalData,
-    FolderData,
+    CaseData,
     TeamMember,
     OrganizationData,
     AddressData,
@@ -16,13 +16,13 @@ import {
 
 export interface DataContext {
     signalSummary: string;
-    folderSummary: string;
+    caseSummary: string;
     teamSummary: string;
     organizationsSummary: string;
     addressesSummary: string;
     peopleSummary: string;
     signalCount: number;
-    folderCount: number;
+    caseCount: number;
 }
 
 /**
@@ -30,7 +30,7 @@ export interface DataContext {
  */
 export function buildDataContext(
     signals: SignalData[],
-    folders: FolderData[],
+    cases: CaseData[],
     teamMembers: TeamMember[],
     organizations: OrganizationData[],
     addresses: AddressData[],
@@ -43,7 +43,7 @@ export function buildDataContext(
         )
         .join('\n');
 
-    const folderSummary = (folders || [])
+    const caseSummary = (cases || [])
         .map((f) => {
             const practitionerNames = (f.practitioners || []).map((p) => p.userName).join(', ');
             const sharedNames = (f.sharedWith || []).map((s) => `${s.userName} (${s.accessLevel})`).join(', ');
@@ -56,7 +56,7 @@ export function buildDataContext(
     const teamSummary = (teamMembers || [])
         .map(
             (m) =>
-                `- ${m.firstName} ${m.lastName} (${m.id}): ${m.title} - owns ${m.ownedFolderCount} folder(s)`
+                `- ${m.firstName} ${m.lastName} (${m.id}): ${m.title} - owns ${m.ownedCaseCount} case(s)`
         )
         .join('\n');
 
@@ -83,13 +83,13 @@ export function buildDataContext(
 
     return {
         signalSummary,
-        folderSummary,
+        caseSummary,
         teamSummary,
         organizationsSummary,
         addressesSummary,
         peopleSummary,
         signalCount: (signals || []).length,
-        folderCount: (folders || []).length,
+        caseCount: (cases || []).length,
     };
 }
 

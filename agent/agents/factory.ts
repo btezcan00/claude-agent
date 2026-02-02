@@ -2,23 +2,19 @@
  * Agent Factory
  * 
  * Creates and configures agent providers.
- * Supports multiple architectures for different use cases.
+ * Supports Anthropic and Google (state-aware) providers.
  */
 
 import { AgentProvider, AgentConfig, AgentTool } from './base-provider';
 import { AnthropicProvider } from './anthropic-provider';
-import { GoogleADKUnifiedProvider } from './google-provider';
-import { GoogleMultiAgentProvider } from './google-multiagent-provider';
 import { GoogleStateAwareProvider } from './google-stateaware-provider';
 
 /**
  * Provider types:
  * - 'anthropic': Anthropic Claude provider
- * - 'google': Unified Google ADK + MCP provider (simple, direct tool execution)
- * - 'google-workflow': Multi-agent with workflow engine (explicit workflows)
- * - 'google-state': State-aware provider (RECOMMENDED - understands entity lifecycle)
+ * - 'google-state' or 'google': State-aware Google provider (RECOMMENDED for Google)
  */
-export type ProviderType = 'anthropic' | 'google' | 'google-workflow' | 'google-state';
+export type ProviderType = 'anthropic' | 'google-state' | 'google';
 
 export interface AgentFactoryConfig {
     provider: ProviderType;
@@ -49,23 +45,6 @@ export class AgentFactory {
                 );
 
             case 'google':
-                return new GoogleADKUnifiedProvider(
-                    config.agentConfig,
-                    config.tools,
-                    config.apiKey,
-                    config.mcpOptions?.serverCommand,
-                    config.mcpOptions?.serverArgs
-                );
-
-            case 'google-workflow':
-                return new GoogleMultiAgentProvider(
-                    config.agentConfig,
-                    config.tools,
-                    config.apiKey,
-                    config.mcpOptions?.serverCommand,
-                    config.mcpOptions?.serverArgs
-                );
-
             case 'google-state':
                 return new GoogleStateAwareProvider(
                     config.agentConfig,
@@ -87,14 +66,8 @@ export class AgentFactory {
     static async createProviderAsync(config: AgentFactoryConfig): Promise<AgentProvider> {
         const provider = this.createProvider(config);
 
-        // Initialize providers that need async setup
-        if (config.provider === 'google' && provider instanceof GoogleADKUnifiedProvider) {
-            await provider.initialize();
-        }
-        if (config.provider === 'google-workflow' && provider instanceof GoogleMultiAgentProvider) {
-            await provider.initialize();
-        }
-        if (config.provider === 'google-state' && provider instanceof GoogleStateAwareProvider) {
+        // Initialize Google State-Aware provider (needs async MCP connection)
+        if ((config.provider === 'google' || config.provider === 'google-state') && provider instanceof GoogleStateAwareProvider) {
             await provider.initialize();
         }
 
@@ -107,19 +80,10 @@ export class AgentFactory {
     static getProviderFromEnv(): ProviderType {
         const provider = process.env.AGENT_PROVIDER?.toLowerCase();
 
-        // State-aware provider (RECOMMENDED)
-        if (provider === 'google-state' || provider === 'state' || provider === 'state-aware') {
+        // Google state-aware provider (default for Google)
+        if (provider === 'google' || provider === 'google-state' || provider === 'state' ||
+            provider === 'state-aware' || provider === 'gemini' || provider === 'adk') {
             return 'google-state';
-        }
-
-        // Google workflow provider (explicit workflows)
-        if (provider === 'google-workflow' || provider === 'workflow' || provider === 'multi-agent') {
-            return 'google-workflow';
-        }
-
-        // Google provider (simple, direct execution)
-        if (provider === 'google' || provider === 'google-adk' || provider === 'gemini' || provider === 'adk') {
-            return 'google';
         }
 
         return 'anthropic'; // default
@@ -138,7 +102,6 @@ export class AgentFactory {
                 return anthropicKey;
 
             case 'google':
-            case 'google-workflow':
             case 'google-state':
                 const googleKey = process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_API_KEY;
                 if (!googleKey) {
@@ -155,7 +118,7 @@ export class AgentFactory {
      * Check if provider uses MCP
      */
     static usesMcp(provider: ProviderType): boolean {
-        return provider === 'google' || provider === 'google-workflow' || provider === 'google-state';
+        return provider === 'google' || provider === 'google-state';
     }
 }
 

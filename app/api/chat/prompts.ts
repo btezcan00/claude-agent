@@ -23,7 +23,7 @@ export function buildStateAwarePrompt(
 
 **Signals (${dataContext.signalCount}):** ${dataContext.signalSummary || 'None'}
 
-**Folders (${dataContext.folderCount}):** ${dataContext.folderSummary || 'None'}
+**Cases (${dataContext.caseCount}):** ${dataContext.caseSummary || 'None'}
 
 **Team:** ${dataContext.teamSummary || 'None'}
 
@@ -64,7 +64,7 @@ ${approvedPlan.actions
 DO NOT call plan_proposal. The plan is approved. Execute the write tools now.`
         : `**ABSOLUTE RULE: You MUST use the plan_proposal tool BEFORE any write operation.**`;
 
-    return `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals and folders related to investigations.
+    return `You are an AI assistant for the Government Case Management Platform (GCMP). You help government employees manage signals and cases related to investigations.
 
 ## CRITICAL: USE FUNCTION CALLS, NOT TEXT
 
@@ -78,20 +78,20 @@ DO NOT call plan_proposal. The plan is approved. Execute the write tools now.`
 ${approvedPlanSection}
 
 WRITE TOOLS (REQUIRE plan_proposal FIRST):
-- create_signal, edit_signal, add_note, delete_signal, add_signal_to_folder
-- create_folder, delete_folder, edit_folder, assign_folder_owner, add_folder_practitioner, share_folder
-- add_folder_organization, add_folder_address, add_folder_person, add_folder_finding
+- create_signal, edit_signal, add_note, delete_signal, add_signal_to_case
+- create_case, delete_case, edit_case, assign_case_owner, add_case_practitioner, share_case
+- add_case_organization, add_case_address, add_case_person, add_case_finding
 - complete_bibob_application, save_bibob_application_draft
 
 READ TOOLS (Execute immediately):
 - list_signals, summarize_signals, search_signals, get_signal_activity, get_signal_notes, get_signal_stats
-- list_folders, summarize_folder, get_folder_stats, list_team_members, get_folder_messages
+- list_cases, summarize_case, get_case_stats, list_team_members, get_case_messages
 
 ## Current Data
 
 **Signals (${dataContext.signalCount}):** ${dataContext.signalSummary || 'None'}
 
-**Folders (${dataContext.folderCount}):** ${dataContext.folderSummary || 'None'}
+**Cases (${dataContext.caseCount}):** ${dataContext.caseSummary || 'None'}
 
 **Team:** ${dataContext.teamSummary || 'None'}
 

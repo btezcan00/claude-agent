@@ -39,10 +39,10 @@ export interface TeamMember {
     lastName: string;
     title: string;
     role: string;
-    ownedFolderCount: number;
+    ownedCaseCount: number;
 }
 
-export interface FolderStatusDates {
+export interface CaseStatusDates {
     application?: string;
     research?: string;
     national_office?: string;
@@ -50,13 +50,13 @@ export interface FolderStatusDates {
     archive?: string;
 }
 
-export interface FolderPractitioner {
+export interface CasePractitioner {
     userId: string;
     userName: string;
     addedAt: string;
 }
 
-export interface FolderShare {
+export interface CaseShare {
     userId: string;
     userName: string;
     accessLevel: string;
@@ -64,7 +64,7 @@ export interface FolderShare {
     sharedBy: string;
 }
 
-export interface FolderNote {
+export interface CaseNote {
     id: string;
     content: string;
     createdAt: string;
@@ -73,7 +73,7 @@ export interface FolderNote {
     isAdminNote: boolean;
 }
 
-export interface FolderChatMessage {
+export interface CaseChatMessage {
     id: string;
     conversationId: string;
     senderId: string;
@@ -98,7 +98,7 @@ export interface ApplicationData {
     completedBy?: string;
 }
 
-export interface FolderItem {
+export interface CaseItem {
     id: string;
     date: string;
     phase: string;
@@ -109,7 +109,7 @@ export interface FolderItem {
     sourceTheme?: string;
 }
 
-export interface FindingItem extends FolderItem {
+export interface FindingItem extends CaseItem {
     isCompleted: boolean;
     totalSteps?: number;
     completedSteps?: number;
@@ -143,7 +143,7 @@ export interface ActivityItem {
     updatedAt: string;
 }
 
-export interface FolderAttachment {
+export interface CaseAttachment {
     id: string;
     fileName: string;
     fileType: string;
@@ -184,7 +184,7 @@ export interface PersonData {
     bsn?: string;
 }
 
-export interface FolderData {
+export interface CaseData {
     id: string;
     name: string;
     description: string;
@@ -197,26 +197,26 @@ export interface FolderData {
     color?: string;
     icon?: string;
     status: string;
-    statusDates: FolderStatusDates;
+    statusDates: CaseStatusDates;
     tags: string[];
     signalTypes: string[];
-    practitioners: FolderPractitioner[];
-    sharedWith: FolderShare[];
+    practitioners: CasePractitioner[];
+    sharedWith: CaseShare[];
     location: string;
-    notes: FolderNote[];
+    notes: CaseNote[];
     organizations: OrganizationData[];
     addresses: AddressData[];
     peopleInvolved: PersonData[];
     letters: LetterItem[];
     findings: FindingItem[];
-    attachments: FolderItem[];
-    records: FolderItem[];
-    communications: FolderItem[];
-    suggestions: FolderItem[];
-    visualizations: FolderItem[];
+    attachments: CaseItem[];
+    records: CaseItem[];
+    communications: CaseItem[];
+    suggestions: CaseItem[];
+    visualizations: CaseItem[];
     activities: ActivityItem[];
-    fileAttachments: FolderAttachment[];
-    chatMessages: FolderChatMessage[];
+    fileAttachments: CaseAttachment[];
+    chatMessages: CaseChatMessage[];
     applicationData: ApplicationData;
     signalCount: number;
 }
@@ -243,7 +243,7 @@ export interface ApprovedPlan {
 export interface ChatRequestBody {
     messages: Message[];
     signals: SignalData[];
-    folders: FolderData[];
+    cases: CaseData[];
     teamMembers: TeamMember[];
     currentUser?: CurrentUser | null;
     lastCreatedSignalId?: string | null;

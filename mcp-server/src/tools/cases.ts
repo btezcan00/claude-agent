@@ -549,8 +549,8 @@ export function registerCaseTools(server: McpServer): void {
     'create_case',
     'Create a new case for an investigation. REQUIRES CONFIRMATION.',
     {
-      name: z.string().describe('Name of the case'),
-      description: z.string().describe('Description of the case'),
+      name: z.string().optional().describe('Name of the case'),
+      description: z.string().optional().describe('Description of the case'),
       ownerId: z.string().optional().describe('ID of the case owner (team member)'),
       color: z.string().optional().describe('Color for the case (hex value, e.g., #FF5733)'),
       icon: z.string().optional().describe('Icon name for the case'),

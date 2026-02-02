@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const {
       messages,
       signals,
-      folders,
+      cases,
       teamMembers,
       currentUser,
       lastCreatedSignalId,
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Build data context
     const dataContext = buildDataContext(
       signals || [],
-      folders || [],
+      cases || [],
       teamMembers || [],
       organizations || [],
       addresses || [],
@@ -96,7 +96,7 @@ After executing all tools, provide a brief summary of what was accomplished.`,
       provider: providerType,
       apiKey: apiKey as string,
       agentConfig: {
-        model: providerType === 'anthropic' ? 'claude-3-haiku-20240307' : 'gemini-2.0-flash',
+        model: providerType === 'anthropic' ? 'claude-3-haiku-20240307' : 'gemini-2.5-flash',
         systemPrompt,
         maxTokens: 2048,
       },

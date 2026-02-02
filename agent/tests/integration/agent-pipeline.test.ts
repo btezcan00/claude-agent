@@ -133,7 +133,7 @@ function createTestProvider(providerType: ProviderType) {
         provider: providerType,
         apiKey,
         agentConfig: {
-            model: providerType === 'anthropic' ? 'claude-3-haiku-20240307' : 'gemini-2.0-flash',
+            model: providerType === 'anthropic' ? 'claude-3-haiku-20240307' : 'gemini-2.5-flash',
             systemPrompt: SIMPLE_SYSTEM_PROMPT,
             maxTokens: 1024,
         },

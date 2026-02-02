@@ -15,6 +15,16 @@ export function generateSignalNumber(): string {
   return `GCMP-${year}-${random}`;
 }
 
+/**
+ * Generate a signal ID in GCMP format (same as signal number)
+ * Format: GCMP-{year}-{6digits}
+ */
+export function generateSignalId(): string {
+  const year = new Date().getFullYear();
+  const random = Math.floor(Math.random() * 900000) + 100000;
+  return `GCMP-${year}-${random}`;
+}
+
 export function generateCaseId(): string {
   return `case-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
