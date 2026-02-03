@@ -3,17 +3,9 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Bell, Search, Menu, MessageCircle } from 'lucide-react';
+import { UserButton, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useUsers } from '@/context/user-context';
 import { useSignals } from '@/context/signal-context';
 import { useChatDrawer } from '@/context/chat-drawer-context';
@@ -27,16 +19,11 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
-  const { currentUser, getUserInitials, getUserFullName } = useUsers();
+  const { isLoaded } = useUsers();
   const { setSearchQuery, searchQuery } = useSignals();
   const { isOpen: isChatOpen, toggle: toggleChat } = useChatDrawer();
   const [localSearch, setLocalSearch] = useState(searchQuery);
-  const [mounted, setMounted] = useState(false);
   const debouncedSearch = useDebounce(localSearch, 300);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     setSearchQuery(debouncedSearch);
@@ -142,41 +129,26 @@ export function Header({ onMenuClick }: HeaderProps) {
         </Button>
 
         {/* User Menu */}
-        {mounted ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                    {getUserInitials(currentUser)}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{getUserFullName(currentUser)}</p>
-                  <p className="text-xs text-muted-foreground">{currentUser.email}</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                {getUserInitials(currentUser)}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
+        {isLoaded && (
+          <>
+            <SignedIn>
+              <UserButton
+                afterSignOutUrl="/sign-in"
+                appearance={{
+                  elements: {
+                    avatarBox: 'h-9 w-9',
+                  },
+                }}
+              />
+            </SignedIn>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+              </SignInButton>
+            </SignedOut>
+          </>
         )}
       </div>
     </header>

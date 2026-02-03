@@ -1,13 +1,17 @@
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { User, CurrentUser, Team } from '@/types/user';
-import { mockUsers, mockTeams, currentUser } from '@/data/mock-users';
+import { mockUsers, mockTeams } from '@/data/mock-users';
+import { mapClerkUserToCurrentUserClient } from '@/lib/auth';
 
 interface UserContextValue {
-  currentUser: CurrentUser;
+  currentUser: CurrentUser | null;
   users: User[];
   teams: Team[];
+  isLoaded: boolean;
+  isSignedIn: boolean;
   getUserById: (id: string) => User | undefined;
   getTeamById: (id: string) => Team | undefined;
   getUserFullName: (user: User) => string;
@@ -17,7 +21,21 @@ interface UserContextValue {
 const UserContext = createContext<UserContextValue | null>(null);
 
 export function UserProvider({ children }: { children: ReactNode }) {
+  const { user: clerkUser, isLoaded, isSignedIn } = useUser();
+
+  const currentUser = useMemo(() => {
+    if (!isLoaded || !isSignedIn || !clerkUser) {
+      return null;
+    }
+    return mapClerkUserToCurrentUserClient(clerkUser);
+  }, [clerkUser, isLoaded, isSignedIn]);
+
   const getUserById = (id: string): User | undefined => {
+    // First check if it's the current user
+    if (currentUser && currentUser.id === id) {
+      return currentUser;
+    }
+    // Fall back to mock users for other users
     return mockUsers.find((user) => user.id === id);
   };
 
@@ -37,6 +55,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     currentUser,
     users: mockUsers,
     teams: mockTeams,
+    isLoaded,
+    isSignedIn: isSignedIn ?? false,
     getUserById,
     getTeamById,
     getUserFullName,

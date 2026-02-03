@@ -2,16 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useClerk } from '@clerk/nextjs';
 import { cn } from '@/lib/utils';
 import { useUsers } from '@/context/user-context';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import {
   Radio,
   FolderOpen,
   Users,
   Shield,
+  LogOut,
 } from 'lucide-react';
 
 const navigation = [
@@ -27,7 +30,13 @@ interface MobileNavProps {
 
 export function MobileNav({ open, onClose }: MobileNavProps) {
   const pathname = usePathname();
-  const { currentUser, getUserInitials, getUserFullName } = useUsers();
+  const { signOut } = useClerk();
+  const { currentUser, getUserInitials, getUserFullName, isLoaded } = useUsers();
+
+  const handleSignOut = () => {
+    onClose();
+    signOut({ redirectUrl: '/sign-in' });
+  };
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -77,21 +86,47 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
         <Separator />
 
         <div className="p-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-9 h-9 border-2 border-border">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                {getUserInitials(currentUser)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
-                {getUserFullName(currentUser)}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {currentUser.title}
-              </p>
+          {isLoaded && currentUser ? (
+            <div className="flex items-center gap-3">
+              <Avatar className="w-9 h-9 border-2 border-border">
+                {currentUser.avatar && (
+                  <AvatarImage src={currentUser.avatar} alt={getUserFullName(currentUser)} />
+                )}
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                  {getUserInitials(currentUser)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {getUserFullName(currentUser)}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {currentUser.title}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground shrink-0"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Avatar className="w-9 h-9 border-2 border-border">
+                <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
+                  --
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground truncate">
+                  Loading...
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>

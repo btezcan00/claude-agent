@@ -21,9 +21,9 @@ import {
 import { Organization } from '@/types/organization';
 import { Address } from '@/types/address';
 import { Person } from '@/types/person';
-import { currentUser } from '@/data/mock-users';
 import { generateId } from '@/lib/utils';
 import { useSignals } from './signal-context';
+import { useUsers } from './user-context';
 
 interface CaseContextValue {
   cases: Case[];
@@ -154,6 +154,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const { signals, addSignalsToCase } = useSignals();
+  const { currentUser } = useUsers();
 
   // Fetch cases from API on mount
   const fetchCases = useCallback(async () => {
@@ -357,7 +358,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   // Notes
   const addCaseNote = useCallback(async (caseId: string, content: string, isAdminNote: boolean) => {
     const caseItem = cases.find(c => c.id === caseId);
-    if (!caseItem) return;
+    if (!caseItem || !currentUser) return;
 
     const now = new Date().toISOString();
     const newNote: CaseNote = {
@@ -468,6 +469,8 @@ export function CaseProvider({ children }: { children: ReactNode }) {
 
   // Sharing
   const shareCase = useCallback(async (caseId: string, userId: string, userName: string, accessLevel: CaseAccessLevel) => {
+    if (!currentUser) return;
+
     // Fetch the latest case state from the API to avoid race conditions
     const getResponse = await fetch(`/api/cases/${caseId}`);
     if (!getResponse.ok) {
@@ -801,7 +804,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   // Letters
   const addLetter = useCallback(async (caseId: string, item: Pick<LetterItem, 'name' | 'template' | 'description' | 'tags'>): Promise<LetterItem | undefined> => {
     const caseItem = cases.find(c => c.id === caseId);
-    if (!caseItem) return undefined;
+    if (!caseItem || !currentUser) return undefined;
 
     const now = new Date().toISOString();
     const newLetter: LetterItem = {
@@ -1324,7 +1327,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   // Activities
   const addActivity = useCallback(async (caseId: string, item: Omit<ActivityItem, 'id' | 'createdByName' | 'updatedAt'>) => {
     const caseItem = cases.find(c => c.id === caseId);
-    if (!caseItem) return;
+    if (!caseItem || !currentUser) return;
 
     const now = new Date().toISOString();
     const newItem: ActivityItem = {

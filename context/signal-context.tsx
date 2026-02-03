@@ -19,8 +19,8 @@ interface SignalStats {
   total: number;
 }
 import { ViewMode } from '@/types/common';
-import { currentUser } from '@/data/mock-users';
 import { generateId } from '@/lib/utils';
+import { useUsers } from './user-context';
 
 interface SignalContextValue {
   signals: Signal[];
@@ -99,6 +99,8 @@ export function SignalProvider({ children }: { children: ReactNode }) {
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
   const [selectedSignalIds, setSelectedSignalIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const { currentUser } = useUsers();
 
   // Synchronous cache for immediately available signal lookups (bypasses React state timing)
   const signalCacheRef = useRef<Map<string, Signal>>(new Map());
@@ -243,7 +245,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
 
   const addNote = useCallback(async (signalId: string, content: string, isPrivate: boolean = false) => {
     const signal = signals.find(s => s.id === signalId);
-    if (!signal) return;
+    if (!signal || !currentUser) return;
 
     const now = new Date().toISOString();
     const note: SignalNote = {
@@ -290,7 +292,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     photo: Omit<SignalPhoto, 'id' | 'signalId' | 'uploadedAt'>
   ) => {
     const signal = signals.find(s => s.id === signalId);
-    if (!signal) return;
+    if (!signal || !currentUser) return;
 
     const now = new Date().toISOString();
     const newPhoto: SignalPhoto = {
@@ -331,7 +333,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
 
   const removePhoto = useCallback(async (signalId: string, photoId: string) => {
     const signal = signals.find(s => s.id === signalId);
-    if (!signal) return;
+    if (!signal || !currentUser) return;
 
     const photo = signal.photos.find(p => p.id === photoId);
     if (!photo) return;
@@ -371,7 +373,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     attachment: Omit<SignalAttachment, 'id' | 'signalId' | 'uploadedAt'>
   ) => {
     const signal = signals.find(s => s.id === signalId);
-    if (!signal) return;
+    if (!signal || !currentUser) return;
 
     const now = new Date().toISOString();
     const newAttachment: SignalAttachment = {
@@ -412,7 +414,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
 
   const removeAttachment = useCallback(async (signalId: string, attachmentId: string) => {
     const signal = signals.find(s => s.id === signalId);
-    if (!signal) return;
+    if (!signal || !currentUser) return;
 
     const attachment = signal.attachments.find(a => a.id === attachmentId);
     if (!attachment) return;
@@ -449,7 +451,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
 
   const updateIndicators = useCallback(async (signalId: string, indicators: SignalIndicator[]) => {
     const signal = signals.find(s => s.id === signalId);
-    if (!signal) return;
+    if (!signal || !currentUser) return;
 
     const now = new Date().toISOString();
     const activity: ActivityEntry = {

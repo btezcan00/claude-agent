@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useClerk } from '@clerk/nextjs';
 import { cn } from '@/lib/utils';
 import { useUsers } from '@/context/user-context';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Radio,
   FolderOpen,
@@ -28,7 +29,12 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false }: SidebarProps) {
   const pathname = usePathname();
-  const { currentUser, getUserInitials, getUserFullName } = useUsers();
+  const { signOut } = useClerk();
+  const { currentUser, getUserInitials, getUserFullName, isLoaded } = useUsers();
+
+  const handleSignOut = () => {
+    signOut({ redirectUrl: '/sign-in' });
+  };
 
   return (
     <aside
@@ -84,37 +90,63 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
 
       {/* User Section */}
       <div className="p-4">
-        <div
-          className={cn(
-            'flex items-center gap-3',
-            collapsed && 'justify-center'
-          )}
-        >
-          <Avatar className="w-9 h-9 border-2 border-border">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-              {getUserInitials(currentUser)}
-            </AvatarFallback>
-          </Avatar>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {getUserFullName(currentUser)}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {currentUser.title}
-              </p>
-            </div>
-          )}
-          {!collapsed && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground shrink-0"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
+        {isLoaded && currentUser ? (
+          <div
+            className={cn(
+              'flex items-center gap-3',
+              collapsed && 'justify-center'
+            )}
+          >
+            <Avatar className="w-9 h-9 border-2 border-border">
+              {currentUser.avatar && (
+                <AvatarImage src={currentUser.avatar} alt={getUserFullName(currentUser)} />
+              )}
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                {getUserInitials(currentUser)}
+              </AvatarFallback>
+            </Avatar>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {getUserFullName(currentUser)}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {currentUser.title}
+                </p>
+              </div>
+            )}
+            {!collapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground shrink-0"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              'flex items-center gap-3',
+              collapsed && 'justify-center'
+            )}
+          >
+            <Avatar className="w-9 h-9 border-2 border-border">
+              <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
+                --
+              </AvatarFallback>
+            </Avatar>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground truncate">
+                  Loading...
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </aside>
   );
