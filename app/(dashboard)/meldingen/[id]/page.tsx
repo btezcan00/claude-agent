@@ -42,7 +42,7 @@ export default function SignalDetailPage() {
   const handleDelete = async () => {
     if (signal) {
       await deleteSignal(signal.id);
-      router.push('/signals');
+      router.push('/meldingen');
     }
   };
 
@@ -62,15 +62,15 @@ export default function SignalDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <FileText className="w-16 h-16 text-muted-foreground mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Signal Not Found</h2>
+        <h2 className="text-2xl font-bold mb-2">Melding Niet Gevonden</h2>
         <p className="text-muted-foreground mb-4">
-          The signal you&apos;re looking for doesn&apos;t exist or has been removed.
+          De melding die je zoekt bestaat niet of is verwijderd.
         </p>
         <button
-          onClick={() => router.push('/signals')}
+          onClick={() => router.push('/meldingen')}
           className="text-primary hover:underline"
         >
-          Return to Signals
+          Terug naar Meldingen
         </button>
       </div>
     );
@@ -105,20 +105,20 @@ export default function SignalDetailPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Signal</AlertDialogTitle>
+            <AlertDialogTitle>Melding Verwijderen</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this signal? This action cannot be
-              undone. All notes, attachments, and activity history will be
-              permanently removed.
+              Weet je zeker dat je deze melding wilt verwijderen? Deze actie kan niet
+              ongedaan worden gemaakt. Alle notities, bijlagen en activiteitengeschiedenis
+              worden permanent verwijderd.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Verwijderen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

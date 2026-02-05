@@ -19,7 +19,7 @@ export function SignalOverview({ signal }: SignalOverviewProps) {
           <div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
               <Building2 className="w-3 h-3" />
-              Source
+              Bron
             </div>
             <Badge
               variant="outline"
@@ -31,7 +31,7 @@ export function SignalOverview({ signal }: SignalOverviewProps) {
           <div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
               <Clock className="w-3 h-3" />
-              Observed
+              Waargenomen
             </div>
             <p className="text-sm font-medium">
               {formatDateTime(signal.timeOfObservation)}
@@ -40,19 +40,19 @@ export function SignalOverview({ signal }: SignalOverviewProps) {
           <div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
               <Calendar className="w-3 h-3" />
-              Created
+              Aangemaakt
             </div>
             <p className="text-sm font-medium">
               {formatDateTime(signal.createdAt)}
             </p>
             <p className="text-xs text-muted-foreground">
-              by {signal.createdByName}
+              door {signal.createdByName}
             </p>
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
               <RefreshCw className="w-3 h-3" />
-              Updated
+              Gewijzigd
             </div>
             <p className="text-sm font-medium">
               {formatDateTime(signal.updatedAt)}

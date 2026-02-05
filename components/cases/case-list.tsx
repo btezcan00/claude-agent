@@ -23,9 +23,9 @@ export function CaseList() {
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
           <FolderOpen className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold mb-1">No cases found</h3>
+        <h3 className="text-lg font-semibold mb-1">Geen dossiers gevonden</h3>
         <p className="text-sm text-muted-foreground max-w-sm">
-          Create a case to organize your signals.
+          Maak een dossier aan om je meldingen te organiseren.
         </p>
       </div>
     );
@@ -36,11 +36,11 @@ export function CaseList() {
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead>Case</TableHead>
-            <TableHead className="w-[200px]">Description</TableHead>
-            <TableHead className="w-[100px]">Signals</TableHead>
-            <TableHead className="w-[150px]">Owner</TableHead>
-            <TableHead className="w-[120px]">Updated</TableHead>
+            <TableHead>Dossier</TableHead>
+            <TableHead className="w-[200px]">Omschrijving</TableHead>
+            <TableHead className="w-[100px]">Meldingen</TableHead>
+            <TableHead className="w-[150px]">Eigenaar</TableHead>
+            <TableHead className="w-[120px]">Bijgewerkt</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -50,7 +50,7 @@ export function CaseList() {
             return (
               <TableRow key={caseItem.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell>
-                  <Link href={`/cases/${caseItem.id}`} className="flex items-center gap-3">
+                  <Link href={`/dossiers/${caseItem.id}`} className="flex items-center gap-3">
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                       style={{
@@ -90,7 +90,7 @@ export function CaseList() {
                     </div>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      No owner
+                      Geen eigenaar
                     </span>
                   )}
                 </TableCell>

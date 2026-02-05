@@ -60,7 +60,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
   const [placeOfObservation, setPlaceOfObservation] = useState('');
   const [locationDescription, setLocationDescription] = useState('');
   const [timeOfObservation, setTimeOfObservation] = useState('');
-  const [receivedBy, setReceivedBy] = useState<SignalSource>('police');
+  const [receivedBy, setReceivedBy] = useState<SignalSource>('politie');
 
   // Contact person state
   const [addContactPerson, setAddContactPerson] = useState(false);
@@ -142,7 +142,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
     setPlaceOfObservation('');
     setLocationDescription('');
     setTimeOfObservation('');
-    setReceivedBy('police');
+    setReceivedBy('politie');
     setAddContactPerson(false);
     setContactFirstName('');
     setContactLastName('');
@@ -226,7 +226,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
 
     setOpen(false);
     resetForm();
-    router.push(`/signals/${newSignal.id}`);
+    router.push(`/meldingen/${newSignal.id}`);
   };
 
   const isFormValid =
@@ -245,22 +245,22 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
         {children || (
           <Button>
             <Plus className="w-4 h-4 mr-2" />
-            New Signal
+            Nieuwe Melding
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Signal</DialogTitle>
+          <DialogTitle>Nieuwe Melding Aanmaken</DialogTitle>
           <DialogDescription>
-            Enter the details for the new signal. All fields marked with * are required.
+            Vul de gegevens in voor de nieuwe melding. Alle velden met * zijn verplicht.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             {/* Signal Types - Multi-select */}
             <div className="grid gap-2">
-              <Label>Signal Type(s) *</Label>
+              <Label>Meldingtype(s) *</Label>
               <div className="flex flex-wrap gap-2">
                 {SIGNAL_TYPES.map((type) => (
                   <button
@@ -279,7 +279,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
                 ))}
               </div>
               {selectedTypes.length === 0 && (
-                <p className="text-xs text-muted-foreground">Select at least one signal type</p>
+                <p className="text-xs text-muted-foreground">Selecteer minimaal één meldingtype</p>
               )}
             </div>
 
@@ -287,7 +287,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
             <div className="grid gap-2">
               <Label className="flex items-center gap-2">
                 <Camera className="w-4 h-4" />
-                Photos ({photos.length}/{MAX_PHOTOS})
+                Foto's ({photos.length}/{MAX_PHOTOS})
               </Label>
               <div className="flex flex-wrap gap-2">
                 {photos.map((photo, index) => (
@@ -324,14 +324,14 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
                 onChange={handlePhotoSelect}
                 className="hidden"
               />
-              <p className="text-xs text-muted-foreground">Max {MAX_PHOTOS} photos, 1MB each. Supported: JPEG, PNG, GIF, WebP</p>
+              <p className="text-xs text-muted-foreground">Max {MAX_PHOTOS} foto's, 1MB per stuk. Ondersteund: JPEG, PNG, GIF, WebP</p>
             </div>
 
             {/* Attachments Upload */}
             <div className="grid gap-2">
               <Label className="flex items-center gap-2">
                 <Paperclip className="w-4 h-4" />
-                Attachments ({attachments.length}/{MAX_ATTACHMENTS})
+                Bijlagen ({attachments.length}/{MAX_ATTACHMENTS})
               </Label>
               <div className="space-y-2">
                 {attachments.map((attachment, index) => (
@@ -356,7 +356,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
                     onClick={() => attachmentInputRef.current?.click()}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Attachment
+                    Bijlage Toevoegen
                   </Button>
                 )}
               </div>
@@ -368,15 +368,15 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
                 onChange={handleAttachmentSelect}
                 className="hidden"
               />
-              <p className="text-xs text-muted-foreground">Max {MAX_ATTACHMENTS} documents, 1MB each. Supported: PDF, Word, Excel, Text, CSV</p>
+              <p className="text-xs text-muted-foreground">Max {MAX_ATTACHMENTS} documenten, 1MB per stuk. Ondersteund: PDF, Word, Excel, Tekst, CSV</p>
             </div>
 
             {/* Place of Observation */}
             <div className="grid gap-2">
-              <Label htmlFor="placeOfObservation">Place of Observation (Address) *</Label>
+              <Label htmlFor="placeOfObservation">Plaats van Waarneming (Adres) *</Label>
               <Input
                 id="placeOfObservation"
-                placeholder="Enter the address where the observation was made"
+                placeholder="Voer het adres in waar de waarneming is gedaan"
                 value={placeOfObservation}
                 onChange={(e) => setPlaceOfObservation(e.target.value)}
                 required
@@ -385,10 +385,10 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
 
             {/* Location Description */}
             <div className="grid gap-2">
-              <Label htmlFor="locationDescription">Location Description</Label>
+              <Label htmlFor="locationDescription">Locatieomschrijving</Label>
               <Textarea
                 id="locationDescription"
-                placeholder="Additional details about the location (landmarks, building description, etc.)"
+                placeholder="Aanvullende details over de locatie (herkenningspunten, gebouwomschrijving, etc.)"
                 value={locationDescription}
                 onChange={(e) => setLocationDescription(e.target.value)}
                 rows={2}
@@ -397,7 +397,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
 
             {/* Time of Observation */}
             <div className="grid gap-2">
-              <Label htmlFor="timeOfObservation">Time of Observation *</Label>
+              <Label htmlFor="timeOfObservation">Tijdstip van Waarneming *</Label>
               <Input
                 id="timeOfObservation"
                 type="datetime-local"
@@ -409,10 +409,10 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
 
             {/* Description */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description">Omschrijving *</Label>
               <Textarea
                 id="description"
-                placeholder="Describe what was observed in detail"
+                placeholder="Beschrijf in detail wat er is waargenomen"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
@@ -422,13 +422,13 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
 
             {/* Received By */}
             <div className="grid gap-2">
-              <Label htmlFor="receivedBy">Signal Received By *</Label>
+              <Label htmlFor="receivedBy">Melding Ontvangen Via *</Label>
               <Select
                 value={receivedBy}
                 onValueChange={(value: SignalSource) => setReceivedBy(value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select source" />
+                  <SelectValue placeholder="Selecteer bron" />
                 </SelectTrigger>
                 <SelectContent>
                   {SIGNAL_SOURCES.map((source) => (
@@ -445,7 +445,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
               <div className="flex items-center justify-between">
                 <Label htmlFor="add-contact" className="flex items-center gap-2 cursor-pointer">
                   <User className="w-4 h-4" />
-                  Add Contact Person
+                  Contactpersoon Toevoegen
                 </Label>
                 <Switch
                   id="add-contact"
@@ -458,22 +458,22 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
                 <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="contactFirstName">First Name *</Label>
+                      <Label htmlFor="contactFirstName">Voornaam *</Label>
                       <Input
                         id="contactFirstName"
                         value={contactFirstName}
                         onChange={(e) => setContactFirstName(e.target.value)}
-                        placeholder="First name"
+                        placeholder="Voornaam"
                         required={addContactPerson}
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="contactLastName">Last Name *</Label>
+                      <Label htmlFor="contactLastName">Achternaam *</Label>
                       <Input
                         id="contactLastName"
                         value={contactLastName}
                         onChange={(e) => setContactLastName(e.target.value)}
-                        placeholder="Last name"
+                        placeholder="Achternaam"
                         required={addContactPerson}
                       />
                     </div>
@@ -481,17 +481,17 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="contactEmail">Email</Label>
+                      <Label htmlFor="contactEmail">E-mail</Label>
                       <Input
                         id="contactEmail"
                         type="email"
                         value={contactEmail}
                         onChange={(e) => setContactEmail(e.target.value)}
-                        placeholder="email@example.com"
+                        placeholder="email@voorbeeld.nl"
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="contactPhone">Phone Number</Label>
+                      <Label htmlFor="contactPhone">Telefoonnummer</Label>
                       <Input
                         id="contactPhone"
                         type="tel"
@@ -509,7 +509,7 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
                       onCheckedChange={(checked) => setContactWantsFeedback(checked === true)}
                     />
                     <Label htmlFor="wantsFeedback" className="text-sm cursor-pointer">
-                      Contact person wants to receive feedback via email
+                      Contactpersoon wil feedback ontvangen via e-mail
                     </Label>
                   </div>
                 </div>
@@ -519,10 +519,10 @@ export function SignalCreateDialog({ children }: SignalCreateDialogProps) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              Annuleren
             </Button>
             <Button type="submit" disabled={!isFormValid}>
-              Create Signal
+              Melding Aanmaken
             </Button>
           </DialogFooter>
         </form>

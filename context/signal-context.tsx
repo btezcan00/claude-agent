@@ -516,7 +516,7 @@ export function SignalProvider({ children }: { children: ReactNode }) {
     if (!signal) return;
     if (!signal.caseRelations.some(cr => cr.caseId === caseId)) return;
 
-    const response = await fetch(`/api/cases/${caseId}/signals/${signalId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}/signals/${signalId}`, {
       method: 'DELETE',
     });
 

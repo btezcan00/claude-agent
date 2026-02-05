@@ -51,11 +51,11 @@ export function CasePeopleInvolved({ caseItem }: CasePeopleInvolvedProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            <CardTitle>People Involved</CardTitle>
+            <CardTitle>Betrokken Personen</CardTitle>
           </div>
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-1" />
-            Add
+            Toevoegen
           </Button>
         </div>
       </CardHeader>
@@ -63,18 +63,18 @@ export function CasePeopleInvolved({ caseItem }: CasePeopleInvolvedProps) {
         {people.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No people associated with this case.</p>
-            <p className="text-sm mt-1">Click &quot;Add&quot; to associate people.</p>
+            <p>Geen personen gekoppeld aan dit dossier.</p>
+            <p className="text-sm mt-1">Klik op &quot;Toevoegen&quot; om personen te koppelen.</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>First name</TableHead>
-                <TableHead>Surname</TableHead>
-                <TableHead>Date of birth</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead>Voornaam</TableHead>
+                <TableHead>Achternaam</TableHead>
+                <TableHead>Geboortedatum</TableHead>
+                <TableHead>Adres</TableHead>
+                <TableHead>Omschrijving</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>

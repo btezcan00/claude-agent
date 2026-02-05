@@ -62,7 +62,7 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
       ownerId: undefined,
       color: undefined,
     });
-    router.push(`/cases/${newCase.id}`);
+    router.push(`/dossiers/${newCase.id}`);
   };
 
   return (
@@ -71,18 +71,18 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
         {children || (
           <Button>
             <Plus className="w-4 h-4 mr-2" />
-            New Case
+            Nieuw Dossier
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Create New Case</DialogTitle>
+          <DialogTitle>Nieuw Dossier Aanmaken</DialogTitle>
           <DialogDescription>
-            Create a case to organize your signals.
+            Maak een dossier aan om je meldingen te organiseren.
             {signalIds && signalIds.length > 0 && (
               <span className="block mt-1 text-primary">
-                {signalIds.length} signal(s) will be added to this case.
+                {signalIds.length} melding(en) worden aan dit dossier toegevoegd.
               </span>
             )}
           </DialogDescription>
@@ -90,10 +90,10 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">Naam *</Label>
               <Input
                 id="name"
-                placeholder="Enter case name"
+                placeholder="Voer dossiernaam in"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -103,10 +103,10 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Omschrijving</Label>
               <Textarea
                 id="description"
-                placeholder="Enter case description"
+                placeholder="Voer dossieromschrijving in"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -116,7 +116,7 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
             </div>
 
             <div className="grid gap-2">
-              <Label>Color</Label>
+              <Label>Kleur</Label>
               <div className="flex flex-wrap gap-2">
                 {CASE_COLORS.map((color) => (
                   <button
@@ -142,7 +142,7 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
                     'w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center transition-transform hover:scale-110',
                     !formData.color && 'ring-2 ring-offset-2 ring-primary'
                   )}
-                  title="No color"
+                  title="Geen kleur"
                 >
                   {!formData.color && (
                     <Check className="w-4 h-4 text-muted-foreground" />
@@ -152,7 +152,7 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="owner">Owner</Label>
+              <Label htmlFor="owner">Eigenaar</Label>
               <Select
                 value={formData.ownerId || 'none'}
                 onValueChange={(value) =>
@@ -163,10 +163,10 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select owner" />
+                  <SelectValue placeholder="Selecteer eigenaar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No owner</SelectItem>
+                  <SelectItem value="none">Geen eigenaar</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {getUserFullName(user)}
@@ -178,10 +178,10 @@ export function CaseCreateDialog({ children, signalIds }: CaseCreateDialogProps)
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              Annuleren
             </Button>
             <Button type="submit" disabled={!formData.name.trim()}>
-              Create Case
+              Dossier Aanmaken
             </Button>
           </DialogFooter>
         </form>

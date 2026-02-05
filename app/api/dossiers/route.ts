@@ -4,7 +4,7 @@ import { Case, CreateCaseInput, APPLICATION_CRITERIA } from '@/types/case';
 import { requireAuth, getServerUserId } from '@/lib/auth-server';
 import { generateCaseId } from '@/lib/utils';
 
-// GET /api/cases - Get all cases
+// GET /api/dossiers - Get all dossiers
 export async function GET() {
   const userId = await getServerUserId();
   if (!userId) {
@@ -15,7 +15,7 @@ export async function GET() {
   return NextResponse.json(cases);
 }
 
-// POST /api/cases - Create a new case
+// POST /api/dossiers - Create a new dossier
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
     return NextResponse.json(
-      { error: 'Failed to create case' },
+      { error: 'Dossier aanmaken mislukt' },
       { status: 400 }
     );
   }

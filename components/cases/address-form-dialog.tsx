@@ -28,40 +28,40 @@ import { Search } from 'lucide-react';
 // Mock postal code address data for lookup
 const POSTAL_CODE_ADDRESSES: Record<string, { street: string; city: string; propertyType: string }[]> = {
   '1011': [
-    { street: 'Kerkstraat 1', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Kerkstraat 15', city: 'Amsterdam', propertyType: 'Private' },
-    { street: 'Kerkstraat 123', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Nieuwmarkt 4', city: 'Amsterdam', propertyType: 'Commercial' },
+    { street: 'Kerkstraat 1', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Kerkstraat 15', city: 'Amsterdam', propertyType: 'Particulier' },
+    { street: 'Kerkstraat 123', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Nieuwmarkt 4', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
   ],
   '1012': [
-    { street: 'Damrak 1', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Damrak 45', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Rokin 92', city: 'Amsterdam', propertyType: 'Commercial' },
+    { street: 'Damrak 1', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Damrak 45', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Rokin 92', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
   ],
   '1016': [
-    { street: 'Prinsengracht 100', city: 'Amsterdam', propertyType: 'Private' },
-    { street: 'Prinsengracht 456', city: 'Amsterdam', propertyType: 'Private' },
-    { street: 'Herengracht 234', city: 'Amsterdam', propertyType: 'Commercial' },
+    { street: 'Prinsengracht 100', city: 'Amsterdam', propertyType: 'Particulier' },
+    { street: 'Prinsengracht 456', city: 'Amsterdam', propertyType: 'Particulier' },
+    { street: 'Herengracht 234', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
   ],
   '1054': [
-    { street: 'Vondelstraat 89', city: 'Amsterdam', propertyType: 'Private' },
+    { street: 'Vondelstraat 89', city: 'Amsterdam', propertyType: 'Particulier' },
     { street: 'Overtoom 156', city: 'Amsterdam', propertyType: '-' },
-    { street: 'Eerste Constantijn Huygensstraat 20', city: 'Amsterdam', propertyType: 'Private' },
+    { street: 'Eerste Constantijn Huygensstraat 20', city: 'Amsterdam', propertyType: 'Particulier' },
   ],
   '1072': [
-    { street: 'Ferdinand Bolstraat 34', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Albert Cuypstraat 67', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Van Woustraat 150', city: 'Amsterdam', propertyType: 'Private' },
+    { street: 'Ferdinand Bolstraat 34', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Albert Cuypstraat 67', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Van Woustraat 150', city: 'Amsterdam', propertyType: 'Particulier' },
   ],
   '1094': [
-    { street: 'Javastraat 45', city: 'Amsterdam', propertyType: 'Private' },
-    { street: 'Javastraat 100', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Molukkenstraat 12', city: 'Amsterdam', propertyType: 'Private' },
+    { street: 'Javastraat 45', city: 'Amsterdam', propertyType: 'Particulier' },
+    { street: 'Javastraat 100', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Molukkenstraat 12', city: 'Amsterdam', propertyType: 'Particulier' },
   ],
   '1013': [
-    { street: 'Haarlemmerstraat 78', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Haarlemmerstraat 120', city: 'Amsterdam', propertyType: 'Commercial' },
-    { street: 'Brouwersgracht 50', city: 'Amsterdam', propertyType: 'Private' },
+    { street: 'Haarlemmerstraat 78', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Haarlemmerstraat 120', city: 'Amsterdam', propertyType: 'Bedrijfspand' },
+    { street: 'Brouwersgracht 50', city: 'Amsterdam', propertyType: 'Particulier' },
   ],
 };
 
@@ -165,11 +165,11 @@ export function AddressFormDialog({
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editMode ? 'Edit address' : 'Add new address'}</DialogTitle>
+          <DialogTitle>{editMode ? 'Adres Bewerken' : 'Nieuw Adres Toevoegen'}</DialogTitle>
           <DialogDescription>
             {editMode
-              ? 'View and edit the address details.'
-              : 'Add a new address to the global register.'}
+              ? 'Bekijk en bewerk de adresgegevens.'
+              : 'Voeg een nieuw adres toe aan het globale register.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -177,11 +177,11 @@ export function AddressFormDialog({
           {/* Postal Code with Lookup */}
           {!editMode && (
             <div className="space-y-2">
-              <Label htmlFor="address-postal">Postal code</Label>
+              <Label htmlFor="address-postal">Postcode</Label>
               <div className="flex gap-2">
                 <Input
                   id="address-postal"
-                  placeholder="e.g. 1011 AB"
+                  placeholder="bijv. 1011 AB"
                   value={postalCode}
                   onChange={(e) => {
                     setPostalCode(e.target.value);
@@ -196,7 +196,7 @@ export function AddressFormDialog({
                   disabled={postalCode.length < 4 || isConsulting}
                 >
                   <Search className="w-4 h-4 mr-1" />
-                  {isConsulting ? 'Searching...' : 'Consult sources'}
+                  {isConsulting ? 'Zoeken...' : 'Bronnen raadplegen'}
                 </Button>
               </div>
 
@@ -204,7 +204,7 @@ export function AddressFormDialog({
               {showSuggestions && addressSuggestions.length > 0 && (
                 <div className="border rounded-md bg-background shadow-sm">
                   <div className="p-2 text-sm text-muted-foreground border-b">
-                    Select an address:
+                    Selecteer een adres:
                   </div>
                   <div className="max-h-[150px] overflow-y-auto">
                     {addressSuggestions.map((suggestion, index) => (
@@ -224,7 +224,7 @@ export function AddressFormDialog({
 
               {showSuggestions && addressSuggestions.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  No addresses found for this postal code. Enter the address manually below.
+                  Geen adressen gevonden voor deze postcode. Voer het adres hieronder handmatig in.
                 </p>
               )}
             </div>
@@ -232,10 +232,10 @@ export function AddressFormDialog({
 
           {/* Street Address */}
           <div className="space-y-2">
-            <Label htmlFor="address-street">Address *</Label>
+            <Label htmlFor="address-street">Adres *</Label>
             <Input
               id="address-street"
-              placeholder="Street name, house number, postal code, city"
+              placeholder="Straatnaam, huisnummer, postcode, stad"
               value={street}
               onChange={(e) => setStreet(e.target.value)}
             />
@@ -243,10 +243,10 @@ export function AddressFormDialog({
 
           {/* Building Type */}
           <div className="space-y-2">
-            <Label htmlFor="address-type">Property type</Label>
+            <Label htmlFor="address-type">Pandtype</Label>
             <Select value={buildingType} onValueChange={setBuildingType}>
               <SelectTrigger id="address-type">
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder="Selecteer type" />
               </SelectTrigger>
               <SelectContent>
                 {BUILDING_TYPES.map((type) => (
@@ -260,7 +260,7 @@ export function AddressFormDialog({
 
           {/* Active Toggle */}
           <div className="flex items-center justify-between">
-            <Label htmlFor="address-active">Current</Label>
+            <Label htmlFor="address-active">Actueel</Label>
             <Switch
               id="address-active"
               checked={isActive}
@@ -270,10 +270,10 @@ export function AddressFormDialog({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="address-description">Description</Label>
+            <Label htmlFor="address-description">Omschrijving</Label>
             <Textarea
               id="address-description"
-              placeholder="Brief description of the address..."
+              placeholder="Korte omschrijving van het adres..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -283,13 +283,13 @@ export function AddressFormDialog({
 
         <DialogFooter className="border-t pt-4 mt-4">
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            Annuleren
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!isValid || isSubmitting}
           >
-            {isSubmitting ? (editMode ? 'Saving...' : 'Adding...') : (editMode ? 'Save' : 'Add address')}
+            {isSubmitting ? (editMode ? 'Opslaan...' : 'Toevoegen...') : (editMode ? 'Opslaan' : 'Adres Toevoegen')}
           </Button>
         </DialogFooter>
       </DialogContent>

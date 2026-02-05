@@ -90,9 +90,9 @@ export function AddOrganizationDialog({
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="w-[80vw] max-w-none sm:max-w-none max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Add Organization to Case</DialogTitle>
+            <DialogTitle>Organisatie Toevoegen aan Dossier</DialogTitle>
             <DialogDescription>
-              Search existing organizations or add a new one to: {caseItem.name}
+              Zoek bestaande organisaties of voeg een nieuwe toe aan: {caseItem.name}
             </DialogDescription>
           </DialogHeader>
 
@@ -100,7 +100,7 @@ export function AddOrganizationDialog({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search organizations by name, address, or type..."
+              placeholder="Zoek organisaties op naam, adres of type..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -114,17 +114,17 @@ export function AddOrganizationDialog({
                 <Building2 className="w-12 h-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
                   {availableOrganizations.length === 0
-                    ? 'All organizations are already in this case'
-                    : 'No organizations match your search'}
+                    ? 'Alle organisaties zijn al toegevoegd aan dit dossier'
+                    : 'Geen organisaties gevonden voor uw zoekopdracht'}
                 </p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Naam</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Address</TableHead>
+                    <TableHead>Adres</TableHead>
                     <TableHead className="w-[100px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -150,7 +150,7 @@ export function AddOrganizationDialog({
                           }}
                         >
                           <Plus className="w-4 h-4 mr-1" />
-                          Add
+                          Toevoegen
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -170,10 +170,10 @@ export function AddOrganizationDialog({
               }}
             >
               <Plus className="w-4 h-4 mr-1" />
-              Add new organization
+              Nieuwe organisatie toevoegen
             </Button>
             <Button variant="outline" onClick={handleClose}>
-              Close
+              Sluiten
             </Button>
           </div>
         </DialogContent>

@@ -26,7 +26,7 @@ export function SignalCard({ signal }: SignalCardProps) {
     .filter(Boolean);
 
   return (
-    <Link href={`/signals/${signal.id}`}>
+    <Link href={`/meldingen/${signal.id}`}>
       <Card className={cn(
         "h-full hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-transparent hover:border-l-primary",
         highlighted && "animate-ui-highlight"
@@ -86,7 +86,7 @@ export function SignalCard({ signal }: SignalCardProps) {
 
             <div className="flex items-center gap-1.5">
               <Clock className="w-3 h-3" />
-              <span>Observed: {formatDateTime(signal.timeOfObservation)}</span>
+              <span>Waargenomen: {formatDateTime(signal.timeOfObservation)}</span>
             </div>
           </div>
 

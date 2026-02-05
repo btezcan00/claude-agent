@@ -13,9 +13,9 @@ import { Button } from '@/components/ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 const sortOptions: { field: SortField; label: string }[] = [
-  { field: 'createdAt', label: 'Created Date' },
-  { field: 'updatedAt', label: 'Updated Date' },
-  { field: 'timeOfObservation', label: 'Observation Time' },
+  { field: 'createdAt', label: 'Aanmaakdatum' },
+  { field: 'updatedAt', label: 'Wijzigingsdatum' },
+  { field: 'timeOfObservation', label: 'Waarnemingstijd' },
 ];
 
 export function SignalSort() {
@@ -36,7 +36,7 @@ export function SignalSort() {
     <div className="flex items-center gap-2">
       <Select value={sortOption.field} onValueChange={handleFieldChange}>
         <SelectTrigger className="w-[160px] h-9">
-          <SelectValue placeholder="Sort by" />
+          <SelectValue placeholder="Sorteren op" />
         </SelectTrigger>
         <SelectContent>
           {sortOptions.map((option) => (

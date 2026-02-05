@@ -55,7 +55,7 @@ export default function CaseDetailPage() {
   const handleDelete = async () => {
     if (caseItem) {
       await deleteCase(caseItem.id);
-      router.push('/cases');
+      router.push('/dossiers');
     }
   };
 
@@ -75,15 +75,15 @@ export default function CaseDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <FolderOpen className="w-16 h-16 text-muted-foreground mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Case Not Found</h2>
+        <h2 className="text-2xl font-bold mb-2">Dossier Niet Gevonden</h2>
         <p className="text-muted-foreground mb-4">
-          The case you&apos;re looking for doesn&apos;t exist or has been removed.
+          Het dossier dat je zoekt bestaat niet of is verwijderd.
         </p>
         <button
-          onClick={() => router.push('/cases')}
+          onClick={() => router.push('/dossiers')}
           className="text-primary hover:underline"
         >
-          Return to Cases
+          Terug naar Dossiers
         </button>
       </div>
     );
@@ -107,14 +107,14 @@ export default function CaseDetailPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <ClipboardList className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Application Pending</h2>
+            <h2 className="text-xl font-semibold mb-2">Aanvraag In Behandeling</h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              This case is in the application phase. Complete the Bibob test application
-              to access case details and start research.
+              Dit dossier is in de aanvraagfase. Voltooi de Bibob-toetsaanvraag
+              om toegang te krijgen tot dossierdetails en het onderzoek te starten.
             </p>
             <Button onClick={() => setApplicationDialogOpen(true)}>
               <ClipboardList className="w-4 h-4 mr-2" />
-              Complete Application
+              Aanvraag Voltooien
             </Button>
           </CardContent>
         </Card>
@@ -134,14 +134,14 @@ export default function CaseDetailPage() {
               {/* Signals in Case */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Signals</h2>
+                  <h2 className="text-lg font-semibold">Meldingen</h2>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setAddSignalsDialogOpen(true)}
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Add
+                    Toevoegen
                   </Button>
                 </div>
                 <CaseSignalsList caseItem={caseItem} />
@@ -170,20 +170,20 @@ export default function CaseDetailPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Case</AlertDialogTitle>
+            <AlertDialogTitle>Dossier Verwijderen</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this case? This action cannot be
-              undone. Signals in this case will not be deleted, only removed
-              from this case.
+              Weet je zeker dat je dit dossier wilt verwijderen? Deze actie kan niet
+              ongedaan worden gemaakt. Meldingen in dit dossier worden niet verwijderd,
+              alleen losgekoppeld van dit dossier.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Verwijderen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

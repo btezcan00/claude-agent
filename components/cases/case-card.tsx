@@ -22,7 +22,7 @@ export function CaseCard({ caseItem }: CaseCardProps) {
   const highlighted = isHighlighted('case', caseItem.id);
 
   return (
-    <Link href={`/cases/${caseItem.id}`}>
+    <Link href={`/dossiers/${caseItem.id}`}>
       <Card className={cn(
         "h-full hover:shadow-md transition-shadow cursor-pointer border-l-4",
         highlighted && "animate-ui-highlight"
@@ -46,7 +46,7 @@ export function CaseCard({ caseItem }: CaseCardProps) {
                   {caseItem.name}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {signalCount} {signalCount === 1 ? 'signal' : 'signals'}
+                  {signalCount} {signalCount === 1 ? 'melding' : 'meldingen'}
                 </p>
               </div>
             </div>
@@ -75,7 +75,7 @@ export function CaseCard({ caseItem }: CaseCardProps) {
             ) : (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <User className="w-3 h-3" />
-                <span>No owner</span>
+                <span>Geen eigenaar</span>
               </div>
             )}
             <span className="text-xs text-muted-foreground">

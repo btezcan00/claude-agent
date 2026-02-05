@@ -53,7 +53,7 @@ export function CaseItemSection({
         </CardHeader>
         <CardContent className="space-y-4">
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No {title.toLowerCase()} added</p>
+            <p className="text-sm text-muted-foreground">Geen {title.toLowerCase()} toegevoegd</p>
           ) : (
             <div className="space-y-3">
               {items.map((item) => (
@@ -100,7 +100,7 @@ export function CaseItemSection({
         onClose={() => setDialogOpen(false)}
         onAdd={onAdd}
         currentPhase={caseItem.status}
-        title={`Add ${title.toLowerCase().replace(/s$/, '')}`}
+        title={`${title.replace(/s$/, '')} Toevoegen`}
       />
     </>
   );

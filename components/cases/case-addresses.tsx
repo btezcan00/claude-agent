@@ -41,11 +41,11 @@ export function CaseAddresses({ caseItem }: CaseAddressesProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Home className="w-5 h-5" />
-            <CardTitle>Known Addresses</CardTitle>
+            <CardTitle>Bekende Adressen</CardTitle>
           </div>
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-1" />
-            Add
+            Toevoegen
           </Button>
         </div>
       </CardHeader>
@@ -53,17 +53,17 @@ export function CaseAddresses({ caseItem }: CaseAddressesProps) {
         {addresses.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Home className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No addresses associated with this case.</p>
-            <p className="text-sm mt-1">Click &quot;Add&quot; to associate addresses.</p>
+            <p>Geen adressen gekoppeld aan dit dossier.</p>
+            <p className="text-sm mt-1">Klik op &quot;Toevoegen&quot; om adressen te koppelen.</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Address</TableHead>
-                <TableHead>Property type</TableHead>
-                <TableHead>Current</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead>Adres</TableHead>
+                <TableHead>Type pand</TableHead>
+                <TableHead>Huidig</TableHead>
+                <TableHead>Omschrijving</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -76,7 +76,7 @@ export function CaseAddresses({ caseItem }: CaseAddressesProps) {
                 >
                   <TableCell className="font-medium">{addr.street}</TableCell>
                   <TableCell>{addr.buildingType}</TableCell>
-                  <TableCell>{addr.isActive ? 'Yes' : 'No'}</TableCell>
+                  <TableCell>{addr.isActive ? 'Ja' : 'Nee'}</TableCell>
                   <TableCell className="max-w-[200px] truncate">
                     {addr.description || '-'}
                   </TableCell>

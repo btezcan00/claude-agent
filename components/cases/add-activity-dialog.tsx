@@ -37,7 +37,7 @@ export function AddActivityDialog({ open, onClose, onAdd, currentPhase }: AddAct
   useEffect(() => {
     if (open) {
       const now = new Date();
-      const formatted = now.toLocaleDateString('en-GB', {
+      const formatted = now.toLocaleDateString('nl-NL', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -69,18 +69,18 @@ export function AddActivityDialog({ open, onClose, onAdd, currentPhase }: AddAct
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add activity</DialogTitle>
+          <DialogTitle>Activiteit Toevoegen</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* Date */}
           <div className="space-y-2">
-            <Label className="text-muted-foreground">Date</Label>
+            <Label className="text-muted-foreground">Datum</Label>
             <Input value={date} readOnly className="bg-muted" />
           </div>
 
           {/* Phase */}
           <div className="space-y-2">
-            <Label className="text-muted-foreground">Phase</Label>
+            <Label className="text-muted-foreground">Fase</Label>
             <Select value={phase} onValueChange={(value) => setPhase(value as CaseStatus)}>
               <SelectTrigger>
                 <SelectValue />
@@ -103,19 +103,19 @@ export function AddActivityDialog({ open, onClose, onAdd, currentPhase }: AddAct
             <Input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Enter label"
+              placeholder="Voer label in"
             />
           </div>
 
           {/* Description */}
           <div className="space-y-2">
             <Label>
-              Description <span className="text-destructive">*</span>
+              Omschrijving <span className="text-destructive">*</span>
             </Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Please provide a full description"
+              placeholder="Geef een volledige omschrijving"
               rows={4}
             />
           </div>
@@ -123,7 +123,7 @@ export function AddActivityDialog({ open, onClose, onAdd, currentPhase }: AddAct
 
         <div className="flex justify-end">
           <Button onClick={handleSubmit} disabled={!isValid}>
-            Add
+            Toevoegen
           </Button>
         </div>
       </DialogContent>

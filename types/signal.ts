@@ -1,16 +1,16 @@
 export type SignalType =
-  | 'bogus-scheme'
-  | 'human-trafficking'
-  | 'drug-trafficking'
-  | 'bibob-research'
-  | 'money-laundering';
+  | 'malafide-constructie'
+  | 'mensenhandel'
+  | 'drugshandel'
+  | 'bibob-onderzoek'
+  | 'witwassen';
 
 export type SignalSource =
-  | 'police'
-  | 'bibob-request'
-  | 'anonymous-report'
-  | 'municipal-department'
-  | 'other';
+  | 'politie'
+  | 'bibob-aanvraag'
+  | 'anonieme-melding'
+  | 'gemeentelijke-afdeling'
+  | 'overig';
 
 export interface ContactPerson {
   firstName: string;

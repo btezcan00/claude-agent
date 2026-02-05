@@ -7,7 +7,7 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// PUT /api/cases/:id/application - Submit/update application form data
+// PUT /api/dossiers/:id/application - Submit/update application form data
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
@@ -22,7 +22,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const caseItem = store.getCaseById(id);
     if (!caseItem) {
       return NextResponse.json(
-        { error: 'Case not found' },
+        { error: 'Dossier niet gevonden' },
         { status: 404 }
       );
     }
@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
     return NextResponse.json(
-      { error: 'Failed to update application' },
+      { error: 'Aanvraag bijwerken mislukt' },
       { status: 400 }
     );
   }

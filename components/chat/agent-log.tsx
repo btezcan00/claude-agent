@@ -5,6 +5,14 @@ import { Loader2, CheckCircle2, XCircle, ChevronRight, Clock, Sparkles, Brain } 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
+// Dutch labels for Bibob criteria IDs
+const CRITERIA_LABELS: Record<string, string> = {
+  'necessary_info': 'Alle benodigde informatie verstrekt?',
+  'annual_accounts': 'Jaarrekeningen',
+  'budgets': 'Begrotingen',
+  'loan_agreement': 'Leningsovereenkomst',
+};
+
 export type AgentPhase = 'idle' | 'clarifying' | 'planning' | 'awaiting_approval' | 'executing' | 'reflecting' | 'complete';
 
 export interface PlanAction {
@@ -59,7 +67,7 @@ function StepsIndicator({ stepCount, isProcessing, isExpanded }: StepsIndicatorP
         <Sparkles className="w-4 h-4 text-[--claude-coral] animate-pulse" />
       )}
       <span className="font-medium">
-        {stepCount} {stepCount === 1 ? 'step' : 'steps'}
+        {stepCount} {stepCount === 1 ? 'stap' : 'stappen'}
       </span>
       <ChevronRight
         className={cn(
@@ -96,10 +104,12 @@ function renderDetailValue(value: unknown, key?: string, casesMap?: Map<string, 
         <div className="mt-1.5 space-y-1.5 overflow-hidden">
           {value.map((item, i) => {
             const criterion = item as { id?: string; label?: string; name?: string; isMet: boolean; explanation?: string };
-            const label = criterion.label || criterion.name || criterion.id || `Item ${i + 1}`;
-            const displayLabel = label
-              .replace(/_/g, ' ')
-              .replace(/\b\w/g, c => c.toUpperCase());
+            const criterionId = criterion.id || '';
+            const label = criterion.label || criterion.name || CRITERIA_LABELS[criterionId] || criterion.id || `Item ${i + 1}`;
+            // Only apply title case transformation if not using a Dutch label
+            const displayLabel = CRITERIA_LABELS[criterionId]
+              ? label
+              : label.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
             return (
               <div
@@ -155,7 +165,7 @@ function renderDetailValue(value: unknown, key?: string, casesMap?: Map<string, 
               {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}:
             </span>
             <span className="text-foreground break-words min-w-0">
-              {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val)}
+              {typeof val === 'boolean' ? (val ? 'Ja' : 'Nee') : String(val)}
             </span>
           </div>
         ))}
@@ -167,7 +177,7 @@ function renderDetailValue(value: unknown, key?: string, casesMap?: Map<string, 
   if (typeof value === 'boolean') {
     return (
       <div className="mt-0.5 text-foreground">
-        {value ? 'Yes' : 'No'}
+        {value ? 'Ja' : 'Nee'}
       </div>
     );
   }
@@ -220,7 +230,7 @@ export function PlanDisplay({ plan, casesMap, onApprove, onReject, isAwaitingApp
     <div className="bg-claude-beige rounded-xl p-4 border border-border/50 overflow-hidden shadow-sm">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-1">
         <Clock className="w-4 h-4 text-claude-coral" />
-        Proposed Plan
+        Voorgesteld Plan
       </div>
       <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
         {plan.summary}
@@ -259,10 +269,10 @@ export function PlanDisplay({ plan, casesMap, onApprove, onReject, isAwaitingApp
           {!showFeedback ? (
             <div className="flex gap-2">
               <Button size="sm" onClick={onApprove} className="bg-claude-coral hover:bg-claude-coral/90 text-white font-medium px-4">
-                Approve Plan
+                Plan Goedkeuren
               </Button>
               <Button size="sm" variant="outline" onClick={handleReviseClick} className="border-border/50 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5">
-                Request Changes
+                Wijzigingen Aanvragen
               </Button>
             </div>
           ) : (
@@ -270,7 +280,7 @@ export function PlanDisplay({ plan, casesMap, onApprove, onReject, isAwaitingApp
               <textarea
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
-                placeholder="What changes would you like?"
+                placeholder="Welke wijzigingen wilt u?"
                 className="w-full px-2 py-1.5 text-xs bg-white dark:bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                 rows={3}
                 autoFocus
@@ -282,10 +292,10 @@ export function PlanDisplay({ plan, casesMap, onApprove, onReject, isAwaitingApp
                   disabled={!feedback.trim()}
                   className="bg-claude-coral hover:bg-claude-coral/90 text-white"
                 >
-                  Submit Feedback
+                  Feedback Verzenden
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleCancelFeedback} className="border-border text-muted-foreground">
-                  Cancel
+                  Annuleren
                 </Button>
               </div>
             </div>

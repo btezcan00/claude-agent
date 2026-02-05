@@ -4,7 +4,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-1',
     street: 'Kerkstraat 123, 1011 AB Amsterdam',
-    buildingType: 'Commercial',
+    buildingType: 'Bedrijfspand',
     isActive: true,
     description: 'Company headquarters',
     createdAt: '2024-01-15T10:00:00Z',
@@ -12,7 +12,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-2',
     street: 'Damrak 45, 1012 LN Amsterdam',
-    buildingType: 'Commercial',
+    buildingType: 'Bedrijfspand',
     isActive: true,
     description: 'Downtown store location',
     createdAt: '2024-01-20T14:30:00Z',
@@ -20,7 +20,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-3',
     street: 'Prinsengracht 456, 1016 HK Amsterdam',
-    buildingType: 'Private',
+    buildingType: 'Particulier',
     isActive: true,
     description: 'Owner residence',
     createdAt: '2024-02-01T09:15:00Z',
@@ -28,7 +28,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-4',
     street: 'Herengracht 234, 1016 BT Amsterdam',
-    buildingType: 'Commercial',
+    buildingType: 'Bedrijfspand',
     isActive: false,
     description: 'Former office - relocated',
     createdAt: '2024-02-10T11:00:00Z',
@@ -36,7 +36,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-5',
     street: 'Vondelstraat 89, 1054 GJ Amsterdam',
-    buildingType: 'Private',
+    buildingType: 'Particulier',
     isActive: true,
     description: '-',
     createdAt: '2024-02-15T16:45:00Z',
@@ -44,7 +44,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-6',
     street: 'Ferdinand Bolstraat 34, 1072 LN Amsterdam',
-    buildingType: 'Commercial',
+    buildingType: 'Bedrijfspand',
     isActive: true,
     description: 'Warehouse and distribution center',
     createdAt: '2024-03-01T08:30:00Z',
@@ -60,7 +60,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-8',
     street: 'Albert Cuypstraat 67, 1072 CN Amsterdam',
-    buildingType: 'Commercial',
+    buildingType: 'Bedrijfspand',
     isActive: false,
     description: 'Old branch - closed',
     createdAt: '2024-03-10T10:00:00Z',
@@ -68,7 +68,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-9',
     street: 'Javastraat 45, 1094 HC Amsterdam',
-    buildingType: 'Private',
+    buildingType: 'Particulier',
     isActive: true,
     description: 'Director residence',
     createdAt: '2024-03-15T15:00:00Z',
@@ -76,7 +76,7 @@ export const mockAddresses: Address[] = [
   {
     id: 'addr-10',
     street: 'Haarlemmerstraat 78, 1013 EP Amsterdam',
-    buildingType: 'Commercial',
+    buildingType: 'Bedrijfspand',
     isActive: true,
     description: 'Pop-up store location',
     createdAt: '2024-03-20T12:00:00Z',

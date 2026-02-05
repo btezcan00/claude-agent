@@ -90,7 +90,7 @@ export function VisualizationGraphEditor({
   onSave,
   onCancel,
 }: VisualizationGraphEditorProps) {
-  const [name, setName] = useState(`${caseItem.name} - Visualization`);
+  const [name, setName] = useState(`${caseItem.name} - Visualisatie`);
 
   // Generate initial nodes and edges based on case data
   const { initialNodes, initialEdges } = useMemo(() => {
@@ -165,12 +165,12 @@ export function VisualizationGraphEditor({
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b">
         <div className="space-y-2">
-          <Label htmlFor="visualization-name">Name</Label>
+          <Label htmlFor="visualization-name">Naam</Label>
           <Input
             id="visualization-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Enter visualization name"
+            placeholder="Voer visualisatienaam in"
           />
         </div>
       </div>
@@ -196,10 +196,10 @@ export function VisualizationGraphEditor({
 
       <div className="px-4 py-3 border-t flex justify-end gap-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          Annuleren
         </Button>
         <Button onClick={handleSave} disabled={!name.trim()}>
-          Save
+          Opslaan
         </Button>
       </div>
     </div>

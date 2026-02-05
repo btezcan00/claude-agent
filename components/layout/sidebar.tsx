@@ -17,9 +17,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
 const navigation = [
-  { name: 'Signals', href: '/signals', icon: Radio },
-  { name: 'Cases', href: '/cases', icon: FolderOpen },
-  { name: 'Teams', href: '/team', icon: Users },
+  { name: 'Meldingen', href: '/meldingen', icon: Radio },
+  { name: 'Dossiers', href: '/dossiers', icon: FolderOpen },
+  { name: 'Team', href: '/team', icon: Users },
 ];
 
 interface SidebarProps {
@@ -52,7 +52,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
           {!collapsed && (
             <div>
               <h1 className="text-base font-bold text-foreground">Atlas AI</h1>
-              <p className="text-xs text-muted-foreground">Case Management</p>
+              <p className="text-xs text-muted-foreground">Dossierbeheer</p>
             </div>
           )}
         </div>
@@ -62,10 +62,10 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navigation.map((item) => {
           const isActive =
-            item.href === '/signals'
-              ? pathname === '/signals' || pathname.startsWith('/signals/')
-              : item.href === '/cases'
-              ? pathname === '/cases' || pathname.startsWith('/cases/')
+            item.href === '/meldingen'
+              ? pathname === '/meldingen' || pathname.startsWith('/meldingen/')
+              : item.href === '/dossiers'
+              ? pathname === '/dossiers' || pathname.startsWith('/dossiers/')
               : pathname === item.href;
 
           return (
@@ -141,7 +141,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-muted-foreground truncate">
-                  Loading...
+                  Laden...
                 </p>
               </div>
             )}

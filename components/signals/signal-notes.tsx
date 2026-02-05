@@ -35,14 +35,14 @@ export function SignalNotes({ signal }: SignalNotesProps) {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <MessageSquare className="w-4 h-4" />
-          Notes ({signal.notes.length})
+          Notities ({signal.notes.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Add Note Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           <Textarea
-            placeholder="Add a note to this signal..."
+            placeholder="Voeg een notitie toe aan deze melding..."
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             rows={3}
@@ -54,7 +54,7 @@ export function SignalNotes({ signal }: SignalNotesProps) {
               size="sm"
             >
               <Send className="w-4 h-4 mr-2" />
-              Add Note
+              Notitie Toevoegen
             </Button>
           </div>
         </form>

@@ -89,9 +89,9 @@ export function CaseAddSignalsDialog({
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Add Signals to Case</DialogTitle>
+          <DialogTitle>Meldingen Toevoegen aan Dossier</DialogTitle>
           <DialogDescription>
-            Select signals to add to: {caseItem.name}
+            Selecteer meldingen om toe te voegen aan: {caseItem.name}
           </DialogDescription>
         </DialogHeader>
 
@@ -99,7 +99,7 @@ export function CaseAddSignalsDialog({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search signals..."
+            placeholder="Zoek meldingen..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -118,12 +118,12 @@ export function CaseAddSignalsDialog({
                 onCheckedChange={handleSelectAll}
               />
               <span className="text-sm text-muted-foreground">
-                Select all ({filteredSignals.length})
+                Alles selecteren ({filteredSignals.length})
               </span>
             </div>
             {selectedSignalIds.length > 0 && (
               <span className="text-sm font-medium">
-                {selectedSignalIds.length} selected
+                {selectedSignalIds.length} geselecteerd
               </span>
             )}
           </div>
@@ -136,8 +136,8 @@ export function CaseAddSignalsDialog({
               <Radio className="w-12 h-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
                 {availableSignals.length === 0
-                  ? 'All signals are already in this case'
-                  : 'No signals match your search'}
+                  ? 'Alle meldingen zitten al in dit dossier'
+                  : 'Geen meldingen gevonden voor uw zoekopdracht'}
               </p>
             </div>
           ) : (
@@ -198,13 +198,13 @@ export function CaseAddSignalsDialog({
 
         <DialogFooter className="border-t pt-4">
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            Annuleren
           </Button>
           <Button
             onClick={handleAddSignals}
             disabled={selectedSignalIds.length === 0}
           >
-            Add {selectedSignalIds.length > 0 && `(${selectedSignalIds.length})`}
+            Toevoegen {selectedSignalIds.length > 0 && `(${selectedSignalIds.length})`}
           </Button>
         </DialogFooter>
       </DialogContent>

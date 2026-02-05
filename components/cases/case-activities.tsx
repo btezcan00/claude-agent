@@ -140,7 +140,7 @@ export function CaseActivities({ caseItem }: CaseActivitiesProps) {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2 text-base font-medium">
             <Activity className="h-4 w-4" />
-            Activities ({filteredActivities.length})
+            Activiteiten ({filteredActivities.length})
           </CardTitle>
           <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(true)}>
             <Plus className="h-4 w-4" />
@@ -149,7 +149,7 @@ export function CaseActivities({ caseItem }: CaseActivitiesProps) {
         <CardContent className="p-0">
           {activities.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              No activities added yet. Click + to add an activity.
+              Nog geen activiteiten toegevoegd. Klik op + om een activiteit toe te voegen.
             </div>
           ) : (
             <>
@@ -176,7 +176,7 @@ export function CaseActivities({ caseItem }: CaseActivitiesProps) {
                     </TableHead>
                     <TableHead>
                       <div className="flex items-center gap-1">
-                        Name
+                        Naam
                         <FilterPopover
                           options={uniqueNames}
                           selected={nameFilter}
@@ -194,10 +194,10 @@ export function CaseActivities({ caseItem }: CaseActivitiesProps) {
                         />
                       </div>
                     </TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Omschrijving</TableHead>
                     <TableHead>
                       <div className="flex items-center gap-1">
-                        Last edited
+                        Laatst bewerkt
                         <FilterPopover
                           options={uniqueLastEdited}
                           selected={lastEditedFilter}
@@ -239,7 +239,7 @@ export function CaseActivities({ caseItem }: CaseActivitiesProps) {
                               onClick={() => removeActivity(caseItem.id, activity.id)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Verwijderen
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -283,7 +283,7 @@ export function CaseActivities({ caseItem }: CaseActivitiesProps) {
         onClose={() => setIsDialogOpen(false)}
         onAdd={handleAddActivity}
         currentPhase={caseItem.status}
-        title="Add Activity"
+        title="Activiteit Toevoegen"
       />
     </>
   );
@@ -340,7 +340,7 @@ function FilterPopover({ options, selected, onChange }: FilterPopoverProps) {
               className="w-full mt-2"
               onClick={() => onChange([])}
             >
-              Clear filter
+              Filter wissen
             </Button>
           )}
         </div>

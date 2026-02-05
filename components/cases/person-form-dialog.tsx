@@ -89,21 +89,21 @@ export function PersonFormDialog({
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editMode ? 'Edit person' : 'Add new person'}</DialogTitle>
+          <DialogTitle>{editMode ? 'Persoon Bewerken' : 'Nieuwe Persoon Toevoegen'}</DialogTitle>
           <DialogDescription>
             {editMode
-              ? 'View and edit the person details.'
-              : 'Add a new person to the global register.'}
+              ? 'Bekijk en bewerk de persoonsgegevens.'
+              : 'Voeg een nieuwe persoon toe aan het globale register.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* First Name */}
           <div className="space-y-2">
-            <Label htmlFor="person-firstName">First name *</Label>
+            <Label htmlFor="person-firstName">Voornaam *</Label>
             <Input
               id="person-firstName"
-              placeholder="Enter first name"
+              placeholder="Voer voornaam in"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
             />
@@ -111,10 +111,10 @@ export function PersonFormDialog({
 
           {/* Surname */}
           <div className="space-y-2">
-            <Label htmlFor="person-surname">Surname *</Label>
+            <Label htmlFor="person-surname">Achternaam *</Label>
             <Input
               id="person-surname"
-              placeholder="Enter surname"
+              placeholder="Voer achternaam in"
               value={surname}
               onChange={(e) => setSurname(e.target.value)}
             />
@@ -122,7 +122,7 @@ export function PersonFormDialog({
 
           {/* Date of Birth */}
           <div className="space-y-2">
-            <Label htmlFor="person-dob">Date of birth</Label>
+            <Label htmlFor="person-dob">Geboortedatum</Label>
             <Input
               id="person-dob"
               type="date"
@@ -133,10 +133,10 @@ export function PersonFormDialog({
 
           {/* Address */}
           <div className="space-y-2">
-            <Label htmlFor="person-address">Address</Label>
+            <Label htmlFor="person-address">Adres</Label>
             <Input
               id="person-address"
-              placeholder="Enter address"
+              placeholder="Voer adres in"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
             />
@@ -144,10 +144,10 @@ export function PersonFormDialog({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="person-description">Description</Label>
+            <Label htmlFor="person-description">Omschrijving</Label>
             <Textarea
               id="person-description"
-              placeholder="Brief description of the person..."
+              placeholder="Korte omschrijving van de persoon..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -157,13 +157,13 @@ export function PersonFormDialog({
 
         <DialogFooter className="border-t pt-4 mt-4">
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            Annuleren
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!isValid || isSubmitting}
           >
-            {isSubmitting ? (editMode ? 'Saving...' : 'Adding...') : (editMode ? 'Save' : 'Add person')}
+            {isSubmitting ? (editMode ? 'Opslaan...' : 'Toevoegen...') : (editMode ? 'Opslaan' : 'Persoon Toevoegen')}
           </Button>
         </DialogFooter>
       </DialogContent>

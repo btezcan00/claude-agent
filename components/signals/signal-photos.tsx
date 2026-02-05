@@ -132,7 +132,7 @@ export function SignalPhotos({ signal }: SignalPhotosProps) {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Image className="w-4 h-4" />
-            Photos ({photos.length}/{MAX_PHOTOS})
+            Foto's ({photos.length}/{MAX_PHOTOS})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -150,7 +150,7 @@ export function SignalPhotos({ signal }: SignalPhotosProps) {
           >
             <Image className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-3">
-              Drag and drop photos here, or click to browse
+              Sleep foto's hierheen, of klik om te bladeren
             </p>
             <input
               ref={fileInputRef}
@@ -167,17 +167,17 @@ export function SignalPhotos({ signal }: SignalPhotosProps) {
               disabled={photos.length >= MAX_PHOTOS}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Add Photos
+              Foto's Toevoegen
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
-              Max {formatFileSize(MAX_FILE_SIZE)} per photo
+              Max {formatFileSize(MAX_FILE_SIZE)} per foto
             </p>
           </div>
 
           {/* Storage Usage */}
           <div>
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>Storage used</span>
+              <span>Opslag gebruikt</span>
               <span>
                 {formatFileSize(currentTotalSize)} / {formatFileSize(MAX_TOTAL_PHOTOS_SIZE)}
               </span>

@@ -36,11 +36,11 @@ function getSourceIcon(source?: SuggestionSource) {
 function getSourceLabel(source?: SuggestionSource) {
   switch (source) {
     case 'persons':
-      return 'Persons';
+      return 'Personen';
     case 'reports':
-      return 'Reports';
+      return 'Rapporten';
     case 'files':
-      return 'Files';
+      return 'Bestanden';
     default:
       return '';
   }
@@ -90,19 +90,19 @@ export function CaseSuggestions({ caseItem }: CaseSuggestionsProps) {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <MessageSquare className="w-4 h-4" />
-          Suggestions
+          Suggesties
         </CardTitle>
       </CardHeader>
       <CardContent>
         {suggestions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No suggestions available</p>
+          <p className="text-sm text-muted-foreground">Geen suggesties beschikbaar</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-muted-foreground">Suggestions</TableHead>
-                <TableHead className="text-muted-foreground">Relation</TableHead>
-                <TableHead className="text-muted-foreground">Source (Theme)</TableHead>
+                <TableHead className="text-muted-foreground">Suggesties</TableHead>
+                <TableHead className="text-muted-foreground">Relatie</TableHead>
+                <TableHead className="text-muted-foreground">Bron (Thema)</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>

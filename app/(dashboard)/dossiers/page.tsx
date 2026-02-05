@@ -51,10 +51,10 @@ export default function CasesPage() {
         <div>
           <div className="flex items-center gap-2">
             <Kanban className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Cases</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Dossiers</h1>
           </div>
           <p className="text-muted-foreground">
-            Track and manage cases through the Bibob process
+            Volg en beheer dossiers door het Bibob-proces
           </p>
         </div>
         <CaseCreateDialog />
@@ -63,7 +63,7 @@ export default function CasesPage() {
       {/* Stats Row */}
       <div className="flex flex-wrap gap-3">
         <StatsCard
-          title="Total Cases"
+          title="Totaal Dossiers"
           value={cases.length}
           icon={FolderOpen}
           className="min-w-[140px]"

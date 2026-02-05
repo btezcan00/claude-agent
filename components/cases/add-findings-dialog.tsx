@@ -48,7 +48,7 @@ export function AddFindingsDialog({
 
   const handleAdd = () => {
     const now = new Date();
-    const formatted = now.toLocaleDateString('en-GB', {
+    const formatted = now.toLocaleDateString('nl-NL', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -97,17 +97,17 @@ export function AddFindingsDialog({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add findings</DialogTitle>
+          <DialogTitle>Bevindingen toevoegen</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          {/* Assigned to */}
+          {/* Toegewezen aan */}
           <div className="space-y-2">
             <Label>
-              Assigned to <span className="text-destructive">*</span>
+              Toegewezen aan <span className="text-destructive">*</span>
             </Label>
             <Select value={assignedTo} onValueChange={setAssignedTo}>
               <SelectTrigger>
-                <SelectValue placeholder="Select user" />
+                <SelectValue placeholder="Selecteer gebruiker" />
               </SelectTrigger>
               <SelectContent>
                 {mockUsers.map((user) => (
@@ -119,9 +119,9 @@ export function AddFindingsDialog({
             </Select>
           </div>
 
-          {/* Findings */}
+          {/* Bevindingen */}
           <div className="space-y-2">
-            <Label>Findings</Label>
+            <Label>Bevindingen</Label>
             <div className="space-y-2">
               {FINDING_TYPES.map((findingType) => {
                 const isSelected = selectedFindings.includes(findingType.id);
@@ -150,7 +150,7 @@ export function AddFindingsDialog({
 
         <div className="flex justify-end">
           <Button onClick={handleAdd} disabled={!isValid}>
-            Add
+            Toevoegen
           </Button>
         </div>
       </DialogContent>

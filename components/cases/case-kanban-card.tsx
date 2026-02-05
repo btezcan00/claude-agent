@@ -38,7 +38,7 @@ export function CaseKanbanCard({ caseItem }: CaseKanbanCardProps) {
 
   const handleStartResearch = () => {
     setApplicationDialogOpen(false);
-    router.push(`/cases/${caseItem.id}`);
+    router.push(`/dossiers/${caseItem.id}`);
   };
 
   const cardContent = (
@@ -112,7 +112,7 @@ export function CaseKanbanCard({ caseItem }: CaseKanbanCardProps) {
       {isApplicationStatus ? (
         cardContent
       ) : (
-        <Link href={`/cases/${caseItem.id}`}>
+        <Link href={`/dossiers/${caseItem.id}`}>
           {cardContent}
         </Link>
       )}

@@ -31,25 +31,25 @@ const REACTION_CONFIG: {
   {
     type: 'thumbs_up',
     icon: ThumbsUp,
-    label: 'Helpful',
+    label: 'Nuttig',
     activeColor: 'text-green-500',
   },
   {
     type: 'thumbs_down',
     icon: ThumbsDown,
-    label: 'Not helpful',
+    label: 'Niet nuttig',
     activeColor: 'text-red-500',
   },
   {
     type: 'heart',
     icon: Heart,
-    label: 'Love it',
+    label: 'Geweldig',
     activeColor: 'text-pink-500',
   },
   {
     type: 'sparkles',
     icon: Sparkles,
-    label: 'Amazing',
+    label: 'Fantastisch',
     activeColor: 'text-yellow-500',
   },
 ];
@@ -140,7 +140,7 @@ export function MessageReactions({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? 'Gekopieerd!' : 'Kopiëren'}
               </TooltipContent>
             </Tooltip>
           </>

@@ -45,9 +45,9 @@ export default function SignalsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Signals</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Meldingen</h1>
           <p className="text-muted-foreground">
-            Manage and track all active investigations
+            Beheer en volg alle actieve onderzoeken
           </p>
         </div>
         <SignalCreateDialog />
@@ -65,7 +65,7 @@ export default function SignalsPage() {
           {/* Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredSignals.length} of {signals.length} signals
+              {filteredSignals.length} van {signals.length} meldingen weergegeven
             </p>
             <div className="flex items-center gap-2">
               <SignalSort />

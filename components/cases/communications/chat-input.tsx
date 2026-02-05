@@ -34,7 +34,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Type a message..."
+        placeholder="Typ een bericht..."
         disabled={disabled}
         className="flex-1"
       />

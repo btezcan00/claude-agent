@@ -101,21 +101,21 @@ export function CaseApplicationDialog({
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Completion of Bibob Test Application</DialogTitle>
+          <DialogTitle>Voltooien van Bibob Toets Aanvraag</DialogTitle>
           <DialogDescription>
-            Complete the application checklist for: {caseItem.name}
+            Voltooi de aanvraag checklist voor: {caseItem.name}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Main Explanation */}
           <div className="space-y-2">
-            <Label htmlFor="explanation">Explanation</Label>
+            <Label htmlFor="explanation">Toelichting</Label>
             <Textarea
               id="explanation"
               value={explanation}
               onChange={(e) => setExplanation(e.target.value)}
-              placeholder="Provide an overall explanation for this application..."
+              placeholder="Geef een algemene toelichting voor deze aanvraag..."
               rows={3}
             />
           </div>
@@ -124,9 +124,9 @@ export function CaseApplicationDialog({
 
           {/* Criteria */}
           <div className="space-y-4">
-            <h3 className="font-medium">Application Criteria</h3>
+            <h3 className="font-medium">Aanvraag Criteria</h3>
             <p className="text-sm text-muted-foreground">
-              For each criterion, indicate if it is met and provide an explanation.
+              Geef voor elk criterium aan of het is voldaan en geef een toelichting.
             </p>
 
             {criteria.map((criterion) => (
@@ -153,26 +153,26 @@ export function CaseApplicationDialog({
                     size="sm"
                     onClick={() => handleCriterionToggle(criterion.id)}
                   >
-                    {criterion.isMet ? 'Criterion Met' : 'Is the criterion met?'}
+                    {criterion.isMet ? 'Criterium voldaan' : 'Is het criterium voldaan?'}
                   </Button>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor={`explanation-${criterion.id}`} className="text-sm">
-                    Explanation for criterion: {criterion.label}
+                    Toelichting voor criterium: {criterion.label}
                   </Label>
                   <Textarea
                     id={`explanation-${criterion.id}`}
                     value={criterion.explanation}
                     onChange={(e) => handleCriterionExplanation(criterion.id, e.target.value)}
-                    placeholder={`Provide explanation for "${criterion.label}"...`}
+                    placeholder={`Geef een toelichting voor "${criterion.label}"...`}
                     rows={2}
                     className="text-sm"
                   />
                   {criterion.isMet && !criterion.explanation.trim() && (
                     <p className="text-xs text-amber-600 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
-                      Explanation required when criterion is met
+                      Toelichting vereist wanneer criterium is voldaan
                     </p>
                   )}
                 </div>
@@ -183,7 +183,7 @@ export function CaseApplicationDialog({
           {/* Progress indicator */}
           <div className="p-3 bg-muted rounded-lg">
             <div className="flex items-center justify-between text-sm">
-              <span>Criteria completed:</span>
+              <span>Criteria voltooid:</span>
               <span className="font-medium">
                 {criteria.filter((c) => c.isMet && c.explanation.trim()).length} / {criteria.length}
               </span>
@@ -201,19 +201,19 @@ export function CaseApplicationDialog({
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={handleSave}>
-            Save and Close
+            Opslaan en sluiten
           </Button>
           <Button
             onClick={handleStartResearch}
             disabled={!canStartResearch}
           >
-            Start Own Research
+            Start eigen onderzoek
           </Button>
         </DialogFooter>
 
         {!canStartResearch && (
           <p className="text-xs text-muted-foreground text-center">
-            Complete all criteria with explanations to start research
+            Voltooi alle criteria met toelichting om onderzoek te starten
           </p>
         )}
       </DialogContent>

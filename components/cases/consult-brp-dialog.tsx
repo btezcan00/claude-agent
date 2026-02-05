@@ -163,7 +163,7 @@ export function ConsultBrpDialog({
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="w-[80vw] max-w-none sm:max-w-none max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Consult BRP</DialogTitle>
+          <DialogTitle>BRP Raadplegen</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
@@ -175,7 +175,7 @@ export function ConsultBrpDialog({
                 <Label htmlFor="brp-bsn">BSN</Label>
                 <Input
                   id="brp-bsn"
-                  placeholder="Enter a BSN"
+                  placeholder="Voer een BSN in"
                   value={bsn}
                   onChange={(e) => setBsn(e.target.value)}
                   disabled={isBsnDisabled}
@@ -184,10 +184,10 @@ export function ConsultBrpDialog({
 
               {/* Surname */}
               <div className="space-y-2">
-                <Label htmlFor="brp-surname">Surname</Label>
+                <Label htmlFor="brp-surname">Achternaam</Label>
                 <Input
                   id="brp-surname"
-                  placeholder="Enter a surname"
+                  placeholder="Voer een achternaam in"
                   value={surname}
                   onChange={(e) => setSurname(e.target.value)}
                   disabled={isSurnameDisabled}
@@ -197,21 +197,21 @@ export function ConsultBrpDialog({
               {/* First names */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="brp-firstName">First names</Label>
+                  <Label htmlFor="brp-firstName">Voornamen</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Enter full first names as registered in BRP</p>
+                        <p>Voer volledige voornamen in zoals geregistreerd in BRP</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
                 <Input
                   id="brp-firstName"
-                  placeholder="Enter first names"
+                  placeholder="Voer voornamen in"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   disabled={isFirstNameDisabled}
@@ -220,11 +220,11 @@ export function ConsultBrpDialog({
 
               {/* Date of birth */}
               <div className="space-y-2">
-                <Label htmlFor="brp-dob">Date of birth</Label>
+                <Label htmlFor="brp-dob">Geboortedatum</Label>
                 <Input
                   id="brp-dob"
                   type="date"
-                  placeholder="Enter a date of birth"
+                  placeholder="Voer een geboortedatum in"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
                   disabled={isDateOfBirthDisabled}
@@ -233,10 +233,10 @@ export function ConsultBrpDialog({
 
               {/* Street */}
               <div className="space-y-2">
-                <Label htmlFor="brp-street">Street</Label>
+                <Label htmlFor="brp-street">Straat</Label>
                 <Input
                   id="brp-street"
-                  placeholder="Enter a street name"
+                  placeholder="Voer een straatnaam in"
                   value={street}
                   onChange={(e) => setStreet(e.target.value)}
                   disabled={isStreetDisabled}
@@ -245,10 +245,10 @@ export function ConsultBrpDialog({
 
               {/* House number */}
               <div className="space-y-2">
-                <Label htmlFor="brp-houseNumber">House number</Label>
+                <Label htmlFor="brp-houseNumber">Huisnummer</Label>
                 <Input
                   id="brp-houseNumber"
-                  placeholder="Enter a house number"
+                  placeholder="Voer een huisnummer in"
                   value={houseNumber}
                   onChange={(e) => setHouseNumber(e.target.value)}
                   disabled={isHouseNumberDisabled}
@@ -257,10 +257,10 @@ export function ConsultBrpDialog({
 
               {/* Zip code */}
               <div className="space-y-2">
-                <Label htmlFor="brp-zipCode">Zip code</Label>
+                <Label htmlFor="brp-zipCode">Postcode</Label>
                 <Input
                   id="brp-zipCode"
-                  placeholder="Enter a zip code"
+                  placeholder="Voer een postcode in"
                   value={zipCode}
                   onChange={(e) => setZipCode(e.target.value)}
                   disabled={isZipCodeDisabled}
@@ -269,10 +269,10 @@ export function ConsultBrpDialog({
 
               {/* Local authority */}
               <div className="space-y-2">
-                <Label htmlFor="brp-municipality">Local authority</Label>
+                <Label htmlFor="brp-municipality">Gemeente</Label>
                 <Select value={municipality} onValueChange={setMunicipality} disabled={isMunicipalityDisabled}>
                   <SelectTrigger id="brp-municipality">
-                    <SelectValue placeholder="Select a municipality" />
+                    <SelectValue placeholder="Selecteer een gemeente" />
                   </SelectTrigger>
                   <SelectContent>
                     {MUNICIPALITIES.map((m) => (
@@ -289,7 +289,7 @@ export function ConsultBrpDialog({
             {!hasSearched ? (
               <div className="flex flex-col">
                 <p className="text-muted-foreground mb-4">
-                  Enter one of the following combinations to begin a search:
+                  Voer een van de volgende combinaties in om te zoeken:
                 </p>
                 <div className="space-y-0">
                   {/* BSN */}
@@ -299,46 +299,46 @@ export function ConsultBrpDialog({
 
                   {/* Divider with "or" */}
                   <div className={`flex items-center transition-opacity ${!isBsnComboAvailable && !isSurnameDobComboAvailable ? 'opacity-30' : ''}`}>
-                    <span className="text-muted-foreground text-sm pr-2">or</span>
+                    <span className="text-muted-foreground text-sm pr-2">of</span>
                     <div className="flex-1 border-t" />
                   </div>
 
                   {/* Surname and date of birth */}
                   <div className={`py-3 transition-opacity ${!isSurnameDobComboAvailable ? 'opacity-30' : ''}`}>
-                    <span className="font-medium pl-8">Surname and date of birth</span>
+                    <span className="font-medium pl-8">Achternaam en geboortedatum</span>
                   </div>
 
                   {/* Divider with "or" */}
                   <div className={`flex items-center transition-opacity ${!isSurnameDobComboAvailable && !isSurnameFirstNameMunicipalityComboAvailable ? 'opacity-30' : ''}`}>
-                    <span className="text-muted-foreground text-sm pr-2">or</span>
+                    <span className="text-muted-foreground text-sm pr-2">of</span>
                     <div className="flex-1 border-t" />
                   </div>
 
                   {/* Surname, first names and municipality */}
                   <div className={`py-3 transition-opacity ${!isSurnameFirstNameMunicipalityComboAvailable ? 'opacity-30' : ''}`}>
-                    <span className="font-medium pl-8">Surname, first names and municipality</span>
+                    <span className="font-medium pl-8">Achternaam, voornamen en gemeente</span>
                   </div>
 
                   {/* Divider with "or" */}
                   <div className={`flex items-center transition-opacity ${!isSurnameFirstNameMunicipalityComboAvailable && !isHouseNumberZipCodeComboAvailable ? 'opacity-30' : ''}`}>
-                    <span className="text-muted-foreground text-sm pr-2">or</span>
+                    <span className="text-muted-foreground text-sm pr-2">of</span>
                     <div className="flex-1 border-t" />
                   </div>
 
                   {/* House number and zip code */}
                   <div className={`py-3 transition-opacity ${!isHouseNumberZipCodeComboAvailable ? 'opacity-30' : ''}`}>
-                    <span className="font-medium pl-8">House number and zip code</span>
+                    <span className="font-medium pl-8">Huisnummer en postcode</span>
                   </div>
 
                   {/* Divider with "or" */}
                   <div className={`flex items-center transition-opacity ${!isHouseNumberZipCodeComboAvailable && !isStreetHouseNumberMunicipalityComboAvailable ? 'opacity-30' : ''}`}>
-                    <span className="text-muted-foreground text-sm pr-2">or</span>
+                    <span className="text-muted-foreground text-sm pr-2">of</span>
                     <div className="flex-1 border-t" />
                   </div>
 
                   {/* Street, house number and municipality */}
                   <div className={`py-3 transition-opacity ${!isStreetHouseNumberMunicipalityComboAvailable ? 'opacity-30' : ''}`}>
-                    <span className="font-medium pl-8">Street, house number and municipality</span>
+                    <span className="font-medium pl-8">Straat, huisnummer en gemeente</span>
                   </div>
                 </div>
               </div>
@@ -347,10 +347,10 @@ export function ConsultBrpDialog({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>First name</TableHead>
-                      <TableHead>Surname</TableHead>
+                      <TableHead>Voornaam</TableHead>
+                      <TableHead>Achternaam</TableHead>
                       <TableHead>BSN</TableHead>
-                      <TableHead>Gender</TableHead>
+                      <TableHead>Geslacht</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -358,7 +358,7 @@ export function ConsultBrpDialog({
                     {searchResults.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          No results found.
+                          Geen resultaten gevonden.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -393,7 +393,7 @@ export function ConsultBrpDialog({
             onClick={handleSearch}
             disabled={!isValidSearch || isSearching}
           >
-            {isSearching ? 'Searching...' : 'Search'}
+            {isSearching ? 'Zoeken...' : 'Zoeken'}
           </Button>
         </div>
       </DialogContent>

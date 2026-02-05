@@ -15,7 +15,7 @@ export function CaseRecords({ caseItem }: CaseRecordsProps) {
   return (
     <CaseItemSection
       caseItem={caseItem}
-      title="Records"
+      title="Registers"
       icon={FileText}
       items={caseItem.records || []}
       onAdd={(item) => addRecord(caseItem.id, item)}

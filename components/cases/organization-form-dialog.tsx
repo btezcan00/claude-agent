@@ -151,21 +151,21 @@ export function OrganizationFormDialog({
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editMode ? 'Change organization' : 'Add New Organization'}</DialogTitle>
+          <DialogTitle>{editMode ? 'Organisatie wijzigen' : 'Nieuwe Organisatie Toevoegen'}</DialogTitle>
           <DialogDescription>
             {editMode
-              ? 'Review and modify the organization details.'
-              : 'Create a new organization that will be added to the global registry.'}
+              ? 'Bekijk en wijzig de organisatiegegevens.'
+              : 'Maak een nieuwe organisatie aan die wordt toegevoegd aan het globale register.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="org-name">Name *</Label>
+            <Label htmlFor="org-name">Naam *</Label>
             <Input
               id="org-name"
-              placeholder="Organization name"
+              placeholder="Organisatienaam"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -173,10 +173,10 @@ export function OrganizationFormDialog({
 
           {/* Type */}
           <div className="space-y-2">
-            <Label htmlFor="org-type">Type of Organization</Label>
+            <Label htmlFor="org-type">Type Organisatie</Label>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger id="org-type">
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder="Selecteer type" />
               </SelectTrigger>
               <SelectContent>
                 {ORGANIZATION_TYPES.map((orgType) => (
@@ -192,7 +192,7 @@ export function OrganizationFormDialog({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-muted-foreground" />
-              <Label htmlFor="use-address">Include Address</Label>
+              <Label htmlFor="use-address">Adres opnemen</Label>
             </div>
             <Switch
               id="use-address"
@@ -204,12 +204,12 @@ export function OrganizationFormDialog({
           {/* Address Field with Autocomplete */}
           {useAddress && (
             <div className="space-y-2 relative">
-              <Label htmlFor="org-address">Address</Label>
+              <Label htmlFor="org-address">Adres</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="org-address"
-                  placeholder="Search or enter address..."
+                  placeholder="Zoek of voer adres in..."
                   value={addressQuery}
                   onChange={(e) => handleAddressInputChange(e.target.value)}
                   onFocus={() => setShowAddressDropdown(addressQuery.trim().length > 0)}
@@ -236,10 +236,10 @@ export function OrganizationFormDialog({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="org-description">Description</Label>
+            <Label htmlFor="org-description">Omschrijving</Label>
             <Textarea
               id="org-description"
-              placeholder="Brief description of the organization..."
+              placeholder="Korte omschrijving van de organisatie..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -248,10 +248,10 @@ export function OrganizationFormDialog({
 
           {/* Chamber of Commerce */}
           <div className="space-y-2">
-            <Label htmlFor="org-coc">Chamber of Commerce Number</Label>
+            <Label htmlFor="org-coc">KvK-nummer</Label>
             <Input
               id="org-coc"
-              placeholder="e.g., 12345678"
+              placeholder="bijv. 12345678"
               value={chamberOfCommerce}
               onChange={(e) => setChamberOfCommerce(e.target.value)}
             />
@@ -265,13 +265,13 @@ export function OrganizationFormDialog({
             disabled={!address.trim()}
           >
             <BookOpen className="w-4 h-4 mr-2" />
-            Consult Sources
+            Bronnen Raadplegen
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!isValid || isSubmitting}
           >
-            {isSubmitting ? (editMode ? 'Saving...' : 'Adding...') : (editMode ? 'Save' : 'Add Organization')}
+            {isSubmitting ? (editMode ? 'Opslaan...' : 'Toevoegen...') : (editMode ? 'Opslaan' : 'Organisatie Toevoegen')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -281,8 +281,8 @@ export function OrganizationFormDialog({
         onClose={() => setSelectDialogOpen(false)}
         organizations={filteredOrganizations}
         onConfirm={handleOrganizationSelected}
-        title="Select the correct organization"
-        description="Choose from existing organizations that match your search."
+        title="Selecteer de juiste organisatie"
+        description="Kies uit bestaande organisaties die overeenkomen met uw zoekopdracht."
       />
     </Dialog>
   );

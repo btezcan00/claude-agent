@@ -123,7 +123,7 @@ export function CaseLetters({ caseItem }: CaseLettersProps) {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2 text-base font-medium">
             <Mail className="h-4 w-4" />
-            Letters ({filteredLetters.length})
+            Brieven ({filteredLetters.length})
           </CardTitle>
           <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(true)}>
             <Plus className="h-4 w-4" />
@@ -132,7 +132,7 @@ export function CaseLetters({ caseItem }: CaseLettersProps) {
         <CardContent className="p-0">
           {letters.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              No letters added yet. Click + to add a document.
+              Nog geen brieven toegevoegd. Klik op + om een document toe te voegen.
             </div>
           ) : (
             <>
@@ -141,7 +141,7 @@ export function CaseLetters({ caseItem }: CaseLettersProps) {
                   <TableRow>
                     <TableHead>
                       <div className="flex items-center gap-1">
-                        Title
+                        Titel
                         <FilterPopover
                           options={uniqueTitles}
                           selected={titleFilter}
@@ -151,7 +151,7 @@ export function CaseLetters({ caseItem }: CaseLettersProps) {
                     </TableHead>
                     <TableHead>
                       <div className="flex items-center gap-1">
-                        Created
+                        Aangemaakt door
                         <FilterPopover
                           options={uniqueCreatedBy}
                           selected={createdByFilter}
@@ -159,7 +159,7 @@ export function CaseLetters({ caseItem }: CaseLettersProps) {
                         />
                       </div>
                     </TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Omschrijving</TableHead>
                     <TableHead>
                       <div className="flex items-center gap-1">
                         Tags
@@ -170,7 +170,7 @@ export function CaseLetters({ caseItem }: CaseLettersProps) {
                         />
                       </div>
                     </TableHead>
-                    <TableHead>Last updated</TableHead>
+                    <TableHead>Laatst bijgewerkt</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -195,7 +195,7 @@ export function CaseLetters({ caseItem }: CaseLettersProps) {
                         <Input
                           value={letter.description}
                           onChange={(e) => handleDescriptionChange(letter.id, e.target.value)}
-                          placeholder="Add description..."
+                          placeholder="Omschrijving toevoegen..."
                           className="h-8 min-w-[150px]"
                         />
                       </TableCell>
@@ -221,14 +221,14 @@ export function CaseLetters({ caseItem }: CaseLettersProps) {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleViewLetter(letter)}>
                               <Eye className="mr-2 h-4 w-4" />
-                              View
+                              Bekijken
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive"
                               onClick={() => removeLetter(caseItem.id, letter.id)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Verwijderen
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -336,7 +336,7 @@ function FilterPopover({ options, selected, onChange }: FilterPopoverProps) {
               className="w-full mt-2"
               onClick={() => onChange([])}
             >
-              Clear filter
+              Filter wissen
             </Button>
           )}
         </div>

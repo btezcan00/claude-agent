@@ -16,7 +16,7 @@ export function CaseStatusRoadmap({ caseItem }: CaseStatusRoadmapProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Case Progress</CardTitle>
+        <CardTitle className="text-base">Dossier Voortgang</CardTitle>
       </CardHeader>
       <CardContent>
         {/* Roadmap */}
@@ -77,7 +77,7 @@ export function CaseStatusRoadmap({ caseItem }: CaseStatusRoadmapProps) {
                     )}
                     {isCurrent && !statusDate && (
                       <p className="text-[10px] text-primary mt-0.5 font-medium">
-                        Current
+                        Huidig
                       </p>
                     )}
                   </div>
@@ -103,7 +103,7 @@ export function CaseStatusRoadmap({ caseItem }: CaseStatusRoadmapProps) {
           </div>
           {caseItem.statusDates?.[caseItem.status] && (
             <p className="text-xs text-muted-foreground mt-1 ml-5">
-              Since {formatDate(caseItem.statusDates[caseItem.status]!)}
+              Sinds {formatDate(caseItem.statusDates[caseItem.status]!)}
             </p>
           )}
         </div>

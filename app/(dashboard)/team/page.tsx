@@ -19,31 +19,31 @@ export default function TeamPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Team Management</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Teambeheer</h1>
         <p className="text-muted-foreground">
-          View team members and case ownership
+          Bekijk teamleden en dossiereigenaarschap
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatsCard
-          title="Team Members"
+          title="Teamleden"
           value={activeUsers.length}
           icon={Users}
         />
         <StatsCard
-          title="Total Signals"
+          title="Totaal Meldingen"
           value={signalStats.total}
           icon={Radio}
         />
         <StatsCard
-          title="Total Cases"
+          title="Totaal Dossiers"
           value={cases.length}
           icon={FolderOpen}
         />
         <StatsCard
-          title="Owned Cases"
+          title="Toegewezen Dossiers"
           value={ownedCasesCount}
           icon={UserCheck}
         />

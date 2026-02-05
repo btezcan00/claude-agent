@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to create address' },
+      { error: 'Adres aanmaken mislukt' },
       { status: 400 }
     );
   }

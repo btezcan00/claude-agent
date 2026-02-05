@@ -3,32 +3,32 @@ import { BadgeConfig } from '@/types/common';
 import { UserRole } from '@/types/user';
 
 export const SIGNAL_TYPE_CONFIG: Record<SignalType, BadgeConfig & { icon: string }> = {
-  'bogus-scheme': {
-    label: 'Bogus Scheme',
+  'malafide-constructie': {
+    label: 'Malafide Constructie',
     variant: 'default',
     className: 'bg-amber-100 text-amber-800 border-amber-200',
     icon: 'AlertTriangle',
   },
-  'human-trafficking': {
-    label: 'Human Trafficking',
+  'mensenhandel': {
+    label: 'Mensenhandel',
     variant: 'destructive',
     className: 'bg-red-100 text-red-800 border-red-200',
     icon: 'Users',
   },
-  'drug-trafficking': {
-    label: 'Drug Trafficking',
+  'drugshandel': {
+    label: 'Drugshandel',
     variant: 'default',
     className: 'bg-orange-100 text-orange-800 border-orange-200',
     icon: 'Pill',
   },
-  'bibob-research': {
-    label: 'Bibob Research',
+  'bibob-onderzoek': {
+    label: 'Bibob Onderzoek',
     variant: 'secondary',
     className: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: 'FileSearch',
   },
-  'money-laundering': {
-    label: 'Money Laundering',
+  'witwassen': {
+    label: 'Witwassen',
     variant: 'default',
     className: 'bg-green-100 text-green-800 border-green-200',
     icon: 'Banknote',
@@ -36,32 +36,32 @@ export const SIGNAL_TYPE_CONFIG: Record<SignalType, BadgeConfig & { icon: string
 };
 
 export const SIGNAL_SOURCE_CONFIG: Record<SignalSource, BadgeConfig & { icon: string }> = {
-  'police': {
-    label: 'Police',
+  'politie': {
+    label: 'Politie',
     variant: 'default',
     className: 'bg-blue-100 text-blue-800 border-blue-200',
     icon: 'Shield',
   },
-  'bibob-request': {
-    label: 'Bibob Request',
+  'bibob-aanvraag': {
+    label: 'Bibob Aanvraag',
     variant: 'secondary',
     className: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: 'FileText',
   },
-  'anonymous-report': {
-    label: 'Anonymous Report',
+  'anonieme-melding': {
+    label: 'Anonieme Melding',
     variant: 'outline',
     className: 'bg-gray-100 text-gray-800 border-gray-200',
     icon: 'EyeOff',
   },
-  'municipal-department': {
-    label: 'Municipal Department',
+  'gemeentelijke-afdeling': {
+    label: 'Gemeentelijke Afdeling',
     variant: 'default',
     className: 'bg-green-100 text-green-800 border-green-200',
     icon: 'Building2',
   },
-  'other': {
-    label: 'Other',
+  'overig': {
+    label: 'Overig',
     variant: 'outline',
     className: 'bg-slate-100 text-slate-800 border-slate-200',
     icon: 'MoreHorizontal',
@@ -70,29 +70,29 @@ export const SIGNAL_SOURCE_CONFIG: Record<SignalSource, BadgeConfig & { icon: st
 
 export const USER_ROLE_CONFIG: Record<UserRole, BadgeConfig> = {
   'admin': {
-    label: 'Admin',
+    label: 'Beheerder',
     variant: 'destructive',
     className: 'bg-red-100 text-red-800',
   },
   'supervisor': {
-    label: 'Supervisor',
+    label: 'Leidinggevende',
     variant: 'default',
     className: 'bg-blue-100 text-blue-800',
   },
   'investigator': {
-    label: 'Investigator',
+    label: 'Onderzoeker',
     variant: 'secondary',
     className: 'bg-green-100 text-green-800',
   },
   'analyst': {
-    label: 'Analyst',
+    label: 'Analist',
     variant: 'outline',
     className: 'bg-purple-100 text-purple-800',
   },
 };
 
-export const SIGNAL_TYPES: SignalType[] = ['bogus-scheme', 'human-trafficking', 'drug-trafficking', 'bibob-research', 'money-laundering'];
-export const SIGNAL_SOURCES: SignalSource[] = ['police', 'bibob-request', 'anonymous-report', 'municipal-department', 'other'];
+export const SIGNAL_TYPES: SignalType[] = ['malafide-constructie', 'mensenhandel', 'drugshandel', 'bibob-onderzoek', 'witwassen'];
+export const SIGNAL_SOURCES: SignalSource[] = ['politie', 'bibob-aanvraag', 'anonieme-melding', 'gemeentelijke-afdeling', 'overig'];
 
 export const FOLDER_COLORS: string[] = [
   '#ef4444', // red

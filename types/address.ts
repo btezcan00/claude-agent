@@ -7,6 +7,6 @@ export interface Address {
   createdAt: string;
 }
 
-export const BUILDING_TYPES = ['Commercial', 'Private', '-'] as const;
+export const BUILDING_TYPES = ['Bedrijfspand', 'Particulier', '-'] as const;
 
 export type BuildingType = (typeof BUILDING_TYPES)[number];

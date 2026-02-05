@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           userName: `${user.firstName} ${user.lastName}`,
           action: 'signal-created',
-          details: 'Signal created',
+          details: 'Melding aangemaakt',
           timestamp: now,
         },
       ],
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
     return NextResponse.json(
-      { error: 'Failed to create signal' },
+      { error: 'Melding aanmaken mislukt' },
       { status: 400 }
     );
   }

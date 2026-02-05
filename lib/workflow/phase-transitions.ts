@@ -63,22 +63,22 @@ export function getValidEvents(phase: ConversationPhase): PhaseTransitionEvent[]
 
 // Phase display names for UI
 export const PHASE_DISPLAY_NAMES: Record<ConversationPhase, string> = {
-  idle: 'Ready',
-  clarification: 'Clarifying',
-  planning: 'Planning',
-  execution: 'Executing',
-  review: 'Reviewing',
-  complete: 'Complete',
+  idle: 'Klaar',
+  clarification: 'Verduidelijken',
+  planning: 'Plannen',
+  execution: 'Uitvoeren',
+  review: 'Controleren',
+  complete: 'Voltooid',
 };
 
 // Phase descriptions for UI
 export const PHASE_DESCRIPTIONS: Record<ConversationPhase, string> = {
-  idle: 'Ready to help with your request',
-  clarification: 'Gathering requirements to understand your needs',
-  planning: 'Creating a detailed execution plan',
-  execution: 'Executing the planned tasks',
-  review: 'Reviewing results and next steps',
-  complete: 'Workflow completed successfully',
+  idle: 'Klaar om te helpen met je verzoek',
+  clarification: 'Vereisten verzamelen om je behoeften te begrijpen',
+  planning: 'Een gedetailleerd uitvoeringsplan maken',
+  execution: 'De geplande taken uitvoeren',
+  review: 'Resultaten en volgende stappen controleren',
+  complete: 'Workflow succesvol voltooid',
 };
 
 // Phase order for stepper UI

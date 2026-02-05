@@ -37,16 +37,16 @@ export function Header({ onMenuClick }: HeaderProps) {
       const href = '/' + paths.slice(0, index + 1).join('/');
       let label = path.charAt(0).toUpperCase() + path.slice(1);
 
-      if (path === 'signals') {
-        label = 'Signals';
-      } else if (path === 'cases') {
-        label = 'Cases';
+      if (path === 'meldingen') {
+        label = 'Meldingen';
+      } else if (path === 'dossiers') {
+        label = 'Dossiers';
       } else if (path === 'team') {
-        label = 'Teams';
-      } else if (paths[index - 1] === 'signals') {
-        label = 'Signal Details';
-      } else if (paths[index - 1] === 'cases') {
-        label = 'Case Details';
+        label = 'Team';
+      } else if (paths[index - 1] === 'meldingen') {
+        label = 'Melding Details';
+      } else if (paths[index - 1] === 'dossiers') {
+        label = 'Dossier Details';
       }
 
       breadcrumbs.push({ label, href });
@@ -91,13 +91,13 @@ export function Header({ onMenuClick }: HeaderProps) {
         ))}
       </nav>
 
-      {/* Search - Only show on signals page */}
-      {pathname === '/signals' && (
+      {/* Search - Only show on meldingen page */}
+      {pathname === '/meldingen' && (
         <div className="hidden md:flex items-center gap-2 ml-auto mr-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search signals..."
+              placeholder="Meldingen zoeken..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               className="w-64 pl-9 bg-background"
@@ -107,7 +107,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       )}
 
       {/* Right Section */}
-      <div className={cn('flex items-center gap-3', pathname !== '/signals' && 'ml-auto')}>
+      <div className={cn('flex items-center gap-3', pathname !== '/meldingen' && 'ml-auto')}>
         {/* Chat Toggle */}
         <Button
           variant="ghost"
@@ -144,7 +144,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             <SignedOut>
               <SignInButton mode="modal">
                 <Button variant="outline" size="sm">
-                  Sign In
+                  Inloggen
                 </Button>
               </SignInButton>
             </SignedOut>
