@@ -41,7 +41,7 @@ export function CaseSignalCard({ signal, caseId, relation, onRemove, onRelationC
 
   const handleCardClick = () => {
     if (!isEditingRelation) {
-      router.push(`/signals/${signal.id}`);
+      router.push(`/meldingen/${signal.id}`);
     }
   };
 
@@ -79,14 +79,14 @@ export function CaseSignalCard({ signal, caseId, relation, onRemove, onRelationC
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setShowConsultMessage(true)}>
                   <FileSearch className="w-4 h-4 mr-2" />
-                  Consult sources
+                  Bronnen raadplegen
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onRemove(signal.id)}
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Remove
+                  Verwijderen
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -109,13 +109,13 @@ export function CaseSignalCard({ signal, caseId, relation, onRemove, onRelationC
 
           {/* Relation field */}
           <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
-            <span className="text-xs font-medium text-muted-foreground">Relation</span>
+            <span className="text-xs font-medium text-muted-foreground">Relatie</span>
             {isEditingRelation ? (
               <div className="space-y-2">
                 <Textarea
                   value={relationText}
                   onChange={(e) => setRelationText(e.target.value)}
-                  placeholder="Describe the relation between this signal and the case..."
+                  placeholder="Beschrijf de relatie tussen deze melding en het dossier..."
                   className="text-xs min-h-[60px] resize-none"
                   autoFocus
                 />
@@ -149,7 +149,7 @@ export function CaseSignalCard({ signal, caseId, relation, onRemove, onRelationC
                 className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5 min-h-[32px] cursor-pointer hover:bg-muted transition-colors"
                 onClick={() => setIsEditingRelation(true)}
               >
-                {relation || <span className="italic">Click to add relation...</span>}
+                {relation || <span className="italic">Klik om relatie toe te voegen...</span>}
               </div>
             )}
           </div>
@@ -164,7 +164,7 @@ export function CaseSignalCard({ signal, caseId, relation, onRemove, onRelationC
               setShowDescription(true);
             }}
           >
-            View description
+            Beschrijving bekijken
           </Button>
         </div>
       </Card>
@@ -173,7 +173,7 @@ export function CaseSignalCard({ signal, caseId, relation, onRemove, onRelationC
       <Dialog open={showDescription} onOpenChange={setShowDescription}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{signal.signalNumber} - Description</DialogTitle>
+            <DialogTitle>{signal.signalNumber} - Omschrijving</DialogTitle>
             <DialogDescription>{signal.placeOfObservation}</DialogDescription>
           </DialogHeader>
           <div className="mt-4">
@@ -186,10 +186,10 @@ export function CaseSignalCard({ signal, caseId, relation, onRemove, onRelationC
       <Dialog open={showConsultMessage} onOpenChange={setShowConsultMessage}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Consult Sources</DialogTitle>
+            <DialogTitle>Bronnen Raadplegen</DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            <p className="text-sm text-muted-foreground">Wait for the response.</p>
+            <p className="text-sm text-muted-foreground">Wacht op het antwoord.</p>
           </div>
         </DialogContent>
       </Dialog>

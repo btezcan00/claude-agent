@@ -79,7 +79,7 @@ export function registerCaseTools(server: McpServer): void {
       limit: z.number().optional().describe('Limit the number of cases returned'),
     },
     async ({ status, limit }) => {
-      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
+      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/dossiers' });
 
       if (response.error) {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
@@ -143,8 +143,8 @@ export function registerCaseTools(server: McpServer): void {
     'Get comprehensive dashboard statistics for cases including counts, status distribution, and trends',
     {},
     async () => {
-      const casesResponse = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
-      const statsResponse = await apiRequest({ method: 'GET', path: '/api/cases/stats' });
+      const casesResponse = await apiRequest<Case[]>({ method: 'GET', path: '/api/dossiers' });
+      const statsResponse = await apiRequest({ method: 'GET', path: '/api/dossiers/stats' });
 
       if (casesResponse.error) {
         return { content: [{ type: 'text', text: formatResponse(casesResponse) }] };
@@ -202,7 +202,7 @@ export function registerCaseTools(server: McpServer): void {
       hasCriticalFindings: z.boolean().optional().describe('Filter cases with critical severity findings'),
     },
     async ({ query, status, ownerId, tag, hasFindings, hasCriticalFindings }) => {
-      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
+      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/dossiers' });
 
       if (response.error) {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
@@ -280,7 +280,7 @@ export function registerCaseTools(server: McpServer): void {
     async ({ caseId, limit }) => {
       const response = await apiRequest<Case>({
         method: 'GET',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
       });
 
@@ -331,7 +331,7 @@ export function registerCaseTools(server: McpServer): void {
     async ({ caseId, includeAdminOnly }) => {
       const response = await apiRequest<Case>({
         method: 'GET',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
       });
 
@@ -381,7 +381,7 @@ export function registerCaseTools(server: McpServer): void {
       status: CaseStatusSchema.optional().describe('Filter by specific status'),
     },
     async ({ daysThreshold = 30, status }) => {
-      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
+      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/dossiers' });
 
       if (response.error) {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
@@ -446,7 +446,7 @@ export function registerCaseTools(server: McpServer): void {
       status: CaseStatusSchema.optional().describe('Filter by specific status'),
     },
     async ({ status }) => {
-      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/cases' });
+      const response = await apiRequest<Case[]>({ method: 'GET', path: '/api/dossiers' });
 
       if (response.error) {
         return { content: [{ type: 'text', text: formatResponse(response) }] };
@@ -496,7 +496,7 @@ export function registerCaseTools(server: McpServer): void {
     async ({ caseId }) => {
       const response = await apiRequest<Case>({
         method: 'GET',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
       });
 
@@ -559,7 +559,7 @@ export function registerCaseTools(server: McpServer): void {
     async (params) => {
       const response = await apiRequest({
         method: 'POST',
-        path: '/api/cases',
+        path: '/api/dossiers',
         body: params,
       });
       return { content: [{ type: 'text', text: formatResponse(response) }] };
@@ -581,7 +581,7 @@ export function registerCaseTools(server: McpServer): void {
     async ({ caseId, ...updateData }) => {
       const response = await apiRequest({
         method: 'PUT',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
         body: updateData,
       });
@@ -602,7 +602,7 @@ export function registerCaseTools(server: McpServer): void {
       // First get the current case to append the note
       const getResponse = await apiRequest<Case>({
         method: 'GET',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
       });
 
@@ -624,7 +624,7 @@ export function registerCaseTools(server: McpServer): void {
 
       const response = await apiRequest({
         method: 'PUT',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
         body: {
           notes: [...existingNotes, newNote],
@@ -658,7 +658,7 @@ export function registerCaseTools(server: McpServer): void {
     async ({ caseId, userId, userName }) => {
       const response = await apiRequest({
         method: 'PUT',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
         body: {
           ownerId: userId,
@@ -700,7 +700,7 @@ export function registerCaseTools(server: McpServer): void {
     async ({ caseId }) => {
       const response = await apiRequest({
         method: 'PUT',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
         body: {
           ownerId: null,
@@ -741,7 +741,7 @@ export function registerCaseTools(server: McpServer): void {
     async ({ caseId }) => {
       const response = await apiRequest({
         method: 'DELETE',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
       });
       return { content: [{ type: 'text', text: formatResponse(response) }] };
@@ -762,7 +762,7 @@ export function registerCaseTools(server: McpServer): void {
       // Get current case to update statusDates
       const getResponse = await apiRequest<Case & { statusDates?: Record<string, string> }>({
         method: 'GET',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
       });
 
@@ -775,7 +775,7 @@ export function registerCaseTools(server: McpServer): void {
 
       const response = await apiRequest({
         method: 'PUT',
-        path: '/api/cases/{id}',
+        path: '/api/dossiers/{id}',
         pathParams: { id: caseId },
         body: {
           status,

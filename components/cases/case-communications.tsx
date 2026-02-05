@@ -71,7 +71,7 @@ export function CaseCommunications({ caseItem }: CaseCommunicationsProps) {
       <CardHeader className="py-3 px-4 border-b">
         <CardTitle className="flex items-center gap-2 text-base font-medium">
           <MessageSquare className="h-4 w-4" />
-          Communications
+          Communicatie
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 h-[calc(100%-49px)]">

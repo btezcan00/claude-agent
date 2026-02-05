@@ -160,7 +160,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const fetchCases = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/cases');
+      const response = await fetch('/api/dossiers');
       if (response.ok) {
         const data = await response.json();
         setCases(data);
@@ -222,7 +222,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, [signals]);
 
   const createCase = useCallback(async (data: CreateCaseInput): Promise<Case> => {
-    const response = await fetch('/api/cases', {
+    const response = await fetch('/api/dossiers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -252,7 +252,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, [createCase]);
 
   const updateCase = useCallback(async (id: string, data: UpdateCaseInput) => {
-    const response = await fetch(`/api/cases/${id}`, {
+    const response = await fetch(`/api/dossiers/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -269,7 +269,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteCase = useCallback(async (id: string) => {
-    const response = await fetch(`/api/cases/${id}`, {
+    const response = await fetch(`/api/dossiers/${id}`, {
       method: 'DELETE',
     });
 
@@ -285,7 +285,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, [cases]);
 
   const assignCaseOwner = useCallback(async (caseId: string, userId: string, userName: string) => {
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -305,7 +305,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unassignCaseOwner = useCallback(async (caseId: string) => {
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -329,7 +329,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (!caseItem) return;
 
     const now = new Date().toISOString();
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -370,7 +370,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       isAdminNote,
     };
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -392,7 +392,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -413,7 +413,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   // Practitioners
   const addPractitioner = useCallback(async (caseId: string, userId: string, userName: string) => {
     // Fetch the latest case state from the API to avoid race conditions
-    const getResponse = await fetch(`/api/cases/${caseId}`);
+    const getResponse = await fetch(`/api/dossiers/${caseId}`);
     if (!getResponse.ok) {
       throw new Error('Failed to fetch case');
     }
@@ -423,7 +423,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if ((latestCase.practitioners || []).some((p: { userId: string }) => p.userId === userId)) return;
 
     const now = new Date().toISOString();
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -443,13 +443,13 @@ export function CaseProvider({ children }: { children: ReactNode }) {
 
   const removePractitioner = useCallback(async (caseId: string, userId: string) => {
     // Fetch the latest case state from the API to avoid race conditions
-    const getResponse = await fetch(`/api/cases/${caseId}`);
+    const getResponse = await fetch(`/api/dossiers/${caseId}`);
     if (!getResponse.ok) {
       throw new Error('Failed to fetch case');
     }
     const latestCase = await getResponse.json();
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -472,7 +472,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (!currentUser) return;
 
     // Fetch the latest case state from the API to avoid race conditions
-    const getResponse = await fetch(`/api/cases/${caseId}`);
+    const getResponse = await fetch(`/api/dossiers/${caseId}`);
     if (!getResponse.ok) {
       throw new Error('Failed to fetch case');
     }
@@ -482,7 +482,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if ((latestCase.sharedWith || []).some((s: { userId: string }) => s.userId === userId)) return;
 
     const now = new Date().toISOString();
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -513,7 +513,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -537,7 +537,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -558,7 +558,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   // Tags
   const addTag = useCallback(async (caseId: string, tag: string) => {
     // Fetch the latest case state from the API to avoid race conditions
-    const getResponse = await fetch(`/api/cases/${caseId}`);
+    const getResponse = await fetch(`/api/dossiers/${caseId}`);
     if (!getResponse.ok) {
       throw new Error('Failed to fetch case');
     }
@@ -567,7 +567,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     // Check if tag already exists
     if ((latestCase.tags || []).includes(tag)) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -587,13 +587,13 @@ export function CaseProvider({ children }: { children: ReactNode }) {
 
   const removeTag = useCallback(async (caseId: string, tag: string) => {
     // Fetch the latest case state from the API to avoid race conditions
-    const getResponse = await fetch(`/api/cases/${caseId}`);
+    const getResponse = await fetch(`/api/dossiers/${caseId}`);
     if (!getResponse.ok) {
       throw new Error('Failed to fetch case');
     }
     const latestCase = await getResponse.json();
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -617,7 +617,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (!caseItem) return;
 
     const newItem: CaseItem = { id: generateId(), ...item };
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -642,7 +642,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     // Check if organization is already in the case
     if ((caseItem.organizations || []).some((o) => o.id === org.id)) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -664,7 +664,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -688,7 +688,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (!caseItem) return;
 
     const newItem: CaseItem = { id: generateId(), ...item };
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -713,7 +713,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     // Check if address is already in the case
     if ((caseItem.addresses || []).some((a) => a.id === address.id)) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -735,7 +735,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -761,7 +761,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     // Check if person is already in the case
     if ((caseItem.peopleInvolved || []).some((p) => p.id === person.id)) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -783,7 +783,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -821,7 +821,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       fieldData: {},
     };
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -843,14 +843,14 @@ export function CaseProvider({ children }: { children: ReactNode }) {
 
   const updateLetter = useCallback(async (caseId: string, letterId: string, data: Partial<Pick<LetterItem, 'description' | 'tags' | 'fieldData'>>) => {
     // Fetch the latest case state from the API to avoid race conditions
-    const getResponse = await fetch(`/api/cases/${caseId}`);
+    const getResponse = await fetch(`/api/dossiers/${caseId}`);
     if (!getResponse.ok) {
       throw new Error('Failed to fetch case');
     }
     const latestCase = await getResponse.json();
 
     const now = new Date().toISOString();
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -874,7 +874,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -904,7 +904,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       totalSteps: item.totalSteps ?? 1,
       completedSteps: item.completedSteps ?? 0,
     };
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -926,7 +926,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -962,7 +962,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       return finding;
     });
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -986,7 +986,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (!caseItem) return;
 
     const newItem: CaseItem = { id: generateId(), ...item };
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1008,7 +1008,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1038,7 +1038,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       uploadedAt: now,
     };
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1060,7 +1060,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1084,7 +1084,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1108,7 +1108,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (!caseItem) return;
 
     const newItem: CaseItem = { id: generateId(), ...item };
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1130,7 +1130,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1154,7 +1154,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (!caseItem) return;
 
     const newItem: CaseItem = { id: generateId(), ...item };
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1176,7 +1176,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1197,7 +1197,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   // Chat Messages
   const addChatMessage = useCallback(async (caseId: string, message: Omit<CaseChatMessage, 'id' | 'createdAt'>) => {
     // Fetch the latest case state from the API to avoid race conditions
-    const getResponse = await fetch(`/api/cases/${caseId}`);
+    const getResponse = await fetch(`/api/dossiers/${caseId}`);
     if (!getResponse.ok) {
       throw new Error('Failed to fetch case');
     }
@@ -1210,7 +1210,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       createdAt: now,
     };
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1234,7 +1234,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (!caseItem) return;
 
     const newItem: CaseItem = { id: generateId(), ...item };
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1256,7 +1256,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1277,14 +1277,14 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   // Visualizations
   const addVisualization = useCallback(async (caseId: string, item: Omit<CaseItem, 'id'>) => {
     // Fetch the latest case state from the API to avoid race conditions
-    const getResponse = await fetch(`/api/cases/${caseId}`);
+    const getResponse = await fetch(`/api/dossiers/${caseId}`);
     if (!getResponse.ok) {
       throw new Error('Failed to fetch case');
     }
     const latestCase = await getResponse.json();
 
     const newItem: CaseItem = { id: generateId(), ...item };
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1306,7 +1306,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1337,7 +1337,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       updatedAt: now,
     };
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1359,7 +1359,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1379,7 +1379,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
 
   // Location
   const updateLocation = useCallback(async (caseId: string, location: string) => {
-    const response = await fetch(`/api/cases/${caseId}`, {
+    const response = await fetch(`/api/dossiers/${caseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ location }),
@@ -1400,7 +1400,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem) return;
 
-    const response = await fetch(`/api/cases/${caseId}/application`, {
+    const response = await fetch(`/api/dossiers/${caseId}/application`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1419,7 +1419,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, [cases]);
 
   const completeApplication = useCallback(async (caseId: string) => {
-    const response = await fetch(`/api/cases/${caseId}/application`, {
+    const response = await fetch(`/api/dossiers/${caseId}/application`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

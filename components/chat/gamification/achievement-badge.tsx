@@ -138,7 +138,7 @@ export function AchievementBadge({
           </div>
           <div>
             <p className="text-xs font-medium text-yellow-500 uppercase tracking-wide">
-              Achievement Unlocked!
+              Prestatie Ontgrendeld!
             </p>
             <p className="font-semibold text-foreground">{achievement.name}</p>
             <p className="text-xs text-muted-foreground">

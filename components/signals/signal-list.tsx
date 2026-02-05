@@ -13,10 +13,10 @@ export function SignalList() {
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
           <Radio className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold mb-1">No signals found</h3>
+        <h3 className="text-lg font-semibold mb-1">Geen meldingen gevonden</h3>
         <p className="text-sm text-muted-foreground max-w-sm">
-          Try adjusting your search or filter criteria to find what you&apos;re
-          looking for.
+          Probeer je zoek- of filtercriteria aan te passen om te vinden wat je
+          zoekt.
         </p>
       </div>
     );

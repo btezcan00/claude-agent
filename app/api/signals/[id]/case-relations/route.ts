@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const signal = store.getSignalById(id);
     if (!signal) {
       return NextResponse.json(
-        { error: 'Signal not found' },
+        { error: 'Melding niet gevonden' },
         { status: 404 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const caseItem = store.getCaseById(caseId);
     if (!caseItem) {
       return NextResponse.json(
-        { error: 'Case not found' },
+        { error: 'Dossier niet gevonden' },
         { status: 404 }
       );
     }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Check if relation already exists
     if (signal.caseRelations.some(cr => cr.caseId === caseId)) {
       return NextResponse.json(
-        { error: 'Signal is already linked to this case' },
+        { error: 'Melding is al gekoppeld aan dit dossier' },
         { status: 400 }
       );
     }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       userId: user.id,
       userName: `${user.firstName} ${user.lastName}`,
       action: 'case-added',
-      details: 'Added to case',
+      details: 'Aan dossier toegevoegd',
       timestamp: now,
     };
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
     return NextResponse.json(
-      { error: 'Failed to link signal to case' },
+      { error: 'Melding koppelen aan dossier mislukt' },
       { status: 400 }
     );
   }

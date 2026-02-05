@@ -7,7 +7,7 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// GET /api/cases/:id - Get a single case
+// GET /api/dossiers/:id - Get a single dossier
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const userId = await getServerUserId();
   if (!userId) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   if (!caseItem) {
     return NextResponse.json(
-      { error: 'Case not found' },
+      { error: 'Dossier niet gevonden' },
       { status: 404 }
     );
   }
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   return NextResponse.json(caseItem);
 }
 
-// PUT /api/cases/:id - Update a case
+// PUT /api/dossiers/:id - Update a dossier
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const userId = await getServerUserId();
   if (!userId) {
@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const caseItem = store.getCaseById(id);
     if (!caseItem) {
       return NextResponse.json(
-        { error: 'Case not found' },
+        { error: 'Dossier niet gevonden' },
         { status: 404 }
       );
     }
@@ -57,13 +57,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to update case' },
+      { error: 'Dossier bijwerken mislukt' },
       { status: 400 }
     );
   }
 }
 
-// DELETE /api/cases/:id - Delete a case
+// DELETE /api/dossiers/:id - Delete a dossier
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const userId = await getServerUserId();
   if (!userId) {
@@ -76,7 +76,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
   if (!success) {
     return NextResponse.json(
-      { error: 'Case not found' },
+      { error: 'Dossier niet gevonden' },
       { status: 404 }
     );
   }

@@ -102,8 +102,8 @@ export interface LetterItem {
 }
 
 export const LETTER_TEMPLATES = [
-  { value: 'lbb_notification', label: 'LBB notification letter', description: '' },
-  { value: 'bibob_7c_request', label: 'Form for requesting information from an administrative body to the Tax Authorities pursuant to Article 7c of the Bibob Act', description: '' },
+  { value: 'lbb_notification', label: 'LBB notificatiebrief', description: '' },
+  { value: 'bibob_7c_request', label: 'Formulier voor het opvragen van informatie door een bestuursorgaan bij de Belastingdienst op grond van artikel 7c van de Wet Bibob', description: '' },
 ] as const;
 
 // ActivityItem with additional tracking fields
@@ -121,10 +121,10 @@ export interface ActivityItem {
 }
 
 export const APPLICATION_CRITERIA = [
-  { id: 'necessary_info', name: 'necessary_info', label: 'Provided all necessary information?' },
-  { id: 'annual_accounts', name: 'annual_accounts', label: 'Annual Accounts' },
-  { id: 'budgets', name: 'budgets', label: 'Budgets' },
-  { id: 'loan_agreement', name: 'loan_agreement', label: 'Loan Agreement' },
+  { id: 'necessary_info', name: 'necessary_info', label: 'Alle benodigde informatie verstrekt?' },
+  { id: 'annual_accounts', name: 'annual_accounts', label: 'Jaarrekeningen' },
+  { id: 'budgets', name: 'budgets', label: 'Begrotingen' },
+  { id: 'loan_agreement', name: 'loan_agreement', label: 'Leningsovereenkomst' },
 ] as const;
 
 export interface Case {
@@ -197,14 +197,14 @@ export interface CaseStats {
 }
 
 export const CASE_COLORS = [
-  { value: '#ef4444', label: 'Red' },
-  { value: '#f97316', label: 'Orange' },
-  { value: '#eab308', label: 'Yellow' },
-  { value: '#22c55e', label: 'Green' },
-  { value: '#3b82f6', label: 'Blue' },
-  { value: '#8b5cf6', label: 'Purple' },
-  { value: '#ec4899', label: 'Pink' },
-  { value: '#6b7280', label: 'Gray' },
+  { value: '#ef4444', label: 'Rood' },
+  { value: '#f97316', label: 'Oranje' },
+  { value: '#eab308', label: 'Geel' },
+  { value: '#22c55e', label: 'Groen' },
+  { value: '#3b82f6', label: 'Blauw' },
+  { value: '#8b5cf6', label: 'Paars' },
+  { value: '#ec4899', label: 'Roze' },
+  { value: '#6b7280', label: 'Grijs' },
 ] as const;
 
 export const CASE_ICONS = [
@@ -225,9 +225,9 @@ export const CASE_ACCESS_LEVELS: {
   label: string;
   description: string;
 }[] = [
-    { value: 'view', label: 'View', description: 'Can view case and signals' },
-    { value: 'edit', label: 'Edit', description: 'Can edit case and add signals' },
-    { value: 'admin', label: 'Admin', description: 'Full access including sharing' },
+    { value: 'view', label: 'Bekijken', description: 'Kan dossier en meldingen bekijken' },
+    { value: 'edit', label: 'Bewerken', description: 'Kan dossier bewerken en meldingen toevoegen' },
+    { value: 'admin', label: 'Beheerder', description: 'Volledige toegang inclusief delen' },
   ];
 
 // File Attachment types and constants
@@ -270,36 +270,36 @@ export const CASE_STATUSES: {
 }[] = [
     {
       value: 'application',
-      label: 'Application for Bibob Test',
-      shortLabel: 'Application',
+      label: 'Aanvraag Bibob Toets',
+      shortLabel: 'Aanvraag',
       color: '#3b82f6',
       bgColor: '#eff6ff',
     },
     {
       value: 'research',
-      label: 'Own Research',
-      shortLabel: 'Research',
+      label: 'Eigen Onderzoek',
+      shortLabel: 'Onderzoek',
       color: '#f59e0b',
       bgColor: '#fffbeb',
     },
     {
       value: 'national_office',
-      label: 'National Bibob Office',
-      shortLabel: 'National Office',
+      label: 'Landelijk Bureau Bibob',
+      shortLabel: 'Landelijk Bureau',
       color: '#8b5cf6',
       bgColor: '#f5f3ff',
     },
     {
       value: 'decision',
-      label: 'Decision',
-      shortLabel: 'Decision',
+      label: 'Beslissing',
+      shortLabel: 'Beslissing',
       color: '#22c55e',
       bgColor: '#f0fdf4',
     },
     {
       value: 'archive',
-      label: 'Archive',
-      shortLabel: 'Archive',
+      label: 'Archief',
+      shortLabel: 'Archief',
       color: '#6b7280',
       bgColor: '#f9fafb',
     },

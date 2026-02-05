@@ -72,10 +72,10 @@ export function TeamMemberCard({ user, cases }: TeamMemberCardProps) {
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <FolderOpen className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium">Case Ownership</span>
+            <span className="font-medium">Dossiereigenaarschap</span>
           </div>
           <span className="text-muted-foreground">
-            {ownedCaseCount} case{ownedCaseCount !== 1 ? 's' : ''}
+            {ownedCaseCount} dossier{ownedCaseCount !== 1 ? 's' : ''}
           </span>
         </div>
 
@@ -83,7 +83,7 @@ export function TeamMemberCard({ user, cases }: TeamMemberCardProps) {
 
         {/* Employee ID */}
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Employee ID</span>
+          <span className="text-muted-foreground">Medewerker ID</span>
           <span className="font-mono">{user.employeeId}</span>
         </div>
 
@@ -94,7 +94,7 @@ export function TeamMemberCard({ user, cases }: TeamMemberCardProps) {
             variant={user.isActive ? 'default' : 'secondary'}
             className={user.isActive ? 'bg-green-100 text-green-800' : ''}
           >
-            {user.isActive ? 'Active' : 'Inactive'}
+            {user.isActive ? 'Actief' : 'Inactief'}
           </Badge>
         </div>
       </CardContent>

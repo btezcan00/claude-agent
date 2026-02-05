@@ -78,7 +78,7 @@ export function CaseVisualizations({ caseItem }: CaseVisualizationsProps) {
           <CardTitle className="text-base flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
-              Visualizations
+              Visualisaties
             </div>
             <Button
               size="sm"
@@ -92,7 +92,7 @@ export function CaseVisualizations({ caseItem }: CaseVisualizationsProps) {
         <CardContent className="space-y-4">
           {visualizations.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No visualizations added
+              Geen visualisaties toegevoegd
             </p>
           ) : (
             <div className="space-y-3">

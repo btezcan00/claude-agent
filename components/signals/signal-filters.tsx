@@ -68,7 +68,7 @@ export function SignalFilters() {
               className="h-8 px-2 text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4 mr-1" />
-              Clear
+              Wissen
             </Button>
           )}
         </div>
@@ -80,7 +80,7 @@ export function SignalFilters() {
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-1">
                 <Briefcase className="w-4 h-4" />
-                Cases
+                Dossiers
               </Label>
               <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
                 {cases.map((caseItem) => {
@@ -114,7 +114,7 @@ export function SignalFilters() {
 
         {/* Type Filter */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Signal Type</Label>
+          <Label className="text-sm font-medium">Meldingtype</Label>
           <div className="flex flex-col gap-2">
             {SIGNAL_TYPES.map((type) => {
               const config = SIGNAL_TYPE_CONFIG[type];
@@ -141,7 +141,7 @@ export function SignalFilters() {
 
         {/* Source Filter */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Signal Source</Label>
+          <Label className="text-sm font-medium">Meldingbron</Label>
           <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
             {SIGNAL_SOURCES.map((source) => {
               const config = SIGNAL_SOURCE_CONFIG[source];

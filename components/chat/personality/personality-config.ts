@@ -6,94 +6,94 @@
 // Varied acknowledgments for successful actions
 export const ACKNOWLEDGMENTS = {
   success: [
-    'Done!',
-    'Got it!',
-    'All set!',
+    'Klaar!',
+    'Begrepen!',
+    'Geregeld!',
     'Perfect!',
-    'Sorted!',
-    'On it!',
-    'Taken care of!',
+    'Gedaan!',
+    'Bezig!',
+    'Afgehandeld!',
   ],
   taskComplete: [
-    'Nice work!',
-    'Nailed it!',
-    'Great job!',
-    'Excellent!',
-    'Well done!',
-    'Looking good!',
+    'Mooi werk!',
+    'Gelukt!',
+    'Goed gedaan!',
+    'Uitstekend!',
+    'Prima!',
+    'Ziet er goed uit!',
   ],
   confirmation: [
-    'Absolutely!',
-    'Of course!',
-    'Sure thing!',
-    'You got it!',
-    'Happy to help!',
-    'Right away!',
+    'Absoluut!',
+    'Natuurlijk!',
+    'Zeker!',
+    'Komt voor elkaar!',
+    'Graag gedaan!',
+    'Direct!',
   ],
 };
 
 // Light, appropriate humor phrases
 export const LIGHT_HUMOR = {
   waiting: [
-    'Let me work my magic...',
-    'Crunching the numbers...',
-    'Consulting the data oracle...',
-    'Digging through the archives...',
-    'Connecting the dots...',
+    'Even mijn magie toepassen...',
+    'De cijfers verwerken...',
+    'Het data-orakel raadplegen...',
+    'Door de archieven graven...',
+    'De puzzelstukjes samenvoegen...',
   ],
   noResults: [
-    "Hmm, came up empty on that one. Let's try a different approach?",
-    "Couldn't find what you're looking for. Maybe we can narrow it down?",
-    'The search came back quiet. Shall we refine the criteria?',
+    'Hmm, niets gevonden. Zullen we een andere aanpak proberen?',
+    'Kon niet vinden wat je zoekt. Kunnen we het verfijnen?',
+    'De zoekopdracht leverde niets op. Zullen we de criteria aanpassen?',
   ],
   encouragement: [
-    "You're making great progress!",
-    'Nice to see you back!',
-    'Always a pleasure to help!',
-    "Let's get things done!",
+    'Je maakt goede voortgang!',
+    'Fijn om je weer te zien!',
+    'Altijd een plezier om te helpen!',
+    'Laten we aan de slag gaan!',
   ],
 };
 
 // Welcome back messages for returning users
 export const WELCOME_BACK_MESSAGES = [
-  'Welcome back! Ready to pick up where we left off?',
-  "Good to see you again! What can I help you with today?",
-  "Welcome back! Let's continue making progress.",
-  "Hey there! Ready to tackle some tasks?",
+  'Welkom terug! Klaar om verder te gaan waar we gebleven waren?',
+  'Fijn om je weer te zien! Waarmee kan ik je vandaag helpen?',
+  'Welkom terug! Laten we verder gaan met de voortgang.',
+  'Hallo! Klaar om wat taken aan te pakken?',
 ];
 
 // First-time user messages
 export const FIRST_TIME_MESSAGES = [
-  "Hello! I'm your Atlas AI assistant. I can help you manage signals, organize cases, and keep track of important information. What would you like to do first?",
-  "Welcome! I'm here to help you navigate Atlas AI. Whether it's creating signals, searching records, or managing cases - just ask!",
+  'Hallo! Ik ben je Atlas AI-assistent. Ik kan je helpen met het beheren van meldingen, organiseren van dossiers en bijhouden van belangrijke informatie. Wat wil je eerst doen?',
+  'Welkom! Ik ben hier om je te helpen bij het navigeren door Atlas AI. Of het nu gaat om meldingen aanmaken, gegevens zoeken of dossiers beheren - vraag maar!',
 ];
 
 // Contextual celebration messages
 export const CELEBRATION_MESSAGES = {
   signalCreated: [
-    'Signal created successfully!',
-    'New signal is now in the system!',
-    'Signal has been recorded!',
+    'Melding succesvol aangemaakt!',
+    'Nieuwe melding staat nu in het systeem!',
+    'Melding is vastgelegd!',
   ],
   signalEdited: [
-    'Signal updated!',
-    'Changes saved successfully!',
-    'Signal has been modified!',
+    'Melding bijgewerkt!',
+    'Wijzigingen succesvol opgeslagen!',
+    'Melding is aangepast!',
   ],
   caseAssigned: [
-    'Case assignment complete!',
-    'Owner has been assigned!',
-    'Team member now owns this case!',
+    'Dossiertoewijzing voltooid!',
+    'Eigenaar is toegewezen!',
+    'Teamlid is nu eigenaar van dit dossier!',
   ],
   achievementUnlocked: [
-    'Achievement unlocked!',
-    'You earned a new badge!',
-    'Milestone reached!',
+    'Prestatie ontgrendeld!',
+    'Je hebt een nieuwe badge verdiend!',
+    'Mijlpaal bereikt!',
   ],
   streakContinued: [
-    'Streak continues!',
-    "You're on a roll!",
-    'Keep it up!',
+    'Reeks gaat door!',
+    'Je bent lekker bezig!',
+    'Ga zo door!',
   ],
 };
 

@@ -19,9 +19,9 @@ export function CaseSignalsList({ caseItem }: CaseSignalsListProps) {
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
           <Radio className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold mb-1">No signals in this case</h3>
+        <h3 className="text-lg font-semibold mb-1">Geen meldingen in dit dossier</h3>
         <p className="text-sm text-muted-foreground max-w-sm">
-          Add signals to this case by selecting them from the Signals page.
+          Voeg meldingen toe aan dit dossier door ze te selecteren op de Meldingen pagina.
         </p>
       </div>
     );

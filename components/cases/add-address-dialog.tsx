@@ -89,9 +89,9 @@ export function AddAddressDialog({
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="w-[80vw] max-w-none sm:max-w-none max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Add address</DialogTitle>
+            <DialogTitle>Adres Toevoegen</DialogTitle>
             <DialogDescription>
-              Search for an existing address or add a new address to: {caseItem.name}
+              Zoek een bestaand adres of voeg een nieuw adres toe aan: {caseItem.name}
             </DialogDescription>
           </DialogHeader>
 
@@ -99,7 +99,7 @@ export function AddAddressDialog({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by street name, house number, postal code, city or description"
+              placeholder="Zoek op straatnaam, huisnummer, postcode, stad of omschrijving"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -113,18 +113,18 @@ export function AddAddressDialog({
                 <Home className="w-12 h-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
                   {availableAddresses.length === 0
-                    ? 'All addresses have already been added to this case'
-                    : 'No addresses found for your search'}
+                    ? 'Alle adressen zijn al toegevoegd aan dit dossier'
+                    : 'Geen adressen gevonden voor uw zoekopdracht'}
                 </p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Property type</TableHead>
-                    <TableHead>Current</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Adres</TableHead>
+                    <TableHead>Pandtype</TableHead>
+                    <TableHead>Actueel</TableHead>
+                    <TableHead>Omschrijving</TableHead>
                     <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -137,7 +137,7 @@ export function AddAddressDialog({
                     >
                       <TableCell className="font-medium">{addr.street}</TableCell>
                       <TableCell>{addr.buildingType}</TableCell>
-                      <TableCell>{addr.isActive ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>{addr.isActive ? 'Ja' : 'Nee'}</TableCell>
                       <TableCell className="max-w-[200px] truncate">
                         {addr.description || '-'}
                       </TableCell>
@@ -170,10 +170,10 @@ export function AddAddressDialog({
               }}
             >
               <Plus className="w-4 h-4 mr-1" />
-              Add new address
+              Nieuw adres toevoegen
             </Button>
             <Button variant="outline" onClick={handleClose}>
-              Close
+              Sluiten
             </Button>
           </div>
         </DialogContent>

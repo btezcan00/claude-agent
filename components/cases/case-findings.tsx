@@ -50,7 +50,7 @@ export function CaseFindings({ caseItem }: CaseFindingsProps) {
           <CardTitle className="text-base flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Findings
+              Bevindingen
             </div>
             <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4" />
@@ -59,7 +59,7 @@ export function CaseFindings({ caseItem }: CaseFindingsProps) {
         </CardHeader>
         <CardContent className="space-y-2">
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No findings added</p>
+            <p className="text-sm text-muted-foreground">Geen bevindingen toegevoegd</p>
           ) : (
             <div className="space-y-2">
               {items.map((item) => {

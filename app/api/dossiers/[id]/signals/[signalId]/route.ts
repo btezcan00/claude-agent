@@ -8,7 +8,7 @@ interface RouteParams {
   params: Promise<{ id: string; signalId: string }>;
 }
 
-// DELETE /api/cases/:id/signals/:signalId - Unlink a signal from case
+// DELETE /api/dossiers/:id/signals/:signalId - Unlink a signal from dossier
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await requireAuth();
@@ -18,7 +18,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const caseItem = store.getCaseById(caseId);
     if (!caseItem) {
       return NextResponse.json(
-        { error: 'Case not found' },
+        { error: 'Dossier niet gevonden' },
         { status: 404 }
       );
     }
@@ -27,7 +27,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const signal = store.getSignalById(signalId);
     if (!signal) {
       return NextResponse.json(
-        { error: 'Signal not found' },
+        { error: 'Melding niet gevonden' },
         { status: 404 }
       );
     }
@@ -64,7 +64,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
     return NextResponse.json(
-      { error: 'Failed to unlink signal from case' },
+      { error: 'Kon melding niet loskoppelen van dossier' },
       { status: 400 }
     );
   }

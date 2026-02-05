@@ -24,7 +24,7 @@ export function ChatArea({ messages, selectedContactId, selectedContactName }: C
   if (!selectedContactId) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-100">
-        <p className="text-muted-foreground">Select a contact to start messaging</p>
+        <p className="text-muted-foreground">Selecteer een contact om te beginnen met berichten</p>
       </div>
     );
   }
@@ -33,7 +33,7 @@ export function ChatArea({ messages, selectedContactId, selectedContactName }: C
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-100">
         <p className="text-muted-foreground">
-          No messages yet. Start a conversation with {selectedContactName}
+          Nog geen berichten. Start een gesprek met {selectedContactName}
         </p>
       </div>
     );

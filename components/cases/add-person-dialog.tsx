@@ -109,9 +109,9 @@ export function AddPersonDialog({
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="w-[80vw] max-w-none sm:max-w-none max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Add person</DialogTitle>
+            <DialogTitle>Persoon Toevoegen</DialogTitle>
             <DialogDescription>
-              Search for an existing person or add a new person to: {caseItem.name}
+              Zoek een bestaande persoon of voeg een nieuwe persoon toe aan: {caseItem.name}
             </DialogDescription>
           </DialogHeader>
 
@@ -119,7 +119,7 @@ export function AddPersonDialog({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, address, description, phone numbers or account numbers"
+              placeholder="Zoek op naam, adres, omschrijving, telefoonnummers of rekeningnummers"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -133,19 +133,19 @@ export function AddPersonDialog({
                 <Users className="w-12 h-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
                   {availablePeople.length === 0
-                    ? 'All people have already been added to this case'
-                    : 'No people found for your search'}
+                    ? 'Alle personen zijn al toegevoegd aan dit dossier'
+                    : 'Geen personen gevonden voor uw zoekopdracht'}
                 </p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>First name</TableHead>
-                    <TableHead>Surname</TableHead>
-                    <TableHead>Date of birth</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Voornaam</TableHead>
+                    <TableHead>Achternaam</TableHead>
+                    <TableHead>Geboortedatum</TableHead>
+                    <TableHead>Adres</TableHead>
+                    <TableHead>Omschrijving</TableHead>
                     <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -191,7 +191,7 @@ export function AddPersonDialog({
                 variant="outline"
                 onClick={() => setBrpDialogOpen(true)}
               >
-                Consult BRP
+                BRP Raadplegen
               </Button>
               <Button
                 onClick={() => {
@@ -200,11 +200,11 @@ export function AddPersonDialog({
                 }}
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Add new person
+                Nieuwe persoon toevoegen
               </Button>
             </div>
             <Button variant="outline" onClick={handleClose}>
-              Close
+              Sluiten
             </Button>
           </div>
         </DialogContent>

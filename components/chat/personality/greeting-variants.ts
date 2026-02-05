@@ -14,70 +14,70 @@ interface GreetingVariant {
 const GREETINGS: Record<TimeOfDay, GreetingVariant[]> = {
   morning: [
     {
-      greeting: 'Good morning!',
-      followUp: 'Ready to start fresh today?',
+      greeting: 'Goedemorgen!',
+      followUp: 'Klaar om fris te beginnen vandaag?',
     },
     {
-      greeting: 'Morning!',
-      followUp: 'What can I help you tackle today?',
+      greeting: 'Morgen!',
+      followUp: 'Waarmee kan ik je helpen vandaag?',
     },
     {
-      greeting: 'Good morning!',
-      followUp: "Let's make today productive!",
+      greeting: 'Goedemorgen!',
+      followUp: 'Laten we er een productieve dag van maken!',
     },
     {
-      greeting: 'Rise and shine!',
-      followUp: "What's on the agenda?",
+      greeting: 'Goedemorgen!',
+      followUp: 'Wat staat er op de agenda?',
     },
   ],
   afternoon: [
     {
-      greeting: 'Good afternoon!',
-      followUp: 'How can I assist you?',
+      greeting: 'Goedemiddag!',
+      followUp: 'Hoe kan ik je helpen?',
     },
     {
-      greeting: 'Hey there!',
-      followUp: "What can I help you with this afternoon?",
+      greeting: 'Hallo!',
+      followUp: 'Waarmee kan ik je vanmiddag helpen?',
     },
     {
-      greeting: 'Good afternoon!',
-      followUp: "Let's keep the momentum going!",
+      greeting: 'Goedemiddag!',
+      followUp: 'Laten we het momentum vasthouden!',
     },
     {
-      greeting: 'Hello!',
-      followUp: 'Ready to get some things done?',
+      greeting: 'Hallo!',
+      followUp: 'Klaar om wat dingen gedaan te krijgen?',
     },
   ],
   evening: [
     {
-      greeting: 'Good evening!',
-      followUp: 'Wrapping up for the day?',
+      greeting: 'Goedenavond!',
+      followUp: 'Bezig met afronden voor vandaag?',
     },
     {
-      greeting: 'Evening!',
-      followUp: 'How can I help you finish strong?',
+      greeting: 'Avond!',
+      followUp: 'Hoe kan ik je helpen om sterk af te sluiten?',
     },
     {
-      greeting: 'Good evening!',
-      followUp: "Let's tackle those last tasks.",
+      greeting: 'Goedenavond!',
+      followUp: 'Laten we die laatste taken aanpakken.',
     },
     {
-      greeting: 'Hello!',
-      followUp: "What can I help you with this evening?",
+      greeting: 'Hallo!',
+      followUp: 'Waarmee kan ik je vanavond helpen?',
     },
   ],
   night: [
     {
-      greeting: 'Working late?',
-      followUp: 'I\'m here to help you wrap things up.',
+      greeting: 'Laat aan het werk?',
+      followUp: 'Ik ben hier om je te helpen met afronden.',
     },
     {
-      greeting: 'Hello, night owl!',
-      followUp: 'What brings you here at this hour?',
+      greeting: 'Hallo, nachtuil!',
+      followUp: 'Wat brengt je hier op dit uur?',
     },
     {
-      greeting: 'Late night session?',
-      followUp: "Let's make it count!",
+      greeting: 'Late sessie?',
+      followUp: 'Laten we er het beste van maken!',
     },
   ],
 };
@@ -113,10 +113,10 @@ export function getInitialGreeting(
   const namePrefix = userName ? `${userName}, ` : '';
 
   if (isReturningUser) {
-    return `${greeting} ${namePrefix}Welcome back! ${followUp} I can help you manage signals, organize cases, assign team members, and more.`;
+    return `${greeting} ${namePrefix}Welkom terug! ${followUp} Ik kan je helpen met het beheren van meldingen, organiseren van dossiers, toewijzen van teamleden en meer.`;
   }
 
-  return `${greeting} ${namePrefix}I'm your Atlas AI assistant. ${followUp} I can help you create and manage signals, organize cases, assign team members, search records, and much more. How can I help you today?`;
+  return `${greeting} ${namePrefix}Ik ben je Atlas AI-assistent. ${followUp} Ik kan je helpen met het aanmaken en beheren van meldingen, organiseren van dossiers, toewijzen van teamleden, zoeken in gegevens en nog veel meer. Waarmee kan ik je vandaag helpen?`;
 }
 
 // Check if current time qualifies for "early bird" achievement (before 9 AM)
@@ -136,12 +136,12 @@ export function getStreakMessage(streakDays: number): string {
   if (streakDays === 0) {
     return '';
   } else if (streakDays === 1) {
-    return "Great start! Let's build that streak!";
+    return 'Goede start! Laten we die reeks opbouwen!';
   } else if (streakDays < 7) {
-    return `${streakDays}-day streak! Keep it going!`;
+    return `${streakDays}-daagse reeks! Ga zo door!`;
   } else if (streakDays < 30) {
-    return `Amazing ${streakDays}-day streak!`;
+    return `Geweldige ${streakDays}-daagse reeks!`;
   } else {
-    return `Incredible ${streakDays}-day streak! You're a champion!`;
+    return `Ongelooflijke ${streakDays}-daagse reeks! Je bent een kampioen!`;
   }
 }

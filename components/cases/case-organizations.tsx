@@ -41,11 +41,11 @@ export function CaseOrganizations({ caseItem }: CaseOrganizationsProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
-            <CardTitle>Associated Organizations</CardTitle>
+            <CardTitle>Gekoppelde Organisaties</CardTitle>
           </div>
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-1" />
-            Add
+            Toevoegen
           </Button>
         </div>
       </CardHeader>
@@ -53,16 +53,16 @@ export function CaseOrganizations({ caseItem }: CaseOrganizationsProps) {
         {organizations.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No organizations associated with this case.</p>
-            <p className="text-sm mt-1">Click &quot;Add&quot; to associate organizations.</p>
+            <p>Geen organisaties gekoppeld aan dit dossier.</p>
+            <p className="text-sm mt-1">Klik op &quot;Toevoegen&quot; om organisaties te koppelen.</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Naam</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Address</TableHead>
+                <TableHead>Adres</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>

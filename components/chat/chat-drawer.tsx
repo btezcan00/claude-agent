@@ -24,7 +24,7 @@ export function ChatDrawer() {
               size="icon"
               onClick={toggleExpanded}
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              aria-label={isExpanded ? 'Collapse chat' : 'Expand chat'}
+              aria-label={isExpanded ? 'Chat inklappen' : 'Chat uitklappen'}
             >
               {isExpanded ? (
                 <ChevronRight className="h-4 w-4" />

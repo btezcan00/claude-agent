@@ -84,7 +84,7 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="w-4 h-4" />
-          Case Details
+          Dossier Details
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -92,23 +92,23 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            Location
+            Locatie
           </h4>
           {editingLocation ? (
             <div className="flex gap-2">
               <Input
                 value={locationValue}
                 onChange={(e) => setLocationValue(e.target.value)}
-                placeholder="Enter location"
+                placeholder="Locatie invoeren"
                 className="flex-1"
               />
-              <Button size="sm" onClick={handleSaveLocation}>Save</Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditingLocation(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleSaveLocation}>Opslaan</Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditingLocation(false)}>Annuleren</Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <p className="text-sm text-muted-foreground">
-                {caseItem.location || 'No location set'}
+                {caseItem.location || 'Geen locatie ingesteld'}
               </p>
               <Button
                 size="sm"
@@ -118,7 +118,7 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
                   setEditingLocation(true);
                 }}
               >
-                Edit
+                Bewerken
               </Button>
             </div>
           )}
@@ -130,11 +130,11 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
             <Tag className="w-4 h-4" />
-            Tags
+            Labels
           </h4>
           <div className="flex flex-wrap gap-2 mb-2">
             {tags.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tags</p>
+              <p className="text-sm text-muted-foreground">Geen labels</p>
             ) : (
               tags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="gap-1">
@@ -153,7 +153,7 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
             <Input
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Add tag"
+              placeholder="Label toevoegen"
               className="w-40"
               onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
             />
@@ -169,11 +169,11 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
             <Users className="w-4 h-4" />
-            Practitioners
+            Behandelaars
           </h4>
           <div className="space-y-2">
             {practitioners.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No practitioners assigned</p>
+              <p className="text-sm text-muted-foreground">Geen behandelaars toegewezen</p>
             ) : (
               practitioners.map((p) => (
                 <div key={p.userId} className="flex items-center justify-between p-2 border rounded-lg">
@@ -201,7 +201,7 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline" className="w-full">
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Practitioner
+                    Behandelaar Toevoegen
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
@@ -225,11 +225,11 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
             <Share2 className="w-4 h-4" />
-            Shared With
+            Gedeeld Met
           </h4>
           <div className="space-y-2">
             {sharedWith.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Not shared with anyone</p>
+              <p className="text-sm text-muted-foreground">Met niemand gedeeld</p>
             ) : (
               sharedWith.map((s) => (
                 <div key={s.userId} className="flex items-center justify-between p-2 border rounded-lg">
@@ -279,7 +279,7 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline" className="w-full">
                     <Plus className="w-4 h-4 mr-2" />
-                    Share with User
+                    Delen met Gebruiker
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
@@ -302,7 +302,7 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
             <User className="w-4 h-4" />
-            Owner
+            Eigenaar
           </h4>
           {caseItem.ownerName ? (
             <div className="flex items-center gap-2">
@@ -314,7 +314,7 @@ export function CaseDetailInfo({ caseItem }: CaseDetailInfoProps) {
               <span className="text-sm">{caseItem.ownerName}</span>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No owner assigned</p>
+            <p className="text-sm text-muted-foreground">Geen eigenaar toegewezen</p>
           )}
         </div>
       </CardContent>

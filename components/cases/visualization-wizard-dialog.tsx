@@ -69,11 +69,11 @@ export function VisualizationWizardDialog({
   );
 
   const steps: StepInfo[] = [
-    { id: 'case', label: 'Case', status: 'completed' },
-    { id: 'upload', label: 'Upload', status: step === 'import' ? 'current' : 'completed' },
-    { id: 'control', label: 'Control', status: 'pending' },
-    { id: 'correction', label: 'Correction', status: 'pending' },
-    { id: 'import', label: 'Import', status: step === 'editor' ? 'current' : 'pending' },
+    { id: 'case', label: 'Dossier', status: 'completed' },
+    { id: 'upload', label: 'Uploaden', status: step === 'import' ? 'current' : 'completed' },
+    { id: 'control', label: 'Controle', status: 'pending' },
+    { id: 'correction', label: 'Correctie', status: 'pending' },
+    { id: 'import', label: 'Importeren', status: step === 'editor' ? 'current' : 'pending' },
   ];
 
   return (
@@ -82,7 +82,7 @@ export function VisualizationWizardDialog({
         className="sm:max-w-3xl p-0 gap-0"
         showCloseButton={false}
       >
-        <DialogTitle className="sr-only">Create Visualization</DialogTitle>
+        <DialogTitle className="sr-only">Visualisatie maken</DialogTitle>
         {/* Stepper Header */}
         <div className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
@@ -138,15 +138,15 @@ export function VisualizationWizardDialog({
           <div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
             <div className="text-center space-y-6">
               <h2 className="text-xl font-semibold">
-                Do you want to import entities for &quot;{caseItem.name}&quot;?
+                Wilt u entiteiten importeren voor &quot;{caseItem.name}&quot;?
               </h2>
               <p className="text-muted-foreground">
-                Import organizations, people, and addresses from external sources,
-                or skip to create a visualization with existing case entities.
+                Importeer organisaties, personen en adressen uit externe bronnen,
+                of sla over om een visualisatie te maken met bestaande dossier-entiteiten.
               </p>
               <div className="flex items-center justify-center">
                 <Button onClick={handleSkip}>
-                  Skip
+                  Overslaan
                 </Button>
               </div>
             </div>

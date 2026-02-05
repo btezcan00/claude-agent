@@ -31,7 +31,7 @@ export function SignalIndicators({ signal }: SignalIndicatorsProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
-            Indicators ({indicators.length})
+            Indicatoren ({indicators.length})
           </CardTitle>
           <Button
             variant="outline"
@@ -39,7 +39,7 @@ export function SignalIndicators({ signal }: SignalIndicatorsProps) {
             onClick={() => setDialogOpen(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Indicator
+            Indicator Toevoegen
           </Button>
         </div>
       </CardHeader>
@@ -47,8 +47,8 @@ export function SignalIndicators({ signal }: SignalIndicatorsProps) {
         {indicators.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>No indicators</p>
-            <p className="text-sm">Add indicators to flag potential risks</p>
+            <p>Geen indicatoren</p>
+            <p className="text-sm">Voeg indicatoren toe om potentiële risico's te markeren</p>
           </div>
         ) : (
           <div className="space-y-4">

@@ -134,16 +134,16 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Signal</DialogTitle>
+          <DialogTitle>Melding Bewerken</DialogTitle>
           <DialogDescription>
-            Update the signal details below.
+            Werk de meldinggegevens hieronder bij.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             {/* Signal Types - Multi-select */}
             <div className="grid gap-2">
-              <Label>Signal Type(s) *</Label>
+              <Label>Meldingtype(s) *</Label>
               <div className="flex flex-wrap gap-2">
                 {SIGNAL_TYPES.map((type) => (
                   <button
@@ -165,7 +165,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
 
             {/* Place of Observation */}
             <div className="grid gap-2">
-              <Label htmlFor="placeOfObservation">Place of Observation (Address) *</Label>
+              <Label htmlFor="placeOfObservation">Plaats van Waarneming (Adres) *</Label>
               <Input
                 id="placeOfObservation"
                 value={placeOfObservation}
@@ -176,7 +176,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
 
             {/* Location Description */}
             <div className="grid gap-2">
-              <Label htmlFor="locationDescription">Location Description</Label>
+              <Label htmlFor="locationDescription">Locatieomschrijving</Label>
               <Textarea
                 id="locationDescription"
                 value={locationDescription}
@@ -187,7 +187,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
 
             {/* Time of Observation */}
             <div className="grid gap-2">
-              <Label htmlFor="timeOfObservation">Time of Observation *</Label>
+              <Label htmlFor="timeOfObservation">Tijdstip van Waarneming *</Label>
               <Input
                 id="timeOfObservation"
                 type="datetime-local"
@@ -199,7 +199,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
 
             {/* Description */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description">Omschrijving *</Label>
               <Textarea
                 id="description"
                 value={description}
@@ -211,7 +211,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
 
             {/* Received By */}
             <div className="grid gap-2">
-              <Label htmlFor="receivedBy">Signal Received By *</Label>
+              <Label htmlFor="receivedBy">Melding Ontvangen Via *</Label>
               <Select
                 value={receivedBy}
                 onValueChange={(value: SignalSource) => setReceivedBy(value)}
@@ -234,7 +234,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
               <div className="flex items-center justify-between">
                 <Label htmlFor="has-contact" className="flex items-center gap-2 cursor-pointer">
                   <User className="w-4 h-4" />
-                  Contact Person
+                  Contactpersoon
                 </Label>
                 <Switch
                   id="has-contact"
@@ -247,7 +247,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
                 <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="contactFirstName">First Name *</Label>
+                      <Label htmlFor="contactFirstName">Voornaam *</Label>
                       <Input
                         id="contactFirstName"
                         value={contactFirstName}
@@ -256,7 +256,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="contactLastName">Last Name *</Label>
+                      <Label htmlFor="contactLastName">Achternaam *</Label>
                       <Input
                         id="contactLastName"
                         value={contactLastName}
@@ -268,7 +268,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="contactEmail">Email</Label>
+                      <Label htmlFor="contactEmail">E-mail</Label>
                       <Input
                         id="contactEmail"
                         type="email"
@@ -277,7 +277,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="contactPhone">Phone Number</Label>
+                      <Label htmlFor="contactPhone">Telefoonnummer</Label>
                       <Input
                         id="contactPhone"
                         type="tel"
@@ -294,7 +294,7 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
                       onCheckedChange={(checked) => setContactWantsFeedback(checked === true)}
                     />
                     <Label htmlFor="wantsFeedback" className="text-sm cursor-pointer">
-                      Contact person wants to receive feedback via email
+                      Contactpersoon wil feedback ontvangen via e-mail
                     </Label>
                   </div>
                 </div>
@@ -303,10 +303,10 @@ export function SignalEditDialog({ signal, open, onClose }: SignalEditDialogProp
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Annuleren
             </Button>
             <Button type="submit" disabled={!isFormValid}>
-              Save Changes
+              Wijzigingen Opslaan
             </Button>
           </DialogFooter>
         </form>

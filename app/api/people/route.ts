@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(created, { status: 201 });
   } catch {
     return NextResponse.json(
-      { error: 'Failed to create person' },
+      { error: 'Persoon aanmaken mislukt' },
       { status: 400 }
     );
   }

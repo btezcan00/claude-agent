@@ -30,8 +30,8 @@ export function OrganizationSelectDialog({
   onClose,
   organizations,
   onConfirm,
-  title = 'Select Organizations',
-  description = 'Choose the correct organizations from the search results.',
+  title = 'Organisaties Selecteren',
+  description = 'Kies de juiste organisaties uit de zoekresultaten.',
 }: OrganizationSelectDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -84,7 +84,7 @@ export function OrganizationSelectDialog({
           {organizations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Building2 className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No organizations found</p>
+              <p className="text-muted-foreground">Geen organisaties gevonden</p>
             </div>
           ) : (
             <div className="space-y-2 py-2">
@@ -114,7 +114,7 @@ export function OrganizationSelectDialog({
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-1">
-                        {org.address || 'No address'}
+                        {org.address || 'Geen adres'}
                       </p>
                       {org.chamberOfCommerce && (
                         <p className="text-xs text-muted-foreground mt-1">
@@ -133,7 +133,7 @@ export function OrganizationSelectDialog({
                   className="w-full mt-2"
                   onClick={handleLoadMore}
                 >
-                  Load more ({organizations.length - visibleCount} remaining)
+                  Meer laden ({organizations.length - visibleCount} resterend)
                 </Button>
               )}
             </div>
@@ -142,13 +142,13 @@ export function OrganizationSelectDialog({
 
         <DialogFooter className="border-t pt-4">
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            Annuleren
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={selectedIds.size === 0}
           >
-            Confirm {selectedIds.size > 0 && `(${selectedIds.size})`}
+            Bevestigen {selectedIds.size > 0 && `(${selectedIds.size})`}
           </Button>
         </DialogFooter>
       </DialogContent>

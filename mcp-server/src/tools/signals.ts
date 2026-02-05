@@ -4,19 +4,19 @@ import { apiRequest, formatResponse } from '../utils/api-client.js';
 
 // Zod schemas for signal types
 const SignalTypeSchema = z.enum([
-  'bogus-scheme',
-  'human-trafficking',
-  'drug-trafficking',
-  'bibob-research',
-  'money-laundering',
+  'malafide-constructie',
+  'mensenhandel',
+  'drugshandel',
+  'bibob-onderzoek',
+  'witwassen',
 ]);
 
 const SignalSourceSchema = z.enum([
-  'police',
-  'bibob-request',
-  'anonymous-report',
-  'municipal-department',
-  'other',
+  'politie',
+  'bibob-aanvraag',
+  'anonieme-melding',
+  'gemeentelijke-afdeling',
+  'overig',
 ]);
 
 const ContactPersonSchema = z.object({
@@ -163,7 +163,7 @@ export function registerSignalTools(server: McpServer): void {
     }
   );
 
-  // Signal Remove from Case - DELETE /api/cases/{caseId}/signals/{signalId}
+  // Signal Remove from Case - DELETE /api/dossiers/{caseId}/signals/{signalId}
   server.tool(
     'signal_remove_from_case',
     'Unlink a signal from a case',
@@ -174,7 +174,7 @@ export function registerSignalTools(server: McpServer): void {
     async ({ caseId, signalId }) => {
       const response = await apiRequest({
         method: 'DELETE',
-        path: '/api/cases/{caseId}/signals/{signalId}',
+        path: '/api/dossiers/{caseId}/signals/{signalId}',
         pathParams: { caseId, signalId },
       });
       return {

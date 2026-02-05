@@ -197,7 +197,7 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Paperclip className="w-4 h-4" />
-            Attachments ({signal.attachments.length})
+            Bijlagen ({signal.attachments.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -215,7 +215,7 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
           >
             <Paperclip className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-3">
-              Drag and drop files here, or click to browse
+              Sleep bestanden hierheen, of klik om te bladeren
             </p>
             <input
               ref={fileInputRef}
@@ -231,17 +231,17 @@ export function SignalAttachments({ signal }: SignalAttachmentsProps) {
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Browse Files
+              Bestanden Bladeren
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
-              Max {formatFileSize(MAX_FILE_SIZE)} per file
+              Max {formatFileSize(MAX_FILE_SIZE)} per bestand
             </p>
           </div>
 
           {/* Storage Usage */}
           <div>
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>Storage used</span>
+              <span>Opslag gebruikt</span>
               <span>
                 {formatFileSize(currentTotalSize)} / {formatFileSize(MAX_TOTAL_ATTACHMENTS_SIZE)}
               </span>

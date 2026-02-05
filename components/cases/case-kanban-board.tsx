@@ -76,7 +76,7 @@ export function CaseKanbanBoard() {
             >
               {cases.length === 0 ? (
                 <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
-                  No cases
+                  Geen dossiers
                 </div>
               ) : (
                 cases.map((caseItem) => (

@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerCurrentUser } from '@/lib/auth-server';
+import { tools, TOOL_NAMES } from './anthropic-tools';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -227,901 +228,6 @@ interface PersonData {
   bsn?: string;
 }
 
-const tools: Anthropic.Tool[] = [
-  {
-    name: 'ask_clarification',
-    description: 'Ask the user for missing required information before creating a plan. Use this BEFORE plan_proposal when required fields cannot be determined from the user message. Only use for WRITE operations when required fields are missing.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        summary: {
-          type: 'string',
-          description: 'Brief explanation of what information is needed and why',
-        },
-        questions: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', description: 'Unique identifier for this question' },
-              question: { type: 'string', description: 'The question to ask the user' },
-              type: { type: 'string', enum: ['text', 'choice', 'multi-select'], description: 'Type of input expected' },
-              options: { type: 'array', items: { type: 'string' }, description: 'Options for choice or multi-select questions' },
-              required: { type: 'boolean', description: 'Whether this field is required' },
-              fieldName: { type: 'string', description: 'The field name this question corresponds to (e.g., "types", "placeOfObservation")' },
-              toolName: { type: 'string', description: 'The tool this field belongs to (e.g., "create_signal")' },
-            },
-            required: ['id', 'question', 'type', 'required', 'fieldName'],
-          },
-          description: 'List of questions to ask the user',
-        },
-      },
-      required: ['summary', 'questions'],
-    },
-  },
-  {
-    name: 'plan_proposal',
-    description: 'Present a structured execution plan to the user for approval before executing write operations. Use this tool BEFORE any create, edit, delete, or other write operations. If required fields are missing, use ask_clarification first.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        summary: {
-          type: 'string',
-          description: 'Brief summary of what will be done (1-2 sentences)',
-        },
-        actions: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              step: { type: 'number', description: 'Step number (starting from 1)' },
-              action: { type: 'string', description: 'Human-readable description of the action' },
-              tool: { type: 'string', description: 'Name of the tool to be used' },
-              details: {
-                type: 'object',
-                description: 'Key parameters for this action. For parameters that depend on outputs from previous steps, use reference syntax: "$stepN.fieldName" (e.g., "$step1.caseId" to reference the case ID created in step 1). Available output fields: step with create_signal returns signalId, signalNumber; step with create_case returns caseId, caseName.',
-              },
-            },
-            required: ['step', 'action', 'tool'],
-          },
-          description: 'List of planned actions in execution order',
-        },
-      },
-      required: ['summary', 'actions'],
-    },
-  },
-  {
-    name: 'summarize_signals',
-    description: 'Summarize all signals or a specific signal by ID. Use this when the user wants an overview of signals.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'Optional specific signal ID or signal number to summarize. If not provided, summarizes all signals.',
-        },
-      },
-      required: [],
-    },
-  },
-  {
-    name: 'summarize_case',
-    description: 'Summarize a specific case or all cases. Returns key information including status, location, signals, and team members.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'Optional case ID or name to summarize. If not provided, summarizes all cases.',
-        },
-      },
-      required: [],
-    },
-  },
-  {
-    name: 'list_signals',
-    description: 'List all signals in the system. Use this when the user wants to see all signals or asks about signals.',
-    input_schema: {
-      type: 'object',
-      properties: {},
-      required: [],
-    },
-  },
-  {
-    name: 'create_signal',
-    description: 'Create a new signal with the specified details. Returns the signal data that should be created.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        description: {
-          type: 'string',
-          description: 'Detailed description of the signal/observation',
-        },
-        types: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'The types of the signal (e.g., human-trafficking, drug-trafficking, bogus-scheme)',
-        },
-        placeOfObservation: {
-          type: 'string',
-          description: 'Location/address where the observation was made',
-        },
-        timeOfObservation: {
-          type: 'string',
-          description: 'ISO datetime string for when the observation was made (e.g., 2024-01-15T14:30:00Z). If not specified by user, use current time.',
-        },
-        receivedBy: {
-          type: 'string',
-          enum: ['police', 'anonymous-report', 'municipal-department', 'bibob-request', 'other'],
-          description: 'Source that received the signal',
-        },
-      },
-      required: ['description', 'types', 'placeOfObservation', 'receivedBy'],
-    },
-  },
-  {
-    name: 'edit_signal',
-    description: 'Edit an existing signal. Returns the updates that should be applied.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'The ID or signal number of the signal to edit',
-        },
-        description: {
-          type: 'string',
-          description: 'New description for the signal',
-        },
-        types: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'New types for the signal',
-        },
-        placeOfObservation: {
-          type: 'string',
-          description: 'New location for the signal',
-        },
-      },
-      required: ['signal_id'],
-    },
-  },
-  {
-    name: 'add_note',
-    description: 'Add a note to an existing signal. Use this when the user wants to add comments, observations, or updates to a signal.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'The ID or signal number of the signal to add a note to',
-        },
-        content: {
-          type: 'string',
-          description: 'The content of the note to add',
-        },
-        is_private: {
-          type: 'boolean',
-          description: 'Whether the note should be private (default: false)',
-        },
-      },
-      required: ['signal_id', 'content'],
-    },
-  },
-  {
-    name: 'delete_signal',
-    description: 'Delete a signal from the system. Use this when the user explicitly wants to delete/remove a signal. Always confirm before deleting.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'The ID or signal number of the signal to delete',
-        },
-      },
-      required: ['signal_id'],
-    },
-  },
-  {
-    name: 'add_signal_to_case',
-    description: 'Add an existing signal to an existing case. Use this when the user wants to move or link a signal to a case that already exists.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'The ID or signal number of the signal to add',
-        },
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the existing case',
-        },
-      },
-      required: ['signal_id', 'case_id'],
-    },
-  },
-  {
-    name: 'list_team_members',
-    description: 'List all available team members and their case ownership. Use this when the user asks about team members or case assignments.',
-    input_schema: {
-      type: 'object',
-      properties: {},
-      required: [],
-    },
-  },
-  {
-    name: 'get_signal_stats',
-    description: 'Get dashboard statistics about all signals. Returns total count.',
-    input_schema: {
-      type: 'object',
-      properties: {},
-      required: [],
-    },
-  },
-  {
-    name: 'search_signals',
-    description: 'Search and filter signals by various criteria. Use this when the user wants to find specific signals.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        keyword: {
-          type: 'string',
-          description: 'Search keyword to match against signal description, location, or signal number',
-        },
-        type: {
-          type: 'string',
-          description: 'Filter by signal type (e.g., human-trafficking, drug-trafficking)',
-        },
-        receivedBy: {
-          type: 'string',
-          enum: ['police', 'anonymous-report', 'municipal-department', 'bibob-request', 'other'],
-          description: 'Filter by source that received the signal',
-        },
-      },
-      required: [],
-    },
-  },
-  {
-    name: 'get_signal_activity',
-    description: 'Get the activity history/timeline for a specific signal. Shows all actions taken on the signal.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'The ID or signal number of the signal',
-        },
-      },
-      required: ['signal_id'],
-    },
-  },
-  {
-    name: 'get_signal_notes',
-    description: 'Get all notes for a specific signal.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'The ID or signal number of the signal',
-        },
-      },
-      required: ['signal_id'],
-    },
-  },
-  {
-    name: 'summarize_attachments',
-    description: 'Summarize and analyze all attachments (images, documents, files) for a specific signal. Uses AI vision to analyze images and extracts text from documents. Use this when the user asks to describe, summarize, or analyze signal attachments.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        signal_id: {
-          type: 'string',
-          description: 'The ID or signal number of the signal whose attachments to summarize',
-        },
-      },
-      required: ['signal_id'],
-    },
-  },
-  {
-    name: 'list_cases',
-    description: 'List all cases in the system. Use this when the user wants to see available cases or asks about cases.',
-    input_schema: {
-      type: 'object',
-      properties: {},
-      required: [],
-    },
-  },
-  {
-    name: 'get_case_stats',
-    description: 'Get statistics about cases. Returns total count and count by status.',
-    input_schema: {
-      type: 'object',
-      properties: {},
-      required: [],
-    },
-  },
-  {
-    name: 'complete_bibob_application',
-    description: 'Complete the Bibob application for a case. IMPORTANT: Only use this when ALL 4 criteria are met. If any criterion is not met, use save_bibob_application_draft instead and inform the user which criteria are missing.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case to complete the application for',
-        },
-        explanation: {
-          type: 'string',
-          description: 'Overall explanation for the Bibob application completion',
-        },
-        criteria: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', enum: ['necessary_info', 'annual_accounts', 'budgets', 'loan_agreement'] },
-              isMet: { type: 'boolean' },
-              explanation: { type: 'string' },
-            },
-            required: ['id', 'isMet', 'explanation'],
-          },
-          description: 'Array of criteria with completion status and explanations',
-        },
-      },
-      required: ['case_id', 'explanation', 'criteria'],
-    },
-  },
-  {
-    name: 'save_bibob_application_draft',
-    description: 'Save progress on a Bibob application without completing it. Use this when any criteria are not met. BEFORE using this tool, you MUST first tell the user which specific criteria are not met and explain that all 4 criteria must be met to complete the application.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'ID or name of the case',
-        },
-        explanation: {
-          type: 'string',
-          description: 'Overall explanation for the application (optional)',
-        },
-        criteria: {
-          type: 'array',
-          description: 'Application criteria status (optional)',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                enum: ['necessary_info', 'annual_accounts', 'budgets', 'loan_agreement'],
-              },
-              isMet: { type: 'boolean' },
-              explanation: { type: 'string' },
-            },
-            required: ['id', 'isMet', 'explanation'],
-          },
-        },
-      },
-      required: ['case_id'],
-    },
-  },
-  {
-    name: 'assign_case_owner',
-    description: 'Assign a team member as the owner of a case. Use this when the user wants to assign someone to a case.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case to assign an owner to',
-        },
-        user_id: {
-          type: 'string',
-          description: 'The ID of the team member to assign as owner',
-        },
-        user_name: {
-          type: 'string',
-          description: 'The full name of the team member to assign as owner',
-        },
-      },
-      required: ['case_id', 'user_id', 'user_name'],
-    },
-  },
-  {
-    name: 'edit_case',
-    description: 'Edit case properties like name, description, status, location, color, or tags. Use this when the user wants to update case information.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case to edit',
-        },
-        name: {
-          type: 'string',
-          description: 'New case name',
-        },
-        description: {
-          type: 'string',
-          description: 'New case description',
-        },
-        status: {
-          type: 'string',
-          enum: ['application', 'research', 'national_office', 'decision', 'archive'],
-          description: 'New case status in the workflow',
-        },
-        location: {
-          type: 'string',
-          description: 'Geographic or organizational location',
-        },
-        color: {
-          type: 'string',
-          description: 'Case color (e.g., #ef4444 for red, #3b82f6 for blue)',
-        },
-        tags: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Tags to set on the case (replaces existing tags)',
-        },
-      },
-      required: ['case_id'],
-    },
-  },
-  {
-    name: 'create_case',
-    description: 'Create a new case. IMPORTANT: If user mentions a signal or is creating a case from a signal, you MUST include that signal ID in signalIds. After creation, ask if the user wants to fill out the Bibob application form. Default name is "New case".',
-    input_schema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Name of the case (default: "New case")',
-        },
-        description: {
-          type: 'string',
-          description: 'Description of the case\'s purpose',
-        },
-        color: {
-          type: 'string',
-          description: 'Optional hex color for the case',
-        },
-        signalIds: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Signal IDs to add to the case. MUST be included when creating a case from/for a signal.',
-        },
-      },
-      required: [],
-    },
-  },
-  {
-    name: 'delete_case',
-    description: 'Delete a case from the system. Use this when the user explicitly wants to delete/remove a case. Always confirm before deleting.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case to delete',
-        },
-      },
-      required: ['case_id'],
-    },
-  },
-  {
-    name: 'add_case_practitioner',
-    description: 'Add a team member as a practitioner to a case. Practitioners can work on the case but have limited permissions compared to the owner.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        user_id: {
-          type: 'string',
-          description: 'The ID of the team member to add as practitioner',
-        },
-        user_name: {
-          type: 'string',
-          description: 'The full name of the team member to add as practitioner',
-        },
-      },
-      required: ['case_id', 'user_id', 'user_name'],
-    },
-  },
-  {
-    name: 'share_case',
-    description: 'Share a case with a team member. Sharing gives them access to view or edit the case based on the access level specified.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case to share',
-        },
-        user_id: {
-          type: 'string',
-          description: 'The ID of the team member to share with',
-        },
-        user_name: {
-          type: 'string',
-          description: 'The full name of the team member to share with',
-        },
-        access_level: {
-          type: 'string',
-          enum: ['view', 'edit', 'admin'],
-          description: 'The access level to grant: view (read-only), edit (can modify), admin (full access)',
-        },
-      },
-      required: ['case_id', 'user_id', 'user_name', 'access_level'],
-    },
-  },
-  {
-    name: 'add_case_organization',
-    description: 'Add an organization to a case. Use this when the user wants to associate a company, business, or organization with the case.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        name: {
-          type: 'string',
-          description: 'Name of the organization',
-        },
-        kvk_number: {
-          type: 'string',
-          description: 'KVK (Chamber of Commerce) number if known',
-        },
-        address: {
-          type: 'string',
-          description: 'Address of the organization',
-        },
-        type: {
-          type: 'string',
-          description: 'Type of organization (e.g., "company", "foundation", "association")',
-        },
-      },
-      required: ['case_id', 'name'],
-    },
-  },
-  {
-    name: 'add_case_address',
-    description: 'Add an address/location to a case. Use this when the user wants to associate a specific address or location with the case.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        street: {
-          type: 'string',
-          description: 'Street name and number',
-        },
-        city: {
-          type: 'string',
-          description: 'City name',
-        },
-        postal_code: {
-          type: 'string',
-          description: 'Postal/ZIP code',
-        },
-        country: {
-          type: 'string',
-          description: 'Country (default: Netherlands)',
-        },
-        description: {
-          type: 'string',
-          description: 'Description or notes about this address',
-        },
-      },
-      required: ['case_id', 'street', 'city'],
-    },
-  },
-  {
-    name: 'add_case_person',
-    description: 'Add a person involved to a case. Use this when the user wants to associate a person with the case investigation.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        first_name: {
-          type: 'string',
-          description: 'First name of the person',
-        },
-        last_name: {
-          type: 'string',
-          description: 'Last name of the person',
-        },
-        date_of_birth: {
-          type: 'string',
-          description: 'Date of birth (YYYY-MM-DD format)',
-        },
-        role: {
-          type: 'string',
-          description: 'Role or relationship to the case (e.g., "suspect", "witness", "owner", "employee")',
-        },
-        notes: {
-          type: 'string',
-          description: 'Additional notes about this person',
-        },
-      },
-      required: ['case_id', 'first_name', 'last_name'],
-    },
-  },
-  {
-    name: 'add_case_finding',
-    description: 'Add a finding to a case. Use one of the 6 predefined finding types: 1) LBB - no serious degree of danger (none), 2) LBB - a lower level of danger (low), 3) LBB - serious level of danger (serious), 4) Serious danger - investing criminal assets (A) (critical), 5) Serious danger - committing criminal offences (B) (critical), 6) no serious level of danger (none).',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        label: {
-          type: 'string',
-          description: 'The finding type label (use exact label from predefined types)',
-        },
-        severity: {
-          type: 'string',
-          enum: ['none', 'low', 'serious', 'critical'],
-          description: 'Severity level matching the finding type',
-        },
-        assigned_to: {
-          type: 'string',
-          description: 'Name of the team member this finding is assigned to',
-        },
-      },
-      required: ['case_id', 'label', 'severity'],
-    },
-  },
-  {
-    name: 'add_case_letter',
-    description: 'Add a letter/document to a case. Two templates available: lbb_notification (LBB notification letter) and bibob_7c_request (Article 7c Bibob Act request). Each has specific required fields. IMPORTANT: Always ask for the letter_name first, then collect all template-specific fields before calling this tool.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        letter_name: {
-          type: 'string',
-          description: 'Custom name/title for the letter (e.g., "Bibob Request - ABC Company")',
-        },
-        template: {
-          type: 'string',
-          enum: ['lbb_notification', 'bibob_7c_request'],
-          description: 'Template type',
-        },
-        // Common fields
-        date: {
-          type: 'string',
-          description: 'Date of the letter (YYYY-MM-DD format)',
-        },
-        municipal_province: {
-          type: 'string',
-          description: 'Municipal or province name',
-        },
-        // LBB Notification specific fields
-        reference_number: {
-          type: 'string',
-          description: 'Reference number (LBB notification)',
-        },
-        recipient_name: {
-          type: 'string',
-          description: 'Name of recipient (LBB notification)',
-        },
-        recipient_address: {
-          type: 'string',
-          description: 'Recipient address (LBB notification)',
-        },
-        recipient_postal_code: {
-          type: 'string',
-          description: 'Recipient postal code and city (LBB notification)',
-        },
-        subject: {
-          type: 'string',
-          description: 'Subject of the letter (LBB notification)',
-        },
-        notification_content: {
-          type: 'string',
-          description: 'Notification content/body text (LBB notification)',
-        },
-        sender_name: {
-          type: 'string',
-          description: 'Sender name (LBB notification)',
-        },
-        sender_title: {
-          type: 'string',
-          description: 'Sender title/function (LBB notification)',
-        },
-        // Bibob 7c Request specific fields
-        applicant_name: {
-          type: 'string',
-          description: 'Name of applicant (Bibob 7c)',
-        },
-        applicant_phone: {
-          type: 'string',
-          description: 'Applicant telephone number (Bibob 7c)',
-        },
-        recipient_email: {
-          type: 'string',
-          description: 'Recipient email address (Bibob 7c)',
-        },
-        legal_provisions: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Selected legal provisions (Bibob 7c): article_10x, awr_incorrect, general_tax_act, article_67e, article_67f',
-        },
-        fine_information: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Selected fine info (Bibob 7c): irrevocable_fines, fines_court_ruled, fines_no_ruling',
-        },
-        license_types: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Selected license types (Bibob 7c): alcohol_act, wabo_building, wabo_environmental, wabo_usage, operating_establishment, sex_establishment, license_other',
-        },
-        additional_remarks: {
-          type: 'string',
-          description: 'Additional remarks (Bibob 7c)',
-        },
-      },
-      required: ['case_id', 'template', 'date', 'municipal_province'],
-    },
-  },
-  {
-    name: 'add_case_communication',
-    description: 'Add a communication record to a case. Communications track correspondence, calls, meetings, or other interactions related to the case.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        label: {
-          type: 'string',
-          description: 'Short title/label for the communication (e.g., "Phone call with witness", "Email from tax office")',
-        },
-        description: {
-          type: 'string',
-          description: 'Detailed description of the communication',
-        },
-        date: {
-          type: 'string',
-          description: 'Date of the communication (YYYY-MM-DD format). Defaults to today if not provided.',
-        },
-      },
-      required: ['case_id', 'label'],
-    },
-  },
-  {
-    name: 'get_case_messages',
-    description: 'Get the chat messages for a specific contact in a case. Returns the last messages in the conversation.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        contact_id: {
-          type: 'string',
-          description: 'The ID of the contact (user ID for practitioners/shared users, org ID for organizations, person ID for people involved)',
-        },
-        contact_name: {
-          type: 'string',
-          description: 'The name of the contact (for display purposes)',
-        },
-        contact_type: {
-          type: 'string',
-          enum: ['practitioner', 'shared', 'organization', 'person'],
-          description: 'The type of contact: practitioner, shared (shared user), organization, or person (person involved)',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of messages to return (default: 5)',
-        },
-      },
-      required: ['case_id', 'contact_id', 'contact_name', 'contact_type'],
-    },
-  },
-  {
-    name: 'send_case_message',
-    description: 'Send a chat message to a contact in a case.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        contact_id: {
-          type: 'string',
-          description: 'The ID of the contact (user ID for practitioners/shared users, org ID for organizations, person ID for people involved)',
-        },
-        contact_name: {
-          type: 'string',
-          description: 'The name of the contact',
-        },
-        contact_type: {
-          type: 'string',
-          enum: ['practitioner', 'shared', 'organization', 'person'],
-          description: 'The type of contact: practitioner, shared (shared user), organization, or person (person involved)',
-        },
-        message: {
-          type: 'string',
-          description: 'The message content to send',
-        },
-      },
-      required: ['case_id', 'contact_id', 'contact_name', 'contact_type', 'message'],
-    },
-  },
-  {
-    name: 'add_case_visualization',
-    description: 'Add a visualization to a case. Visualizations are diagrams, charts, relationship maps, or other visual representations of case data.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        label: {
-          type: 'string',
-          description: 'Short title/label for the visualization (e.g., "Organization structure", "Timeline of events")',
-        },
-        description: {
-          type: 'string',
-          description: 'Description of what the visualization shows',
-        },
-      },
-      required: ['case_id', 'label'],
-    },
-  },
-  {
-    name: 'add_case_activity',
-    description: 'Add an activity to a case. Activities track tasks, actions, or work items that need to be done or have been completed for the case.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        case_id: {
-          type: 'string',
-          description: 'The ID or name of the case',
-        },
-        label: {
-          type: 'string',
-          description: 'Short title/label for the activity (e.g., "Review documents", "Interview witness")',
-        },
-        description: {
-          type: 'string',
-          description: 'Detailed description of the activity',
-        },
-        assigned_to: {
-          type: 'string',
-          description: 'Name of the person this activity is assigned to',
-        },
-        date: {
-          type: 'string',
-          description: 'Due date or date of the activity (YYYY-MM-DD format). Defaults to today if not provided.',
-        },
-      },
-      required: ['case_id', 'label'],
-    },
-  },
-];
-
 // Helper function to summarize attachments using Claude Vision
 async function summarizeAttachmentsForSignal(
   signalId: string,
@@ -1136,18 +242,18 @@ async function summarizeAttachmentsForSignal(
   );
 
   if (!targetSignal) {
-    return `Signal "${signalId}" not found.`;
+    return `Melding "${signalId}" niet gevonden.`;
   }
 
   const attachments = targetSignal.attachments || [];
   if (attachments.length === 0) {
-    return `Signal ${targetSignal.signalNumber} has no attachments.`;
+    return `Melding ${targetSignal.signalNumber} heeft geen bijlagen.`;
   }
 
   // Filter to only attachments with content
   const attachmentsWithContent = attachments.filter((a) => a.content);
   if (attachmentsWithContent.length === 0) {
-    return `Signal ${targetSignal.signalNumber} has ${attachments.length} attachment(s), but none have accessible content for analysis.`;
+    return `Melding ${targetSignal.signalNumber} heeft ${attachments.length} bijlage(n), maar geen daarvan heeft toegankelijke inhoud voor analyse.`;
   }
 
   // Build multimodal content array
@@ -1243,10 +349,10 @@ function validatePlanProposal(plan: {
   ];
 
   // Types that indicate Claude couldn't determine the actual type
-  const fallbackTypes = ['other'];
+  const fallbackTypes = ['other', 'overig'];
 
   const requiredFields: Record<string, string[]> = {
-    create_signal: ['types', 'placeOfObservation'],
+    [TOOL_NAMES.MAAK_MELDING]: ['beschrijving', 'soorten', 'plaatsVanWaarneming', 'ontvangenDoor'],
   };
 
   const result = { isValid: true, missingFields: [] as string[] };
@@ -1266,8 +372,8 @@ function validatePlanProposal(plan: {
         continue;
       }
 
-      // Special handling for 'types' field - check if only fallback types
-      if (field === 'types' && Array.isArray(value)) {
+      // Special handling for 'soorten' field - check if only fallback types
+      if (field === 'soorten' && Array.isArray(value)) {
         const onlyFallbacks = value.every(t =>
           typeof t === 'string' && fallbackTypes.includes(t.toLowerCase())
         );
@@ -1382,7 +488,7 @@ export async function POST(request: NextRequest) {
       .join('\n');
 
     // Build system prompt - modify if we have an approved plan
-    const systemPrompt = `You are an AI assistant for Atlas AI. You help government employees manage signals and cases related to investigations.
+    const systemPrompt = `Je bent een AI-assistent voor Atlas AI. Je helpt overheidsmedewerkers bij het beheren van meldingen en dossiers gerelateerd aan onderzoeken. BELANGRIJK: Reageer ALTIJD in het Nederlands.
 
 ## CLARIFICATION BEFORE PLANNING
 
@@ -1391,30 +497,30 @@ If required fields are missing, use ask_clarification BEFORE plan_proposal.
 
 **IMPORTANT:** Only ask for fields that are ACTUALLY MISSING. If the user provides some fields (in any format - prose, bullet points, or structured), extract those values and only ask for the remaining missing fields.
 
-**IMPORTANT:** Maximum 5 questions for create_signal. Do NOT create duplicate questions (e.g., do NOT ask for date and time separately - use ONE question for "date and time").
+**IMPORTANT:** Maximum 5 questions for maak_melding. Do NOT create duplicate questions (e.g., do NOT ask for date and time separately - use ONE question for "date and time").
 
-**For create_signal - Required Fields (use these exact questions):**
-- description: REQUIRED - Question: "Please provide a description for the signal"
-- types: REQUIRED - Question: "What type of signal is this?" Options: human-trafficking, drug-trafficking, bogus-scheme, fraud, money-laundering, other
-- placeOfObservation: REQUIRED - Question: "Where was this observed (location/address)?"
-- receivedBy: REQUIRED - Question: "How was this signal received?" Options: police, anonymous-report, municipal-department, bibob-request, other
-- timeOfObservation: REQUIRED - Question: "When was the observation made (date and time)?" (single question for both date AND time together)
+**For maak_melding - Required Fields (use these exact questions):**
+- beschrijving: REQUIRED - Question: "Geef een beschrijving van de melding"
+- soorten: REQUIRED - Question: "Wat voor soort melding is dit?" Options: mensenhandel, drugshandel, malafide-constructie, fraude, witwassen, overig
+- plaatsVanWaarneming: REQUIRED - Question: "Waar is dit waargenomen (locatie/adres)?"
+- ontvangenDoor: REQUIRED - Question: "Hoe is deze melding ontvangen?" Options: politie, anonieme-melding, gemeentelijke-afdeling, bibob-verzoek, overig
+- tijdVanWaarneming: REQUIRED - Question: "Wanneer is de waarneming gedaan (datum en tijd)?" (single question for both date AND time together)
 
 **Example - Missing Info:**
-User: "Create a signal"
+User: "Maak een melding aan"
 → Use ask_clarification for: description, types, placeOfObservation, receivedBy, timeOfObservation
 
 **Example - Complete Info:**
-User: "Create a signal about drug trafficking at Main Street"
-→ Skip clarification, use plan_proposal directly
+User: "Maak een melding over verdachte drugshandel activiteiten op de Hoofdstraat, gemeld door de politie gisteren om 14:00"
+→ Skip clarification, use plan_proposal directly (has description, types, placeOfObservation, receivedBy, timeOfObservation)
 
 **Example - Structured Answers:**
 User provides answers like:
-- description: Suspicious activity
-- types: human-trafficking
-- placeOfObservation: Here
-- receivedBy: municipal-department
-- timeOfObservation: Today
+- description: Verdachte activiteit
+- types: mensenhandel
+- placeOfObservation: Hier
+- receivedBy: gemeentelijke-afdeling
+- timeOfObservation: Vandaag
 → Extract values from the structured format and use plan_proposal directly. Do NOT ask clarification again.
 
 **SKIP clarification when:**
@@ -1443,15 +549,15 @@ For step references like "$step1.signalId", use that exact string - the client w
 DO NOT call plan_proposal. The plan is approved. Execute the write tools now.` : `**ABSOLUTE RULE: You MUST use the plan_proposal tool BEFORE any write operation.**`}
 
 WRITE TOOLS (REQUIRE plan_proposal FIRST):
-- create_signal, edit_signal, add_note, delete_signal, add_signal_to_case
-- create_case, delete_case, edit_case, assign_case_owner, add_case_practitioner, share_case
-- add_case_organization, add_case_address, add_case_person, add_case_finding
-- add_case_letter, add_case_communication, add_case_visualization, add_case_activity
-- send_case_message, complete_bibob_application, save_bibob_application_draft
+- maak_melding, bewerk_melding, voeg_notitie_toe, verwijder_melding, voeg_melding_toe_aan_dossier
+- maak_dossier, verwijder_dossier, bewerk_dossier, wijs_dossier_eigenaar_toe, voeg_dossier_behandelaar_toe, deel_dossier
+- voeg_dossier_organisatie_toe, voeg_dossier_adres_toe, voeg_dossier_persoon_toe, voeg_dossier_bevinding_toe
+- voeg_dossier_brief_toe, voeg_dossier_communicatie_toe, voeg_dossier_visualisatie_toe, voeg_dossier_activiteit_toe
+- verstuur_dossier_bericht, voltooi_bibob_aanvraag, sla_bibob_aanvraag_concept_op
 
 READ TOOLS (Execute immediately):
-- list_signals, summarize_signals, search_signals, get_signal_activity, get_signal_notes, get_signal_stats
-- summarize_attachments, list_cases, summarize_case, get_case_stats, list_team_members, get_case_messages
+- toon_meldingen, vat_meldingen_samen, zoek_meldingen, haal_melding_activiteit_op, haal_melding_notities_op, haal_melding_statistieken_op
+- vat_bijlagen_samen, toon_dossiers, vat_dossier_samen, haal_dossier_statistieken_op, toon_teamleden, haal_dossier_berichten_op
 
 ## CRITICAL: WORKFLOW BOUNDARIES
 
@@ -1570,10 +676,10 @@ User provides signal about "human trafficking at Prinsengracht 247, Amsterdam":
 3. **Match Found**: Both keyword AND location match
 4. **Proposal**:
 {
-  "summary": "Create human trafficking signal and link to Human Trafficking Priority case (matched by content keywords and location)",
+  "summary": "Maak mensenhandel melding aan en koppel aan Human Trafficking Priority dossier (matched by content keywords and location)",
   "actions": [
-    { "step": 1, "tool": "create_signal", "action": "Create human trafficking signal", "details": { ... } },
-    { "step": 2, "tool": "add_signal_to_case", "action": "Link to Human Trafficking Priority case", "details": { "signal_id": "$step1.signalId", "case_id": "[case ID from Current Data]" } }
+    { "step": 1, "tool": "maak_melding", "action": "Maak mensenhandel melding aan", "details": { ... } },
+    { "step": 2, "tool": "voeg_melding_toe_aan_dossier", "action": "Koppel aan Human Trafficking Priority dossier", "details": { "melding_id": "$step1.signalId", "dossier_id": "[dossier ID uit Huidige Gegevens]" } }
   ]
 }
 
@@ -1948,21 +1054,22 @@ NEVER call summarize_signals in a loop for individual signals - this is ineffici
 
 **Team:** list_team_members
 
-## Defaults & Assumptions
+## Standaardwaarden & Aannames
 
-When information is missing:
-- **Signal time**: Use current time
-- **Signal receivedBy**: Use "municipal-department"
-- **Case name**: Use "New Case" or derive from context
-- **Case color**: Pick randomly from: #ef4444, #f97316, #22c55e, #3b82f6, #8b5cf6
-- **Owner**: Assign to current user if not specified
-- **Bibob criteria**: If not all met, save as draft automatically
+Wanneer informatie ontbreekt:
+- **Meldingstijd**: Gebruik huidige tijd
+- **Melding receivedBy**: Gebruik "municipal-department"
+- **Dossiernaam**: Gebruik "Nieuw Dossier" of afleiden uit context
+- **Dossierkleur**: Kies willekeurig uit: #ef4444, #f97316, #22c55e, #3b82f6, #8b5cf6
+- **Eigenaar**: Wijs toe aan huidige gebruiker indien niet gespecificeerd
+- **Bibob-criteria**: Als niet allemaal voldaan, automatisch als concept opslaan
 
-## Response Style
+## Responsstijl
 
-- Be concise and action-oriented
-- After completing actions, summarize what was done
-- Suggest logical next steps when appropriate
+- Reageer ALTIJD in het Nederlands
+- Wees beknopt en actiegericht
+- Vat na het voltooien van acties samen wat er is gedaan
+- Stel waar nodig logische volgende stappen voor
 
 ## Signal-to-Case Matching (IMPORTANT)
 
@@ -2085,9 +1192,9 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
 
                 let result = '';
 
-                // Handle summarize_attachments server-side
-                if (nextAction.tool === 'summarize_attachments') {
-                  const signalId = (toolInput as { signal_id: string }).signal_id;
+                // Handle vat_bijlagen_samen server-side
+                if (nextAction.tool === TOOL_NAMES.VAT_BIJLAGEN_SAMEN) {
+                  const signalId = (toolInput as { melding_id: string }).melding_id;
                   result = await summarizeAttachmentsForSignal(signalId, signals);
                 } else {
                   // For other tools, return success - client will execute
@@ -2135,7 +1242,7 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
 
             for (const toolUse of toolUses) {
               // Handle ask_clarification - pause and wait for user response
-              if (toolUse.name === 'ask_clarification') {
+              if (toolUse.name === TOOL_NAMES.VRAAG_VERDUIDELIJKING) {
                 const clarificationInput = toolUse.input as {
                   summary: string;
                   questions: Array<{ id: string; question: string; type: string; options?: string[]; required: boolean; fieldName?: string; toolName?: string }>;
@@ -2172,7 +1279,7 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
               }
 
               // Handle plan_proposal specially
-              if (toolUse.name === 'plan_proposal') {
+              if (toolUse.name === TOOL_NAMES.PLAN_VOORSTEL) {
                 // If we have an approved plan, skip plan_proposal entirely
                 if (approvedPlan) {
                   // Return a dummy result so the AI can continue
@@ -2200,14 +1307,14 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
                     max_tokens: 2048,
                     system: systemPrompt + `\n\nIMPORTANT: The user's request is missing required information: ${validation.missingFields.join(', ')}. You MUST use ask_clarification to request this information before proceeding.`,
                     tools,
-                    tool_choice: { type: 'tool', name: 'ask_clarification' },
+                    tool_choice: { type: 'tool', name: TOOL_NAMES.VRAAG_VERDUIDELIJKING },
                     messages: currentMessages,
                     temperature: 0,
                   });
 
                   // Process retry response for ask_clarification
                   for (const block of retryResponse.content) {
-                    if (block.type === 'tool_use' && block.name === 'ask_clarification') {
+                    if (block.type === 'tool_use' && block.name === TOOL_NAMES.VRAAG_VERDUIDELIJKING) {
                       const clarificationInput = block.input as {
                         summary: string;
                         questions: Array<{ id: string; question: string; type: string; options?: string[]; required: boolean; fieldName?: string; toolName?: string }>;
@@ -2278,44 +1385,44 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
 
                 // Inject step references for known tool patterns
                 // This ensures references are used even if AI didn't include them
-                if (toolUse.name === 'add_signal_to_case' && currentPlanStep > 1) {
-                  const createSignalStep = approvedPlan.actions.find(a => a.tool === 'create_signal');
+                if (toolUse.name === TOOL_NAMES.VOEG_MELDING_TOE_AAN_DOSSIER && currentPlanStep > 1) {
+                  const createSignalStep = approvedPlan.actions.find(a => a.tool === TOOL_NAMES.MAAK_MELDING);
 
                   if (createSignalStep && createSignalStep.step < currentPlanStep) {
                     toolInput = {
                       ...toolInput,
-                      signal_id: `$step${createSignalStep.step}.signalId`
+                      melding_id: `$step${createSignalStep.step}.signalId`
                     };
                   }
                 }
 
-                if (toolUse.name === 'complete_bibob_application' || toolUse.name === 'save_bibob_application_draft') {
-                  const createCaseStep = approvedPlan.actions.find(a => a.tool === 'create_case');
+                if (toolUse.name === TOOL_NAMES.VOLTOOI_BIBOB_AANVRAAG || toolUse.name === TOOL_NAMES.SLA_BIBOB_AANVRAAG_CONCEPT_OP) {
+                  const createCaseStep = approvedPlan.actions.find(a => a.tool === TOOL_NAMES.MAAK_DOSSIER);
 
                   if (createCaseStep && createCaseStep.step < currentPlanStep) {
-                    // Only inject if case_id looks like a fake ID (not an existing case ID)
-                    const currentCaseId = (toolInput as Record<string, unknown>).case_id as string;
+                    // Only inject if dossier_id looks like a fake ID (not an existing case ID)
+                    const currentCaseId = (toolInput as Record<string, unknown>).dossier_id as string;
                     if (currentCaseId && !currentCaseId.startsWith('case-') && !currentCaseId.startsWith('$step')) {
                       toolInput = {
                         ...toolInput,
-                        case_id: `$step${createCaseStep.step}.caseId`
+                        dossier_id: `$step${createCaseStep.step}.caseId`
                       };
                     }
                   }
                 }
 
-                if (toolUse.name === 'create_case') {
-                  const createSignalStep = approvedPlan.actions.find(a => a.tool === 'create_signal');
+                if (toolUse.name === TOOL_NAMES.MAAK_DOSSIER) {
+                  const createSignalStep = approvedPlan.actions.find(a => a.tool === TOOL_NAMES.MAAK_MELDING);
 
                   if (createSignalStep && createSignalStep.step < currentPlanStep) {
-                    // If signalIds is present but doesn't use reference syntax, inject it
-                    const signalIds = (toolInput as Record<string, unknown>).signalIds as string[] | undefined;
-                    if (signalIds && signalIds.length > 0) {
-                      const hasReference = signalIds.some(id => id.startsWith('$step'));
+                    // If meldingIds is present but doesn't use reference syntax, inject it
+                    const meldingIds = (toolInput as Record<string, unknown>).meldingIds as string[] | undefined;
+                    if (meldingIds && meldingIds.length > 0) {
+                      const hasReference = meldingIds.some(id => id.startsWith('$step'));
                       if (!hasReference) {
                         toolInput = {
                           ...toolInput,
-                          signalIds: [`$step${createSignalStep.step}.signalId`]
+                          meldingIds: [`$step${createSignalStep.step}.signalId`]
                         };
                       }
                     }
@@ -2328,8 +1435,8 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
               let result = '';
 
               // Handle summarize_attachments server-side
-              if (toolUse.name === 'summarize_attachments') {
-                const signalId = (toolInput as { signal_id: string }).signal_id;
+              if (toolUse.name === TOOL_NAMES.VAT_BIJLAGEN_SAMEN) {
+                const signalId = (toolInput as { melding_id: string }).melding_id;
                 result = await summarizeAttachmentsForSignal(signalId, signals);
               } else {
                 // For other tools, return success - client will execute
@@ -2410,8 +1517,8 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
         };
 
         // Handle summarize_attachments tool server-side
-        if (block.name === 'summarize_attachments') {
-          const signalId = (block.input as { signal_id: string }).signal_id;
+        if (block.name === TOOL_NAMES.VAT_BIJLAGEN_SAMEN) {
+          const signalId = (block.input as { melding_id: string }).melding_id;
           toolUse.result = await summarizeAttachmentsForSignal(signalId, signals);
         }
 

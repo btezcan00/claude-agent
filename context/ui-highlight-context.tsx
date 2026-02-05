@@ -71,7 +71,7 @@ export function UIHighlightProvider({ children }: UIHighlightProviderProps) {
   }, [activeHighlights]);
 
   const navigateAndHighlight = useCallback((type: 'signal' | 'case', id: string) => {
-    const targetPath = type === 'signal' ? '/signals' : '/cases';
+    const targetPath = type === 'signal' ? '/meldingen' : '/dossiers';
 
     // Navigate to the list page
     router.push(targetPath);

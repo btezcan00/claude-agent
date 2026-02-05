@@ -78,7 +78,7 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <HelpCircle className="w-4 h-4" />
-          Need More Information
+          Meer Informatie Nodig
         </div>
         <button
           onClick={onCancel}
@@ -105,7 +105,7 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
                 type="text"
                 value={(answers[question.id] as string) || ''}
                 onChange={(e) => handleTextChange(question.id, e.target.value)}
-                placeholder="Type your answer..."
+                placeholder="Typ je antwoord..."
                 className="w-full px-2 py-1.5 text-xs bg-white dark:bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-ring"
               />
             )}
@@ -161,7 +161,7 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
           disabled={!canSubmit}
           className="bg-claude-coral hover:bg-claude-coral/90 text-white disabled:opacity-50"
         >
-          Continue
+          Doorgaan
         </Button>
         <Button
           size="sm"
@@ -169,7 +169,7 @@ export function ClarificationDisplay({ data, onSubmit, onCancel }: Clarification
           onClick={onCancel}
           className="border-border text-muted-foreground"
         >
-          Cancel
+          Annuleren
         </Button>
       </div>
     </div>

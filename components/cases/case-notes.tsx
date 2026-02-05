@@ -37,7 +37,7 @@ export function CaseNotes({ caseItem, isAdmin = true }: CaseNotesProps) {
   const NotesList = ({ notesList, showAdminBadge = false }: { notesList: typeof notes; showAdminBadge?: boolean }) => (
     <div className="space-y-3">
       {notesList.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">No notes yet</p>
+        <p className="text-sm text-muted-foreground text-center py-4">Nog geen notities</p>
       ) : (
         notesList.map((note) => (
           <div key={note.id} className="p-3 border rounded-lg space-y-2">
@@ -83,7 +83,7 @@ export function CaseNotes({ caseItem, isAdmin = true }: CaseNotesProps) {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <MessageSquare className="w-4 h-4" />
-          Notes
+          Notities
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -92,7 +92,7 @@ export function CaseNotes({ caseItem, isAdmin = true }: CaseNotesProps) {
           <Textarea
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
-            placeholder="Write a note..."
+            placeholder="Schrijf een notitie..."
             rows={3}
           />
           <div className="flex items-center justify-between">
@@ -105,12 +105,12 @@ export function CaseNotes({ caseItem, isAdmin = true }: CaseNotesProps) {
                   className="rounded"
                 />
                 <Shield className="w-4 h-4 text-amber-600" />
-                Admin note (only visible to admins)
+                Admin notitie (alleen zichtbaar voor admins)
               </label>
             )}
             <Button onClick={handleAddNote} disabled={!noteContent.trim()}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Note
+              Notitie Toevoegen
             </Button>
           </div>
         </div>
@@ -121,8 +121,8 @@ export function CaseNotes({ caseItem, isAdmin = true }: CaseNotesProps) {
         {isAdmin ? (
           <Tabs defaultValue="all">
             <TabsList>
-              <TabsTrigger value="all">All ({notes.length})</TabsTrigger>
-              <TabsTrigger value="regular">Regular ({regularNotes.length})</TabsTrigger>
+              <TabsTrigger value="all">Alle ({notes.length})</TabsTrigger>
+              <TabsTrigger value="regular">Regulier ({regularNotes.length})</TabsTrigger>
               <TabsTrigger value="admin">Admin ({adminNotes.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="all" className="mt-4">

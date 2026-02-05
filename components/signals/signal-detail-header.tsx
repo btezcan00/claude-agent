@@ -22,11 +22,11 @@ export function SignalDetailHeader({
     <div className="space-y-4">
       {/* Back Navigation */}
       <Link
-        href="/signals"
+        href="/meldingen"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Signals
+        Terug naar Meldingen
       </Link>
 
       {/* Header */}
@@ -49,12 +49,12 @@ export function SignalDetailHeader({
           <CaseCreateDialog signalIds={[signal.id]}>
             <Button variant="outline" size="sm">
               <FolderPlus className="w-4 h-4 mr-2" />
-              Create Case
+              Dossier Aanmaken
             </Button>
           </CaseCreateDialog>
           <Button variant="outline" size="sm" onClick={onEdit}>
             <Edit className="w-4 h-4 mr-2" />
-            Edit
+            Bewerken
           </Button>
           <Button
             variant="outline"

@@ -57,29 +57,29 @@ export function AddLetterDialog({ open, onClose, onAdd }: AddLetterDialogProps) 
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add document</DialogTitle>
+          <DialogTitle>Document toevoegen</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          {/* Name */}
+          {/* Naam */}
           <div className="space-y-2">
             <Label>
-              Name <span className="text-destructive">*</span>
+              Naam <span className="text-destructive">*</span>
             </Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter document name"
+              placeholder="Voer documentnaam in"
             />
           </div>
 
-          {/* Template */}
+          {/* Sjabloon */}
           <div className="space-y-2">
             <Label>
-              Template <span className="text-destructive">*</span>
+              Sjabloon <span className="text-destructive">*</span>
             </Label>
             <Select value={template} onValueChange={setTemplate}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a template" />
+                <SelectValue placeholder="Selecteer een sjabloon" />
               </SelectTrigger>
               <SelectContent>
                 {LETTER_TEMPLATES.map((t) => (
@@ -99,10 +99,10 @@ export function AddLetterDialog({ open, onClose, onAdd }: AddLetterDialogProps) 
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            Annuleren
           </Button>
           <Button onClick={handleSubmit} disabled={!isValid}>
-            Save
+            Opslaan
           </Button>
         </div>
       </DialogContent>

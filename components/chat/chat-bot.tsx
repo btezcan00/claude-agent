@@ -97,7 +97,7 @@ function ChatBotInner() {
         {
           id: '1',
           role: 'assistant',
-          content: "Hi! I'm Atlas AI, your AI assistant. I can help you manage signals and cases - just tell me what you need and I'll take care of it.",
+          content: "Hallo! Ik ben Atlas AI, je AI-assistent. Ik kan je helpen met het beheren van meldingen en dossiers - vertel me gewoon wat je nodig hebt en ik regel het.",
           isNew: true,
         },
       ]);
@@ -145,7 +145,7 @@ function ChatBotInner() {
     // If not found locally and identifier looks like an ID, try fetching from API
     if (identifier.startsWith('case-') || identifier.match(/^[a-z0-9-]+$/i)) {
       try {
-        const response = await fetch(`/api/cases/${identifier}`);
+        const response = await fetch(`/api/dossiers/${identifier}`);
         if (response.ok) {
           return await response.json();
         }
@@ -290,13 +290,16 @@ function ChatBotInner() {
   const executeTool = useCallback(async (toolName: string, input: Record<string, unknown>): Promise<ToolResult> => {
     try {
       switch (toolName) {
-        case 'create_signal': {
-          const timeOfObservation = isValidDate(input.timeOfObservation)
-            ? input.timeOfObservation as string
+        case 'maak_melding': {
+          const timeOfObservation = isValidDate(input.tijdVanWaarneming)
+            ? input.tijdVanWaarneming as string
             : new Date().toISOString();
 
           const signalData = {
-            ...input,
+            description: input.beschrijving,
+            types: input.soorten,
+            placeOfObservation: input.plaatsVanWaarneming,
+            receivedBy: input.ontvangenDoor,
             timeOfObservation,
           } as CreateSignalInput;
           const newSignal = await createSignal(signalData);
@@ -308,61 +311,65 @@ function ChatBotInner() {
           };
         }
 
-        case 'edit_signal': {
-          const { signal_id, ...updates } = input;
-          const targetSignal = findSignal(signal_id as string);
+        case 'bewerk_melding': {
+          const { melding_id, beschrijving, soorten, plaatsVanWaarneming } = input;
+          const targetSignal = findSignal(melding_id as string);
           if (targetSignal) {
-            await updateSignal(targetSignal.id, updates as UpdateSignalInput);
+            const updates: UpdateSignalInput = {};
+            if (beschrijving) updates.description = beschrijving as string;
+            if (soorten) updates.types = soorten as SignalType[];
+            if (plaatsVanWaarneming) updates.placeOfObservation = plaatsVanWaarneming as string;
+            await updateSignal(targetSignal.id, updates);
             navigateAndHighlight('signal', targetSignal.id);
             return { message: `Signal ${targetSignal.signalNumber} updated` };
           }
-          return { message: `Signal ${signal_id} not found` };
+          return { message: `Signal ${melding_id} not found` };
         }
 
-        case 'add_note': {
-          const { signal_id, content, is_private } = input;
-          const targetSignal = findSignal(signal_id as string);
+        case 'voeg_notitie_toe': {
+          const { melding_id, inhoud, is_prive } = input;
+          const targetSignal = findSignal(melding_id as string);
           if (targetSignal) {
-            await addNote(targetSignal.id, content as string, is_private as boolean || false);
+            await addNote(targetSignal.id, inhoud as string, is_prive as boolean || false);
             navigateAndHighlight('signal', targetSignal.id);
             return { message: `Note added to ${targetSignal.signalNumber}` };
           }
-          return { message: `Signal ${signal_id} not found` };
+          return { message: `Signal ${melding_id} not found` };
         }
 
-        case 'delete_signal': {
-          const { signal_id } = input;
-          const targetSignal = findSignal(signal_id as string);
+        case 'verwijder_melding': {
+          const { melding_id } = input;
+          const targetSignal = findSignal(melding_id as string);
           if (targetSignal) {
             await deleteSignal(targetSignal.id);
             return { message: `Signal ${targetSignal.signalNumber} deleted` };
           }
-          return { message: `Signal ${signal_id} not found` };
+          return { message: `Signal ${melding_id} not found` };
         }
 
-        case 'add_signal_to_case': {
-          const { signal_id, case_id } = input;
-          const signal = findSignal(signal_id as string);
+        case 'voeg_melding_toe_aan_dossier': {
+          const { melding_id, dossier_id } = input;
+          const signal = findSignal(melding_id as string);
           if (!signal) {
-            return { message: `Signal "${signal_id}" not found` };
+            return { message: `Signal "${melding_id}" not found` };
           }
-          const caseItem = findCase(case_id as string);
+          const caseItem = findCase(dossier_id as string);
           if (!caseItem) {
-            return { message: `Case "${case_id}" not found` };
+            return { message: `Dossier "${dossier_id}" niet gevonden` };
           }
           await addSignalToCase(signal.id, caseItem.id);
           // Navigate to signals page since signal is the primary entity being modified
           // Both entities are still highlighted if user navigates to cases page within highlight duration
           navigateAndHighlight('signal', signal.id);
           triggerHighlight('case', caseItem.id);
-          return { message: `Added signal ${signal.signalNumber} to case "${caseItem.name}"` };
+          return { message: `Melding ${signal.signalNumber} toegevoegd aan dossier "${caseItem.name}"` };
         }
 
-        case 'create_case': {
+        case 'maak_dossier': {
           const randomColors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899'];
           const randomColor = randomColors[Math.floor(Math.random() * randomColors.length)];
 
-          const rawSignalIds = input.signalIds as string[] | undefined;
+          const rawSignalIds = input.meldingIds as string[] | undefined;
           const signalIds = rawSignalIds?.map(id => {
             const signal = signals.find(s => s.id === id || s.signalNumber === id);
             return signal?.id || id;
@@ -378,9 +385,9 @@ function ChatBotInner() {
 
           const currentUser = users[0];
           const caseData = {
-            name: (input.name as string) || 'New case',
-            description: (input.description as string) || '',
-            color: (input.color as string) || randomColor,
+            name: (input.naam as string) || 'Nieuw dossier',
+            description: (input.beschrijving as string) || '',
+            color: (input.kleur as string) || randomColor,
             location,
             ownerId: currentUser?.id,
             ownerName: currentUser ? getUserFullName(currentUser) : undefined,
@@ -393,27 +400,27 @@ function ChatBotInner() {
           setLastCreatedSignalId(null);
           navigateAndHighlight('case', newCase.id);
           return {
-            message: `Case "${newCase.name}" created with ID: ${newCase.id}`,
+            message: `Dossier "${newCase.name}" aangemaakt met ID: ${newCase.id}`,
             output: { caseId: newCase.id, caseName: newCase.name }
           };
         }
 
-        case 'edit_case': {
-          const { case_id, name, description, status, location, color, tags } = input;
-          const caseItem = findCase(case_id as string);
+        case 'bewerk_dossier': {
+          const { dossier_id, naam, beschrijving, status, locatie, kleur, tags } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             const updates: Record<string, unknown> = {};
-            if (name) updates.name = name;
-            if (description) updates.description = description;
-            if (color) updates.color = color;
+            if (naam) updates.name = naam;
+            if (beschrijving) updates.description = beschrijving;
+            if (kleur) updates.color = kleur;
             if (Object.keys(updates).length > 0) {
               await updateCase(caseItem.id, updates as { name?: string; description?: string; color?: string });
             }
             if (status) {
               await updateCaseStatus(caseItem.id, status as CaseStatus);
             }
-            if (location) {
-              await updateLocation(caseItem.id, location as string);
+            if (locatie) {
+              await updateLocation(caseItem.id, locatie as string);
             }
             if (tags && Array.isArray(tags)) {
               for (const tag of caseItem.tags) {
@@ -424,163 +431,163 @@ function ChatBotInner() {
               }
             }
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Case "${name || caseItem.name}" updated` };
+            return { message: `Dossier "${naam || caseItem.name}" bijgewerkt` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'delete_case': {
-          const { case_id } = input;
-          const caseItem = findCase(case_id as string);
+        case 'verwijder_dossier': {
+          const { dossier_id } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             await deleteCase(caseItem.id);
-            return { message: `Case "${caseItem.name}" deleted` };
+            return { message: `Dossier "${caseItem.name}" verwijderd` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'assign_case_owner': {
-          const { case_id, user_id, user_name } = input;
-          const caseItem = findCase(case_id as string);
+        case 'wijs_dossier_eigenaar_toe': {
+          const { dossier_id, gebruiker_id, gebruiker_naam } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
-            await assignCaseOwner(caseItem.id, user_id as string, user_name as string);
+            await assignCaseOwner(caseItem.id, gebruiker_id as string, gebruiker_naam as string);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `${user_name} assigned as owner of "${caseItem.name}"` };
+            return { message: `${gebruiker_naam} toegewezen als eigenaar van "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_practitioner': {
-          const { case_id, user_id, user_name } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_behandelaar_toe': {
+          const { dossier_id, gebruiker_id, gebruiker_naam } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
-            await addPractitioner(caseItem.id, user_id as string, user_name as string);
+            await addPractitioner(caseItem.id, gebruiker_id as string, gebruiker_naam as string);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added ${user_name} as practitioner to "${caseItem.name}"` };
+            return { message: `${gebruiker_naam} toegevoegd als behandelaar aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'share_case': {
-          const { case_id, user_id, user_name, access_level } = input;
-          const caseItem = findCase(case_id as string);
+        case 'deel_dossier': {
+          const { dossier_id, gebruiker_id, gebruiker_naam, toegangsniveau } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
-            await shareCase(caseItem.id, user_id as string, user_name as string, (access_level as 'view' | 'edit' | 'admin') || 'view');
+            await shareCase(caseItem.id, gebruiker_id as string, gebruiker_naam as string, (toegangsniveau as 'view' | 'edit' | 'admin') || 'view');
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Shared "${caseItem.name}" with ${user_name}` };
+            return { message: `"${caseItem.name}" gedeeld met ${gebruiker_naam}` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'complete_bibob_application': {
-          const { case_id, explanation, criteria } = input;
+        case 'voltooi_bibob_aanvraag': {
+          const { dossier_id, toelichting, criteria } = input;
           // Use async version to handle race condition when case was just created
-          const caseItem = await findCaseAsync(case_id as string);
+          const caseItem = await findCaseAsync(dossier_id as string);
           if (caseItem) {
-            const incomingCriteria = criteria as Array<{ id: string; isMet: boolean; explanation: string }>;
+            const incomingCriteria = criteria as Array<{ id: string; isMet: boolean; toelichting: string }>;
             const fullCriteria: ApplicationCriterion[] = APPLICATION_CRITERIA.map(baseCrit => {
               const incoming = incomingCriteria.find(c => c.id === baseCrit.id);
               return {
                 ...baseCrit,
                 isMet: incoming?.isMet ?? false,
-                explanation: incoming?.explanation ?? '',
+                explanation: incoming?.toelichting ?? '',
               };
             });
-            await updateApplicationData(caseItem.id, { explanation: explanation as string, criteria: fullCriteria });
+            await updateApplicationData(caseItem.id, { explanation: toelichting as string, criteria: fullCriteria });
             await completeApplication(caseItem.id);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Bibob application completed for "${caseItem.name}"` };
+            return { message: `Bibob-aanvraag voltooid voor "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'save_bibob_application_draft': {
-          const { case_id, explanation, criteria } = input;
+        case 'sla_bibob_aanvraag_concept_op': {
+          const { dossier_id, toelichting, criteria } = input;
           // Use async version to handle race condition when case was just created
-          const caseItem = await findCaseAsync(case_id as string);
+          const caseItem = await findCaseAsync(dossier_id as string);
           if (caseItem) {
             const updatePayload: { explanation?: string; criteria?: ApplicationCriterion[] } = {};
-            if (explanation) updatePayload.explanation = explanation as string;
+            if (toelichting) updatePayload.explanation = toelichting as string;
             if (criteria) {
-              const incomingCriteria = criteria as Array<{ id: string; isMet: boolean; explanation: string }>;
+              const incomingCriteria = criteria as Array<{ id: string; isMet: boolean; toelichting: string }>;
               updatePayload.criteria = APPLICATION_CRITERIA.map(baseCrit => {
                 const incoming = incomingCriteria.find(c => c.id === baseCrit.id);
                 return {
                   ...baseCrit,
                   isMet: incoming?.isMet ?? false,
-                  explanation: incoming?.explanation ?? '',
+                  explanation: incoming?.toelichting ?? '',
                 };
               });
             }
             await updateApplicationData(caseItem.id, updatePayload);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Draft saved for "${caseItem.name}"` };
+            return { message: `Concept opgeslagen voor "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_organization': {
-          const { case_id, name: orgName, kvk_number, address, type } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_organisatie_toe': {
+          const { dossier_id, naam: orgName, kvk_nummer, adres, type } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             const org = {
               id: `org-${Date.now()}`,
               name: orgName as string,
-              kvkNumber: (kvk_number as string) || '',
-              address: (address as string) || '',
+              kvkNumber: (kvk_nummer as string) || '',
+              address: (adres as string) || '',
               type: (type as string) || 'company',
               createdAt: new Date().toISOString(),
             };
             await addOrganizationToCase(caseItem.id, org);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added organization "${orgName}" to "${caseItem.name}"` };
+            return { message: `Organisatie "${orgName}" toegevoegd aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_address': {
-          const { case_id, street, city, postal_code, country, description } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_adres_toe': {
+          const { dossier_id, straat, plaats, postcode, land, beschrijving } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
-            const fullAddress = `${street}, ${postal_code ? postal_code + ' ' : ''}${city}, ${country || 'Netherlands'}`;
+            const fullAddress = `${straat}, ${postcode ? postcode + ' ' : ''}${plaats}, ${land || 'Netherlands'}`;
             const addr = {
               id: `addr-${Date.now()}`,
               street: fullAddress,
               buildingType: 'Commercial',
               isActive: true,
-              description: (description as string) || '',
+              description: (beschrijving as string) || '',
               createdAt: new Date().toISOString(),
             };
             await addAddressToCase(caseItem.id, addr);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added address "${street}, ${city}" to "${caseItem.name}"` };
+            return { message: `Adres "${straat}, ${plaats}" toegevoegd aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_person': {
-          const { case_id, first_name, last_name, date_of_birth, role, notes } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_persoon_toe': {
+          const { dossier_id, voornaam, achternaam, geboortedatum, rol, notities } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             const person = {
               id: `person-${Date.now()}`,
-              firstName: first_name as string,
-              surname: last_name as string,
-              dateOfBirth: (date_of_birth as string) || '',
+              firstName: voornaam as string,
+              surname: achternaam as string,
+              dateOfBirth: (geboortedatum as string) || '',
               address: '',
-              description: `${(role as string) || ''} ${(notes as string) || ''}`.trim() || '',
+              description: `${(rol as string) || ''} ${(notities as string) || ''}`.trim() || '',
               createdAt: new Date().toISOString(),
             };
             await addPersonToCase(caseItem.id, person);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added "${first_name} ${last_name}" to "${caseItem.name}"` };
+            return { message: `"${voornaam} ${achternaam}" toegevoegd aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_finding': {
-          const { case_id, label, severity, assigned_to } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_bevinding_toe': {
+          const { dossier_id, label, ernst, toegewezen_aan } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             const finding = {
               date: new Date().toISOString(),
@@ -588,22 +595,27 @@ function ChatBotInner() {
               label: label as string,
               description: '',
               isCompleted: false,
-              severity: (severity as 'none' | 'low' | 'serious' | 'critical') || 'none',
-              assignedTo: (assigned_to as string) || '',
+              severity: (ernst as 'none' | 'low' | 'serious' | 'critical') || 'none',
+              assignedTo: (toegewezen_aan as string) || '',
             };
             await addFinding(caseItem.id, finding);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added finding "${label}" to "${caseItem.name}"` };
+            return { message: `Bevinding "${label}" toegevoegd aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_letter': {
-          const { case_id, letter_name, template, date, municipal_province, ...fields } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_brief_toe': {
+          const { dossier_id, brief_naam, sjabloon, datum, gemeente_provincie,
+            referentienummer, ontvanger_naam, ontvanger_adres, ontvanger_postcode,
+            onderwerp, kennisgeving_inhoud, afzender_naam, afzender_titel,
+            aanvrager_naam, aanvrager_telefoon, ontvanger_email,
+            wettelijke_bepalingen, boete_informatie, vergunning_soorten, aanvullende_opmerkingen,
+            ...otherFields } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
-            const templateType = (template as string) || 'lbb_notification';
-            const letterName = (letter_name as string) || `Letter - ${new Date().toLocaleDateString()}`;
+            const templateType = (sjabloon as string) || 'lbb_notification';
+            const letterName = (brief_naam as string) || `Letter - ${new Date().toLocaleDateString()}`;
             const letter = {
               name: letterName,
               template: templateType,
@@ -613,38 +625,53 @@ function ChatBotInner() {
             const newLetter = await addLetter(caseItem.id, letter);
             if (newLetter) {
               const fieldData: Record<string, string | boolean> = {
-                date: (date as string) || '',
-                municipal_province: (municipal_province as string) || '',
-                ...fields as Record<string, string | boolean>,
+                date: (datum as string) || '',
+                municipal_province: (gemeente_provincie as string) || '',
+                reference_number: (referentienummer as string) || '',
+                recipient_name: (ontvanger_naam as string) || '',
+                recipient_address: (ontvanger_adres as string) || '',
+                recipient_postal_code: (ontvanger_postcode as string) || '',
+                subject: (onderwerp as string) || '',
+                notification_content: (kennisgeving_inhoud as string) || '',
+                sender_name: (afzender_naam as string) || '',
+                sender_title: (afzender_titel as string) || '',
+                applicant_name: (aanvrager_naam as string) || '',
+                applicant_phone: (aanvrager_telefoon as string) || '',
+                recipient_email: (ontvanger_email as string) || '',
+                legal_provisions: (wettelijke_bepalingen as string[] || []).join(','),
+                fine_information: (boete_informatie as string[] || []).join(','),
+                license_types: (vergunning_soorten as string[] || []).join(','),
+                additional_remarks: (aanvullende_opmerkingen as string) || '',
+                ...otherFields as Record<string, string | boolean>,
               };
               await updateLetter(caseItem.id, newLetter.id, { fieldData });
             }
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added letter "${letterName}" to "${caseItem.name}"` };
+            return { message: `Brief "${letterName}" toegevoegd aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_communication': {
-          const { case_id, label, description: commDesc, date } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_communicatie_toe': {
+          const { dossier_id, label, beschrijving: commDesc, datum } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             const communication = {
-              date: (date as string) || new Date().toISOString(),
+              date: (datum as string) || new Date().toISOString(),
               phase: caseItem.status,
               label: label as string,
               description: (commDesc as string) || '',
             };
             await addCommunication(caseItem.id, communication);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added communication "${label}" to "${caseItem.name}"` };
+            return { message: `Communicatie "${label}" toegevoegd aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_visualization': {
-          const { case_id, label, description: vizDesc } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_visualisatie_toe': {
+          const { dossier_id, label, beschrijving: vizDesc } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             const visualization = {
               date: new Date().toISOString(),
@@ -654,32 +681,32 @@ function ChatBotInner() {
             };
             await addVisualization(caseItem.id, visualization);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added visualization "${label}" to "${caseItem.name}"` };
+            return { message: `Visualisatie "${label}" toegevoegd aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'add_case_activity': {
-          const { case_id, label, description: actDesc, assigned_to, date } = input;
-          const caseItem = findCase(case_id as string);
+        case 'voeg_dossier_activiteit_toe': {
+          const { dossier_id, label, beschrijving: actDesc, toegewezen_aan, datum } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             const activity = {
-              date: (date as string) || new Date().toISOString(),
+              date: (datum as string) || new Date().toISOString(),
               phase: caseItem.status,
               label: label as string,
               description: (actDesc as string) || '',
-              assignedTo: (assigned_to as string) || '',
+              assignedTo: (toegewezen_aan as string) || '',
             };
             await addActivity(caseItem.id, activity);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Added activity "${label}" to "${caseItem.name}"` };
+            return { message: `Activiteit "${label}" toegevoegd aan "${caseItem.name}"` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'get_case_messages': {
-          const { case_id, contact_id, contact_name, contact_type, limit: msgLimit } = input;
-          const caseItem = findCase(case_id as string);
+        case 'haal_dossier_berichten_op': {
+          const { dossier_id, contact_id, contact_naam, contact_type, limiet: msgLimit } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             let conversationId = contact_id as string;
             switch (contact_type) {
@@ -693,16 +720,16 @@ function ChatBotInner() {
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .slice(0, (msgLimit as number) || 5);
             if (msgs.length === 0) {
-              return { message: `No messages with ${contact_name}` };
+              return { message: `Geen berichten met ${contact_naam}` };
             }
-            return { message: `Messages with ${contact_name}: ${msgs.map(m => `${m.senderName}: ${m.content}`).join('; ')}` };
+            return { message: `Berichten met ${contact_naam}: ${msgs.map(m => `${m.senderName}: ${m.content}`).join('; ')}` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
-        case 'send_case_message': {
-          const { case_id, contact_id, contact_name, contact_type, message } = input;
-          const caseItem = findCase(case_id as string);
+        case 'verstuur_dossier_bericht': {
+          const { dossier_id, contact_id, contact_naam, contact_type, bericht } = input;
+          const caseItem = findCase(dossier_id as string);
           if (caseItem) {
             let conversationId = contact_id as string;
             switch (contact_type) {
@@ -716,18 +743,18 @@ function ChatBotInner() {
               conversationId,
               senderId: currentUser?.id || 'unknown',
               senderName: currentUser ? getUserFullName(currentUser) : 'Unknown',
-              content: message as string,
+              content: bericht as string,
             };
             await addChatMessage(caseItem.id, chatMessage);
             navigateAndHighlight('case', caseItem.id);
-            return { message: `Message sent to ${contact_name}` };
+            return { message: `Bericht verzonden naar ${contact_naam}` };
           }
-          return { message: `Case "${case_id}" not found` };
+          return { message: `Dossier "${dossier_id}" niet gevonden` };
         }
 
         // Read-only tools return data summaries
-        case 'summarize_signals': {
-          const signalId = input.signal_id as string | undefined;
+        case 'vat_meldingen_samen': {
+          const signalId = input.melding_id as string | undefined;
           if (signalId) {
             const s = findSignal(signalId);
             if (s) {
@@ -738,42 +765,42 @@ function ChatBotInner() {
           return { message: `${signals.length} signals in system` };
         }
 
-        case 'summarize_case': {
-          const caseId = input.case_id as string | undefined;
+        case 'vat_dossier_samen': {
+          const caseId = input.dossier_id as string | undefined;
           if (caseId) {
             const c = findCase(caseId);
             if (c) {
               const signalCount = getSignalCountForCase(c.id);
               return {
-                message: `${c.name}: ${c.description.substring(0, 80)}... | Status: ${c.status} | Location: ${c.location || 'N/A'} | Signals: ${signalCount} | Practitioners: ${c.practitioners?.length || 0} | Organizations: ${c.organizations?.length || 0}`
+                message: `${c.name}: ${c.description.substring(0, 80)}... | Status: ${c.status} | Locatie: ${c.location || 'N/B'} | Meldingen: ${signalCount} | Behandelaars: ${c.practitioners?.length || 0} | Organisaties: ${c.organizations?.length || 0}`
               };
             }
-            return { message: `Case "${caseId}" not found` };
+            return { message: `Dossier "${caseId}" niet gevonden` };
           }
-          return { message: `${cases.length} cases: ${cases.map(c => `${c.name} (${c.status})`).join('; ')}` };
+          return { message: `${cases.length} dossiers: ${cases.map(c => `${c.name} (${c.status})`).join('; ')}` };
         }
 
-        case 'list_cases':
+        case 'toon_dossiers':
           return {
             message: cases.length > 0
-              ? cases.map(c => `${c.name} (${c.status}, ${getSignalCountForCase(c.id)} signals)`).join('; ')
-              : 'No cases'
+              ? cases.map(c => `${c.name} (${c.status}, ${getSignalCountForCase(c.id)} meldingen)`).join('; ')
+              : 'Geen dossiers'
           };
 
-        case 'list_team_members':
+        case 'toon_teamleden':
           return { message: users.map(u => `${getUserFullName(u)} (${u.title})`).join('; ') };
 
-        case 'get_signal_stats':
-          return { message: `Total signals: ${signalStats.total}` };
+        case 'haal_melding_statistieken_op':
+          return { message: `Totaal meldingen: ${signalStats.total}` };
 
-        case 'get_case_stats':
-          return { message: `Total cases: ${cases.length}` };
+        case 'haal_dossier_statistieken_op':
+          return { message: `Totaal dossiers: ${cases.length}` };
 
-        case 'search_signals': {
+        case 'zoek_meldingen': {
           let results = [...signals];
-          const { keyword, type, receivedBy } = input;
-          if (keyword) {
-            const kw = (keyword as string).toLowerCase();
+          const { zoekterm, type, ontvangenDoor } = input;
+          if (zoekterm) {
+            const kw = (zoekterm as string).toLowerCase();
             results = results.filter(s =>
               s.description.toLowerCase().includes(kw) ||
               s.signalNumber.toLowerCase().includes(kw) ||
@@ -781,37 +808,57 @@ function ChatBotInner() {
             );
           }
           if (type) results = results.filter(s => s.types.includes(type as SignalType));
-          if (receivedBy) results = results.filter(s => s.receivedBy === receivedBy);
+          if (ontvangenDoor) results = results.filter(s => s.receivedBy === ontvangenDoor);
           return {
             message: results.length > 0
-              ? `Found ${results.length}: ${results.map(s => s.signalNumber).join(', ')}`
-              : 'No signals found'
+              ? `${results.length} gevonden: ${results.map(s => s.signalNumber).join(', ')}`
+              : 'Geen meldingen gevonden'
           };
         }
 
-        case 'get_signal_activity': {
-          const s = findSignal(input.signal_id as string);
+        case 'haal_melding_activiteit_op': {
+          const s = findSignal(input.melding_id as string);
           if (s) {
             const activities = s.activities.slice(0, 5);
             return {
               message: activities.length > 0
-                ? activities.map(a => `${a.details} by ${a.userName}`).join('; ')
-                : 'No activity'
+                ? activities.map(a => `${a.details} door ${a.userName}`).join('; ')
+                : 'Geen activiteit'
             };
           }
-          return { message: 'Signal not found' };
+          return { message: 'Melding niet gevonden' };
         }
 
-        case 'get_signal_notes': {
-          const s = findSignal(input.signal_id as string);
+        case 'haal_melding_notities_op': {
+          const s = findSignal(input.melding_id as string);
           if (s) {
             return {
               message: s.notes.length > 0
                 ? s.notes.map(n => `${n.authorName}: ${n.content.substring(0, 50)}`).join('; ')
-                : 'No notes'
+                : 'Geen notities'
             };
           }
-          return { message: 'Signal not found' };
+          return { message: 'Melding niet gevonden' };
+        }
+
+        case 'toon_meldingen':
+          return {
+            message: signals.length > 0
+              ? `${signals.length} meldingen: ${signals.slice(0, 10).map(s => `${s.signalNumber} (${s.types.join(', ')})`).join('; ')}${signals.length > 10 ? '...' : ''}`
+              : 'Geen meldingen'
+          };
+
+        case 'vat_bijlagen_samen': {
+          const s = findSignal(input.melding_id as string);
+          if (s) {
+            const attachmentCount = s.attachments?.length || 0;
+            if (attachmentCount === 0) {
+              return { message: `Melding ${s.signalNumber} heeft geen bijlagen` };
+            }
+            const attachmentSummary = s.attachments?.map(a => `${a.fileName} (${a.fileType})`).join('; ') || '';
+            return { message: `${attachmentCount} bijlagen voor ${s.signalNumber}: ${attachmentSummary}` };
+          }
+          return { message: 'Melding niet gevonden' };
         }
 
         default:
@@ -1102,7 +1149,7 @@ function ChatBotInner() {
         {
           id: generateMessageId(),
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: 'Sorry, er is een fout opgetreden. Probeer het opnieuw.',
           isNew: true,
         },
       ]);
@@ -1359,7 +1406,7 @@ function ChatBotInner() {
         {
           id: generateMessageId(),
           role: 'assistant',
-          content: 'Sorry, I encountered an error executing the plan. Please try again.',
+          content: 'Sorry, er is een fout opgetreden bij het uitvoeren van het plan. Probeer het opnieuw.',
           isNew: true,
         },
       ]);
@@ -1632,7 +1679,7 @@ function ChatBotInner() {
           {
             id: generateMessageId(),
             role: 'assistant',
-            content: 'Sorry, I encountered an error. Please try again.',
+            content: 'Sorry, er is een fout opgetreden. Probeer het opnieuw.',
             isNew: true,
           },
         ]);
@@ -1912,7 +1959,7 @@ function ChatBotInner() {
         {
           id: generateMessageId(),
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: 'Sorry, er is een fout opgetreden. Probeer het opnieuw.',
           isNew: true,
         },
       ]);
@@ -2090,7 +2137,7 @@ function ChatBotInner() {
               adjustTextareaHeight();
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Reply to Atlas AI..."
+            placeholder="Antwoord aan Atlas AI..."
             disabled={isLoading}
             rows={1}
             className="flex-1 px-4 py-2.5 text-sm bg-muted/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 resize-none overflow-y-auto leading-5"

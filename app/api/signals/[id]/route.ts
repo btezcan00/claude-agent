@@ -20,7 +20,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
   if (!signal) {
     return NextResponse.json(
-      { error: 'Signal not found' },
+      { error: 'Melding niet gevonden' },
       { status: 404 }
     );
   }
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const signal = store.getSignalById(id);
     if (!signal) {
       return NextResponse.json(
-        { error: 'Signal not found' },
+        { error: 'Melding niet gevonden' },
         { status: 404 }
       );
     }
@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         userId: user.id,
         userName: `${user.firstName} ${user.lastName}`,
         action: 'signal-updated',
-        details: 'Signal details updated',
+        details: 'Meldingdetails bijgewerkt',
         timestamp: now,
       };
       updateData.activities = [activity, ...signal.activities];
@@ -81,7 +81,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
     return NextResponse.json(
-      { error: 'Failed to update signal' },
+      { error: 'Melding bijwerken mislukt' },
       { status: 400 }
     );
   }
@@ -100,7 +100,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
   if (!success) {
     return NextResponse.json(
-      { error: 'Signal not found' },
+      { error: 'Melding niet gevonden' },
       { status: 404 }
     );
   }

@@ -32,13 +32,13 @@ export function SignalDetailInfo({ signal }: SignalDetailInfoProps) {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="w-4 h-4" />
-          Signal Details
+          Meldinggegevens
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Description Section */}
         <div>
-          <h4 className="text-sm font-medium mb-2">Description</h4>
+          <h4 className="text-sm font-medium mb-2">Omschrijving</h4>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">
             {signal.description}
           </p>
@@ -50,16 +50,16 @@ export function SignalDetailInfo({ signal }: SignalDetailInfoProps) {
         <div>
           <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
             <MapPin className="w-4 h-4" />
-            Location
+            Locatie
           </h4>
           <div className="space-y-3 pl-6">
             <div>
-              <p className="text-xs text-muted-foreground">Place of Observation</p>
+              <p className="text-xs text-muted-foreground">Plaats van Waarneming</p>
               <p className="text-sm">{signal.placeOfObservation}</p>
             </div>
             {signal.locationDescription && (
               <div>
-                <p className="text-xs text-muted-foreground">Description</p>
+                <p className="text-xs text-muted-foreground">Omschrijving</p>
                 <p className="text-sm">{signal.locationDescription}</p>
               </div>
             )}
@@ -73,7 +73,7 @@ export function SignalDetailInfo({ signal }: SignalDetailInfoProps) {
             <div>
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                 <User className="w-4 h-4" />
-                Contact Person
+                Contactpersoon
               </h4>
               <div className="space-y-2 pl-6">
                 <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export function SignalDetailInfo({ signal }: SignalDetailInfoProps) {
                 {signal.contactPerson.wantsFeedback && (
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <CheckCircle className="w-4 h-4" />
-                    <span>Wants to receive feedback</span>
+                    <span>Wil feedback ontvangen</span>
                   </div>
                 )}
               </div>
@@ -122,11 +122,11 @@ export function SignalDetailInfo({ signal }: SignalDetailInfoProps) {
             <div>
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                 <Briefcase className="w-4 h-4" />
-                Cases
+                Dossiers
               </h4>
               <div className="flex flex-wrap gap-2 pl-6">
                 {cases.map((caseItem) => (
-                  <Link key={caseItem!.id} href={`/cases/${caseItem!.id}`}>
+                  <Link key={caseItem!.id} href={`/dossiers/${caseItem!.id}`}>
                     <Badge
                       variant="outline"
                       className="cursor-pointer hover:bg-muted gap-1.5"

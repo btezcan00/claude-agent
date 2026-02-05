@@ -9,12 +9,12 @@ export interface Organization {
 }
 
 export const ORGANIZATION_TYPES = [
-  'Corporation',
-  'Non-profit',
-  'Government',
-  'Partnership',
-  'Sole Proprietorship',
-  'Other',
+  'BV/NV',
+  'Stichting',
+  'Overheid',
+  'Vennootschap',
+  'Eenmanszaak',
+  'Overig',
 ] as const;
 
 export type OrganizationType = (typeof ORGANIZATION_TYPES)[number];

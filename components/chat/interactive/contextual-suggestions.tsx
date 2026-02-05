@@ -8,55 +8,55 @@ import { ContextualSuggestion } from '@/types/chat';
 // Define contextual suggestions based on completed action types
 const SUGGESTION_MAP: Record<string, ContextualSuggestion[]> = {
   signal_created: [
-    { label: 'Add a note', prompt: 'Add a note to the signal I just created' },
-    { label: 'Create another', prompt: 'Create another signal' },
-    { label: 'View all signals', prompt: 'Show me all signals' },
-    { label: 'Assign to case', prompt: 'Assign this signal to a case' },
+    { label: 'Notitie toevoegen', prompt: 'Voeg een notitie toe aan de melding die ik net heb aangemaakt' },
+    { label: 'Nog een aanmaken', prompt: 'Maak nog een melding aan' },
+    { label: 'Alle meldingen bekijken', prompt: 'Toon alle meldingen' },
+    { label: 'Aan dossier toewijzen', prompt: 'Wijs deze melding toe aan een dossier' },
   ],
   signal_edited: [
-    { label: 'Add a note', prompt: 'Add a note to the edited signal' },
-    { label: 'View history', prompt: 'Show the activity history of this signal' },
-    { label: 'Search similar', prompt: 'Search for similar signals' },
+    { label: 'Notitie toevoegen', prompt: 'Voeg een notitie toe aan de bewerkte melding' },
+    { label: 'Geschiedenis bekijken', prompt: 'Toon de activiteitengeschiedenis van deze melding' },
+    { label: 'Vergelijkbare zoeken', prompt: 'Zoek naar vergelijkbare meldingen' },
   ],
   signal_deleted: [
-    { label: 'View remaining', prompt: 'Show remaining signals' },
-    { label: 'Create new', prompt: 'Create a new signal' },
-    { label: 'Signal stats', prompt: 'Show signal statistics' },
+    { label: 'Overige bekijken', prompt: 'Toon overige meldingen' },
+    { label: 'Nieuwe aanmaken', prompt: 'Maak een nieuwe melding aan' },
+    { label: 'Melding statistieken', prompt: 'Toon meldingstatistieken' },
   ],
   note_added: [
-    { label: 'Add another note', prompt: 'Add another note to this signal' },
-    { label: 'View all notes', prompt: 'Show all notes for this signal' },
-    { label: 'Edit the signal', prompt: 'Edit this signal' },
+    { label: 'Nog een notitie', prompt: 'Voeg nog een notitie toe aan deze melding' },
+    { label: 'Alle notities bekijken', prompt: 'Toon alle notities voor deze melding' },
+    { label: 'Melding bewerken', prompt: 'Bewerk deze melding' },
   ],
   case_assigned: [
-    { label: 'View case', prompt: 'Show details of this case' },
-    { label: 'Edit case', prompt: 'Edit case details' },
-    { label: 'Assign another', prompt: 'Assign another case' },
+    { label: 'Dossier bekijken', prompt: 'Toon details van dit dossier' },
+    { label: 'Dossier bewerken', prompt: 'Bewerk dossierdetails' },
+    { label: 'Andere toewijzen', prompt: 'Wijs een ander dossier toe' },
   ],
   case_listed: [
-    { label: 'Create case', prompt: 'Help me create a new case' },
-    { label: 'Case stats', prompt: 'Show case statistics' },
-    { label: 'Assign owner', prompt: 'Assign an owner to a case' },
+    { label: 'Dossier aanmaken', prompt: 'Help me een nieuw dossier aan te maken' },
+    { label: 'Dossier statistieken', prompt: 'Toon dossierstatistieken' },
+    { label: 'Eigenaar toewijzen', prompt: 'Wijs een eigenaar toe aan een dossier' },
   ],
   search_performed: [
-    { label: 'Refine search', prompt: 'Refine my search with more filters' },
-    { label: 'New search', prompt: 'Start a new search' },
-    { label: 'View signal details', prompt: 'Tell me more about one of these signals' },
+    { label: 'Zoekopdracht verfijnen', prompt: 'Verfijn mijn zoekopdracht met meer filters' },
+    { label: 'Nieuwe zoekopdracht', prompt: 'Start een nieuwe zoekopdracht' },
+    { label: 'Meldingdetails bekijken', prompt: 'Vertel me meer over een van deze meldingen' },
   ],
   stats_shown: [
-    { label: 'View signals', prompt: 'Show me all signals' },
-    { label: 'View cases', prompt: 'Show me all cases' },
-    { label: 'Team overview', prompt: 'Show team members' },
+    { label: 'Meldingen bekijken', prompt: 'Toon alle meldingen' },
+    { label: 'Dossiers bekijken', prompt: 'Toon alle dossiers' },
+    { label: 'Team overzicht', prompt: 'Toon teamleden' },
   ],
   team_listed: [
-    { label: 'Assign case', prompt: 'Assign a case to a team member' },
-    { label: 'View cases', prompt: 'List all cases' },
-    { label: 'Case stats', prompt: 'Show case statistics' },
+    { label: 'Dossier toewijzen', prompt: 'Wijs een dossier toe aan een teamlid' },
+    { label: 'Dossiers bekijken', prompt: 'Toon alle dossiers' },
+    { label: 'Dossier statistieken', prompt: 'Toon dossierstatistieken' },
   ],
   default: [
-    { label: 'Create signal', prompt: 'Create a new signal' },
-    { label: 'View cases', prompt: 'List all cases' },
-    { label: 'Signal stats', prompt: 'Show signal statistics' },
+    { label: 'Melding aanmaken', prompt: 'Maak een nieuwe melding aan' },
+    { label: 'Dossiers bekijken', prompt: 'Toon alle dossiers' },
+    { label: 'Melding statistieken', prompt: 'Toon meldingstatistieken' },
   ],
 };
 
@@ -85,7 +85,7 @@ export function ContextualSuggestions({
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <p className="text-xs text-muted-foreground px-1">Suggested next steps:</p>
+      <p className="text-xs text-muted-foreground px-1">Voorgestelde volgende stappen:</p>
       <div className="flex flex-wrap gap-2">
         {suggestions.map((suggestion, index) => (
           <button

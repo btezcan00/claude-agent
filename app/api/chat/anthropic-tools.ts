@@ -73,7 +73,7 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        signal_id: {
+        melding_id: {
           type: 'string',
           description: 'Optionele specifieke melding-ID of meldingsnummer om samen te vatten. Indien niet opgegeven, worden alle meldingen samengevat.',
         },
@@ -87,7 +87,7 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'Optionele dossier-ID of naam om samen te vatten. Indien niet opgegeven, worden alle dossiers samengevat.',
         },
@@ -110,30 +110,30 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        description: {
+        beschrijving: {
           type: 'string',
           description: 'Gedetailleerde beschrijving van de melding/waarneming',
         },
-        types: {
+        soorten: {
           type: 'array',
           items: { type: 'string' },
-          description: 'De types van de melding (bijv. human-trafficking, drug-trafficking, bogus-scheme)',
+          description: 'De types van de melding (bijv. mensenhandel, drugshandel, malafide-constructie, bibob-onderzoek, witwassen)',
         },
-        placeOfObservation: {
+        plaatsVanWaarneming: {
           type: 'string',
           description: 'Locatie/adres waar de waarneming is gedaan',
         },
-        timeOfObservation: {
+        tijdVanWaarneming: {
           type: 'string',
           description: 'ISO datetime string voor wanneer de waarneming is gedaan (bijv. 2024-01-15T14:30:00Z). Indien niet opgegeven door gebruiker, gebruik huidige tijd.',
         },
-        receivedBy: {
+        ontvangenDoor: {
           type: 'string',
-          enum: ['police', 'anonymous-report', 'municipal-department', 'bibob-request', 'other'],
+          enum: ['politie', 'anonieme-melding', 'gemeentelijke-afdeling', 'bibob-aanvraag', 'overig'],
           description: 'Bron die de melding heeft ontvangen',
         },
       },
-      required: ['description', 'types', 'placeOfObservation', 'receivedBy'],
+      required: ['beschrijving', 'soorten', 'plaatsVanWaarneming', 'ontvangenDoor'],
     },
   },
   {
@@ -142,25 +142,25 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        signal_id: {
+        melding_id: {
           type: 'string',
           description: 'De ID of meldingsnummer van de te bewerken melding',
         },
-        description: {
+        beschrijving: {
           type: 'string',
           description: 'Nieuwe beschrijving voor de melding',
         },
-        types: {
+        soorten: {
           type: 'array',
           items: { type: 'string' },
           description: 'Nieuwe types voor de melding',
         },
-        placeOfObservation: {
+        plaatsVanWaarneming: {
           type: 'string',
           description: 'Nieuwe locatie voor de melding',
         },
       },
-      required: ['signal_id'],
+      required: ['melding_id'],
     },
   },
   {
@@ -169,20 +169,20 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        signal_id: {
+        melding_id: {
           type: 'string',
           description: 'De ID of meldingsnummer van de melding om een notitie aan toe te voegen',
         },
-        content: {
+        inhoud: {
           type: 'string',
           description: 'De inhoud van de toe te voegen notitie',
         },
-        is_private: {
+        is_prive: {
           type: 'boolean',
           description: 'Of de notitie privé moet zijn (standaard: false)',
         },
       },
-      required: ['signal_id', 'content'],
+      required: ['melding_id', 'inhoud'],
     },
   },
   {
@@ -191,12 +191,12 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        signal_id: {
+        melding_id: {
           type: 'string',
           description: 'De ID of meldingsnummer van de te verwijderen melding',
         },
       },
-      required: ['signal_id'],
+      required: ['melding_id'],
     },
   },
   {
@@ -205,16 +205,16 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        signal_id: {
+        melding_id: {
           type: 'string',
           description: 'De ID of meldingsnummer van de toe te voegen melding',
         },
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het bestaande dossier',
         },
       },
-      required: ['signal_id', 'case_id'],
+      required: ['melding_id', 'dossier_id'],
     },
   },
   {
@@ -241,17 +241,17 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        keyword: {
+        zoekterm: {
           type: 'string',
           description: 'Zoekterm om te matchen met meldingsbeschrijving, locatie of meldingsnummer',
         },
         type: {
           type: 'string',
-          description: 'Filter op meldingstype (bijv. human-trafficking, drug-trafficking)',
+          description: 'Filter op meldingstype (bijv. mensenhandel, drugshandel, malafide-constructie, bibob-onderzoek, witwassen)',
         },
-        receivedBy: {
+        ontvangenDoor: {
           type: 'string',
-          enum: ['police', 'anonymous-report', 'municipal-department', 'bibob-request', 'other'],
+          enum: ['politie', 'anonieme-melding', 'gemeentelijke-afdeling', 'bibob-aanvraag', 'overig'],
           description: 'Filter op bron die de melding heeft ontvangen',
         },
       },
@@ -264,12 +264,12 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        signal_id: {
+        melding_id: {
           type: 'string',
           description: 'De ID of meldingsnummer van de melding',
         },
       },
-      required: ['signal_id'],
+      required: ['melding_id'],
     },
   },
   {
@@ -278,12 +278,12 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        signal_id: {
+        melding_id: {
           type: 'string',
           description: 'De ID of meldingsnummer van de melding',
         },
       },
-      required: ['signal_id'],
+      required: ['melding_id'],
     },
   },
   {
@@ -292,12 +292,12 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        signal_id: {
+        melding_id: {
           type: 'string',
           description: 'De ID of meldingsnummer van de melding waarvan de bijlagen moeten worden samengevat',
         },
       },
-      required: ['signal_id'],
+      required: ['melding_id'],
     },
   },
   {
@@ -324,11 +324,11 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier waarvoor de aanvraag moet worden voltooid',
         },
-        explanation: {
+        toelichting: {
           type: 'string',
           description: 'Algemene toelichting voor de voltooiing van de Bibob-aanvraag',
         },
@@ -337,16 +337,20 @@ export const tools: Anthropic.Tool[] = [
           items: {
             type: 'object',
             properties: {
-              id: { type: 'string', enum: ['necessary_info', 'annual_accounts', 'budgets', 'loan_agreement'] },
+              id: {
+                type: 'string',
+                enum: ['necessary_info', 'annual_accounts', 'budgets', 'loan_agreement'],
+                description: 'Criterium ID. Labels: necessary_info = "Alle benodigde informatie verstrekt?", annual_accounts = "Jaarrekeningen", budgets = "Begrotingen", loan_agreement = "Leningsovereenkomst"',
+              },
               isMet: { type: 'boolean' },
-              explanation: { type: 'string' },
+              toelichting: { type: 'string' },
             },
-            required: ['id', 'isMet', 'explanation'],
+            required: ['id', 'isMet', 'toelichting'],
           },
-          description: 'Array van criteria met voltooiingsstatus en toelichtingen',
+          description: 'Array van criteria met voltooiingsstatus en toelichtingen. Gebruik Nederlandse labels bij weergave: necessary_info = "Alle benodigde informatie verstrekt?", annual_accounts = "Jaarrekeningen", budgets = "Begrotingen", loan_agreement = "Leningsovereenkomst"',
         },
       },
-      required: ['case_id', 'explanation', 'criteria'],
+      required: ['dossier_id', 'toelichting', 'criteria'],
     },
   },
   {
@@ -355,32 +359,33 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'ID of naam van het dossier',
         },
-        explanation: {
+        toelichting: {
           type: 'string',
           description: 'Algemene toelichting voor de aanvraag (optioneel)',
         },
         criteria: {
           type: 'array',
-          description: 'Status van aanvraagcriteria (optioneel)',
+          description: 'Status van aanvraagcriteria (optioneel). Gebruik Nederlandse labels bij weergave: necessary_info = "Alle benodigde informatie verstrekt?", annual_accounts = "Jaarrekeningen", budgets = "Begrotingen", loan_agreement = "Leningsovereenkomst"',
           items: {
             type: 'object',
             properties: {
               id: {
                 type: 'string',
                 enum: ['necessary_info', 'annual_accounts', 'budgets', 'loan_agreement'],
+                description: 'Criterium ID. Labels: necessary_info = "Alle benodigde informatie verstrekt?", annual_accounts = "Jaarrekeningen", budgets = "Begrotingen", loan_agreement = "Leningsovereenkomst"',
               },
               isMet: { type: 'boolean' },
-              explanation: { type: 'string' },
+              toelichting: { type: 'string' },
             },
-            required: ['id', 'isMet', 'explanation'],
+            required: ['id', 'isMet', 'toelichting'],
           },
         },
       },
-      required: ['case_id'],
+      required: ['dossier_id'],
     },
   },
   {
@@ -389,20 +394,20 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier om een eigenaar aan toe te wijzen',
         },
-        user_id: {
+        gebruiker_id: {
           type: 'string',
           description: 'De ID van het teamlid om als eigenaar toe te wijzen',
         },
-        user_name: {
+        gebruiker_naam: {
           type: 'string',
           description: 'De volledige naam van het teamlid om als eigenaar toe te wijzen',
         },
       },
-      required: ['case_id', 'user_id', 'user_name'],
+      required: ['dossier_id', 'gebruiker_id', 'gebruiker_naam'],
     },
   },
   {
@@ -411,15 +416,15 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het te bewerken dossier',
         },
-        name: {
+        naam: {
           type: 'string',
           description: 'Nieuwe dossiernaam',
         },
-        description: {
+        beschrijving: {
           type: 'string',
           description: 'Nieuwe dossierbeschrijving',
         },
@@ -428,11 +433,11 @@ export const tools: Anthropic.Tool[] = [
           enum: ['application', 'research', 'national_office', 'decision', 'archive'],
           description: 'Nieuwe dossierstatus in de workflow',
         },
-        location: {
+        locatie: {
           type: 'string',
           description: 'Geografische of organisatorische locatie',
         },
-        color: {
+        kleur: {
           type: 'string',
           description: 'Dossierkleur (bijv. #ef4444 voor rood, #3b82f6 voor blauw)',
         },
@@ -442,28 +447,28 @@ export const tools: Anthropic.Tool[] = [
           description: 'Tags voor het dossier (vervangt bestaande tags)',
         },
       },
-      required: ['case_id'],
+      required: ['dossier_id'],
     },
   },
   {
     name: 'maak_dossier',
-    description: 'Maak een nieuw dossier aan. BELANGRIJK: Als de gebruiker een melding noemt of een dossier maakt van een melding, MOET je die melding-ID opnemen in signalIds. Vraag na aanmaak of de gebruiker het Bibob-aanvraagformulier wil invullen. Standaardnaam is "Nieuw Dossier".',
+    description: 'Maak een nieuw dossier aan. BELANGRIJK: Als de gebruiker een melding noemt of een dossier maakt van een melding, MOET je die melding-ID opnemen in meldingIds. Vraag na aanmaak of de gebruiker het Bibob-aanvraagformulier wil invullen. Standaardnaam is "Nieuw Dossier".',
     input_schema: {
       type: 'object',
       properties: {
-        name: {
+        naam: {
           type: 'string',
           description: 'Naam van het dossier (standaard: "Nieuw dossier")',
         },
-        description: {
+        beschrijving: {
           type: 'string',
           description: 'Beschrijving van het doel van het dossier',
         },
-        color: {
+        kleur: {
           type: 'string',
           description: 'Optionele hex-kleur voor het dossier',
         },
-        signalIds: {
+        meldingIds: {
           type: 'array',
           items: { type: 'string' },
           description: 'Melding-ID\'s om toe te voegen aan het dossier. MOET worden opgenomen bij het aanmaken van een dossier van/voor een melding.',
@@ -478,12 +483,12 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het te verwijderen dossier',
         },
       },
-      required: ['case_id'],
+      required: ['dossier_id'],
     },
   },
   {
@@ -492,20 +497,20 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
-        user_id: {
+        gebruiker_id: {
           type: 'string',
           description: 'De ID van het teamlid om als behandelaar toe te voegen',
         },
-        user_name: {
+        gebruiker_naam: {
           type: 'string',
           description: 'De volledige naam van het teamlid om als behandelaar toe te voegen',
         },
       },
-      required: ['case_id', 'user_id', 'user_name'],
+      required: ['dossier_id', 'gebruiker_id', 'gebruiker_naam'],
     },
   },
   {
@@ -514,25 +519,25 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het te delen dossier',
         },
-        user_id: {
+        gebruiker_id: {
           type: 'string',
           description: 'De ID van het teamlid om mee te delen',
         },
-        user_name: {
+        gebruiker_naam: {
           type: 'string',
           description: 'De volledige naam van het teamlid om mee te delen',
         },
-        access_level: {
+        toegangsniveau: {
           type: 'string',
           enum: ['view', 'edit', 'admin'],
           description: 'Het toegangsniveau: view (alleen-lezen), edit (kan wijzigen), admin (volledige toegang)',
         },
       },
-      required: ['case_id', 'user_id', 'user_name', 'access_level'],
+      required: ['dossier_id', 'gebruiker_id', 'gebruiker_naam', 'toegangsniveau'],
     },
   },
   {
@@ -541,19 +546,19 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
-        name: {
+        naam: {
           type: 'string',
           description: 'Naam van de organisatie',
         },
-        kvk_number: {
+        kvk_nummer: {
           type: 'string',
           description: 'KVK-nummer (Kamer van Koophandel) indien bekend',
         },
-        address: {
+        adres: {
           type: 'string',
           description: 'Adres van de organisatie',
         },
@@ -562,7 +567,7 @@ export const tools: Anthropic.Tool[] = [
           description: 'Type organisatie (bijv. "bedrijf", "stichting", "vereniging")',
         },
       },
-      required: ['case_id', 'name'],
+      required: ['dossier_id', 'naam'],
     },
   },
   {
@@ -571,32 +576,32 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
-        street: {
+        straat: {
           type: 'string',
           description: 'Straatnaam en huisnummer',
         },
-        city: {
+        plaats: {
           type: 'string',
           description: 'Plaatsnaam',
         },
-        postal_code: {
+        postcode: {
           type: 'string',
           description: 'Postcode',
         },
-        country: {
+        land: {
           type: 'string',
           description: 'Land (standaard: Nederland)',
         },
-        description: {
+        beschrijving: {
           type: 'string',
           description: 'Beschrijving of notities over dit adres',
         },
       },
-      required: ['case_id', 'street', 'city'],
+      required: ['dossier_id', 'straat', 'plaats'],
     },
   },
   {
@@ -605,32 +610,32 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
-        first_name: {
+        voornaam: {
           type: 'string',
           description: 'Voornaam van de persoon',
         },
-        last_name: {
+        achternaam: {
           type: 'string',
           description: 'Achternaam van de persoon',
         },
-        date_of_birth: {
+        geboortedatum: {
           type: 'string',
           description: 'Geboortedatum (JJJJ-MM-DD formaat)',
         },
-        role: {
+        rol: {
           type: 'string',
           description: 'Rol of relatie tot het dossier (bijv. "verdachte", "getuige", "eigenaar", "werknemer")',
         },
-        notes: {
+        notities: {
           type: 'string',
           description: 'Aanvullende notities over deze persoon',
         },
       },
-      required: ['case_id', 'first_name', 'last_name'],
+      required: ['dossier_id', 'voornaam', 'achternaam'],
     },
   },
   {
@@ -639,7 +644,7 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
@@ -647,114 +652,114 @@ export const tools: Anthropic.Tool[] = [
           type: 'string',
           description: 'Het bevindingstype label (gebruik exact label van voorgedefinieerde types)',
         },
-        severity: {
+        ernst: {
           type: 'string',
           enum: ['none', 'low', 'serious', 'critical'],
           description: 'Ernst niveau overeenkomend met het bevindingstype',
         },
-        assigned_to: {
+        toegewezen_aan: {
           type: 'string',
           description: 'Naam van het teamlid aan wie deze bevinding is toegewezen',
         },
       },
-      required: ['case_id', 'label', 'severity'],
+      required: ['dossier_id', 'label', 'ernst'],
     },
   },
   {
     name: 'voeg_dossier_brief_toe',
-    description: 'Voeg een brief/document toe aan een dossier. Twee sjablonen beschikbaar: lbb_notification (LBB-kennisgevingsbrief) en bibob_7c_request (Artikel 7c Wet Bibob-verzoek). Elk heeft specifieke vereiste velden. BELANGRIJK: Vraag altijd eerst om de letter_name, verzamel dan alle sjabloon-specifieke velden voordat je deze tool aanroept.',
+    description: 'Voeg een brief/document toe aan een dossier. Twee sjablonen beschikbaar: lbb_notification (LBB-kennisgevingsbrief) en bibob_7c_request (Artikel 7c Wet Bibob-verzoek). Elk heeft specifieke vereiste velden. BELANGRIJK: Vraag altijd eerst om de brief_naam, verzamel dan alle sjabloon-specifieke velden voordat je deze tool aanroept.',
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
-        letter_name: {
+        brief_naam: {
           type: 'string',
           description: 'Aangepaste naam/titel voor de brief (bijv. "Bibob Verzoek - ABC Bedrijf")',
         },
-        template: {
+        sjabloon: {
           type: 'string',
           enum: ['lbb_notification', 'bibob_7c_request'],
           description: 'Sjabloontype',
         },
         // Common fields
-        date: {
+        datum: {
           type: 'string',
           description: 'Datum van de brief (JJJJ-MM-DD formaat)',
         },
-        municipal_province: {
+        gemeente_provincie: {
           type: 'string',
           description: 'Gemeente- of provincienaam',
         },
         // LBB Notification specific fields
-        reference_number: {
+        referentienummer: {
           type: 'string',
           description: 'Referentienummer (LBB-kennisgeving)',
         },
-        recipient_name: {
+        ontvanger_naam: {
           type: 'string',
           description: 'Naam van ontvanger (LBB-kennisgeving)',
         },
-        recipient_address: {
+        ontvanger_adres: {
           type: 'string',
           description: 'Adres van ontvanger (LBB-kennisgeving)',
         },
-        recipient_postal_code: {
+        ontvanger_postcode: {
           type: 'string',
           description: 'Postcode en plaats van ontvanger (LBB-kennisgeving)',
         },
-        subject: {
+        onderwerp: {
           type: 'string',
           description: 'Onderwerp van de brief (LBB-kennisgeving)',
         },
-        notification_content: {
+        kennisgeving_inhoud: {
           type: 'string',
           description: 'Kennisgevingsinhoud/brieftekst (LBB-kennisgeving)',
         },
-        sender_name: {
+        afzender_naam: {
           type: 'string',
           description: 'Naam van afzender (LBB-kennisgeving)',
         },
-        sender_title: {
+        afzender_titel: {
           type: 'string',
           description: 'Titel/functie van afzender (LBB-kennisgeving)',
         },
         // Bibob 7c Request specific fields
-        applicant_name: {
+        aanvrager_naam: {
           type: 'string',
           description: 'Naam van aanvrager (Bibob 7c)',
         },
-        applicant_phone: {
+        aanvrager_telefoon: {
           type: 'string',
           description: 'Telefoonnummer van aanvrager (Bibob 7c)',
         },
-        recipient_email: {
+        ontvanger_email: {
           type: 'string',
           description: 'E-mailadres van ontvanger (Bibob 7c)',
         },
-        legal_provisions: {
+        wettelijke_bepalingen: {
           type: 'array',
           items: { type: 'string' },
           description: 'Geselecteerde wettelijke bepalingen (Bibob 7c): article_10x, awr_incorrect, general_tax_act, article_67e, article_67f',
         },
-        fine_information: {
+        boete_informatie: {
           type: 'array',
           items: { type: 'string' },
           description: 'Geselecteerde boete-informatie (Bibob 7c): irrevocable_fines, fines_court_ruled, fines_no_ruling',
         },
-        license_types: {
+        vergunning_soorten: {
           type: 'array',
           items: { type: 'string' },
           description: 'Geselecteerde vergunningstypen (Bibob 7c): alcohol_act, wabo_building, wabo_environmental, wabo_usage, operating_establishment, sex_establishment, license_other',
         },
-        additional_remarks: {
+        aanvullende_opmerkingen: {
           type: 'string',
           description: 'Aanvullende opmerkingen (Bibob 7c)',
         },
       },
-      required: ['case_id', 'template', 'date', 'municipal_province'],
+      required: ['dossier_id', 'sjabloon', 'datum', 'gemeente_provincie'],
     },
   },
   {
@@ -763,7 +768,7 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
@@ -771,16 +776,16 @@ export const tools: Anthropic.Tool[] = [
           type: 'string',
           description: 'Korte titel/label voor de communicatie (bijv. "Telefoongesprek met getuige", "E-mail van belastingdienst")',
         },
-        description: {
+        beschrijving: {
           type: 'string',
           description: 'Gedetailleerde beschrijving van de communicatie',
         },
-        date: {
+        datum: {
           type: 'string',
           description: 'Datum van de communicatie (JJJJ-MM-DD formaat). Standaard vandaag indien niet opgegeven.',
         },
       },
-      required: ['case_id', 'label'],
+      required: ['dossier_id', 'label'],
     },
   },
   {
@@ -789,7 +794,7 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
@@ -797,7 +802,7 @@ export const tools: Anthropic.Tool[] = [
           type: 'string',
           description: 'De ID van het contact (gebruikers-ID voor behandelaars/gedeelde gebruikers, organisatie-ID voor organisaties, persoon-ID voor betrokkenen)',
         },
-        contact_name: {
+        contact_naam: {
           type: 'string',
           description: 'De naam van het contact (voor weergavedoeleinden)',
         },
@@ -806,12 +811,12 @@ export const tools: Anthropic.Tool[] = [
           enum: ['practitioner', 'shared', 'organization', 'person'],
           description: 'Het type contact: practitioner (behandelaar), shared (gedeelde gebruiker), organization (organisatie), of person (betrokken persoon)',
         },
-        limit: {
+        limiet: {
           type: 'number',
           description: 'Maximum aantal berichten om terug te geven (standaard: 5)',
         },
       },
-      required: ['case_id', 'contact_id', 'contact_name', 'contact_type'],
+      required: ['dossier_id', 'contact_id', 'contact_naam', 'contact_type'],
     },
   },
   {
@@ -820,7 +825,7 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
@@ -828,7 +833,7 @@ export const tools: Anthropic.Tool[] = [
           type: 'string',
           description: 'De ID van het contact (gebruikers-ID voor behandelaars/gedeelde gebruikers, organisatie-ID voor organisaties, persoon-ID voor betrokkenen)',
         },
-        contact_name: {
+        contact_naam: {
           type: 'string',
           description: 'De naam van het contact',
         },
@@ -837,12 +842,12 @@ export const tools: Anthropic.Tool[] = [
           enum: ['practitioner', 'shared', 'organization', 'person'],
           description: 'Het type contact: practitioner (behandelaar), shared (gedeelde gebruiker), organization (organisatie), of person (betrokken persoon)',
         },
-        message: {
+        bericht: {
           type: 'string',
           description: 'De berichtinhoud om te verzenden',
         },
       },
-      required: ['case_id', 'contact_id', 'contact_name', 'contact_type', 'message'],
+      required: ['dossier_id', 'contact_id', 'contact_naam', 'contact_type', 'bericht'],
     },
   },
   {
@@ -851,7 +856,7 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
@@ -859,12 +864,12 @@ export const tools: Anthropic.Tool[] = [
           type: 'string',
           description: 'Korte titel/label voor de visualisatie (bijv. "Organisatiestructuur", "Tijdlijn van gebeurtenissen")',
         },
-        description: {
+        beschrijving: {
           type: 'string',
           description: 'Beschrijving van wat de visualisatie toont',
         },
       },
-      required: ['case_id', 'label'],
+      required: ['dossier_id', 'label'],
     },
   },
   {
@@ -873,7 +878,7 @@ export const tools: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        case_id: {
+        dossier_id: {
           type: 'string',
           description: 'De ID of naam van het dossier',
         },
@@ -881,20 +886,20 @@ export const tools: Anthropic.Tool[] = [
           type: 'string',
           description: 'Korte titel/label voor de activiteit (bijv. "Documenten beoordelen", "Getuige interviewen")',
         },
-        description: {
+        beschrijving: {
           type: 'string',
           description: 'Gedetailleerde beschrijving van de activiteit',
         },
-        assigned_to: {
+        toegewezen_aan: {
           type: 'string',
           description: 'Naam van de persoon aan wie deze activiteit is toegewezen',
         },
-        date: {
+        datum: {
           type: 'string',
           description: 'Deadline of datum van de activiteit (JJJJ-MM-DD formaat). Standaard vandaag indien niet opgegeven.',
         },
       },
-      required: ['case_id', 'label'],
+      required: ['dossier_id', 'label'],
     },
   },
 ];

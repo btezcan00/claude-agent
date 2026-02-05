@@ -4,7 +4,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-1',
     name: 'Tech Solutions BV',
-    type: 'Corporation',
+    type: 'BV/NV',
     address: 'Kerkstraat 123, 1011 AB Amsterdam',
     description: 'IT consulting and software development firm',
     chamberOfCommerce: '12345678',
@@ -13,7 +13,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-2',
     name: 'Amsterdam Community Foundation',
-    type: 'Non-profit',
+    type: 'Stichting',
     address: 'Damrak 45, 1012 LN Amsterdam',
     description: 'Community development and social welfare organization',
     chamberOfCommerce: '23456789',
@@ -22,7 +22,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-3',
     name: 'City of Amsterdam - Urban Planning',
-    type: 'Government',
+    type: 'Overheid',
     address: 'Rokin 92, 1012 KZ Amsterdam',
     description: 'Municipal department for urban development',
     createdAt: '2024-03-10T09:15:00Z',
@@ -30,7 +30,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-4',
     name: 'Van der Berg & Partners',
-    type: 'Partnership',
+    type: 'Vennootschap',
     address: 'Herengracht 234, 1016 BT Amsterdam',
     description: 'Legal services and notary partnership',
     chamberOfCommerce: '34567890',
@@ -39,7 +39,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-5',
     name: 'De Groot Bakkerij',
-    type: 'Sole Proprietorship',
+    type: 'Eenmanszaak',
     address: 'Albert Cuypstraat 67, 1072 CN Amsterdam',
     description: 'Traditional Dutch bakery and cafe',
     chamberOfCommerce: '45678901',
@@ -48,7 +48,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-6',
     name: 'Green Energy Solutions NV',
-    type: 'Corporation',
+    type: 'BV/NV',
     address: 'Vondelstraat 89, 1054 GJ Amsterdam',
     description: 'Renewable energy and sustainability consulting',
     chamberOfCommerce: '56789012',
@@ -57,7 +57,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-7',
     name: 'Medical Research Institute Amsterdam',
-    type: 'Non-profit',
+    type: 'Stichting',
     address: 'Overtoom 156, 1054 HN Amsterdam',
     description: 'Medical research and public health initiatives',
     chamberOfCommerce: '67890123',
@@ -66,7 +66,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-8',
     name: 'Netherlands Trade Authority',
-    type: 'Government',
+    type: 'Overheid',
     address: 'Prinsengracht 456, 1016 HK Amsterdam',
     description: 'International trade and commerce regulation',
     createdAt: '2024-08-30T13:00:00Z',
@@ -74,7 +74,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-9',
     name: 'Jansen & Smit Architecten',
-    type: 'Partnership',
+    type: 'Vennootschap',
     address: 'Singel 567, 1012 WP Amsterdam',
     description: 'Architectural design and urban planning',
     chamberOfCommerce: '78901234',
@@ -83,7 +83,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-10',
     name: 'Coffee Culture Amsterdam',
-    type: 'Sole Proprietorship',
+    type: 'Eenmanszaak',
     address: 'Haarlemmerstraat 78, 1013 EP Amsterdam',
     description: 'Specialty coffee shop and roastery',
     chamberOfCommerce: '89012345',
@@ -92,7 +92,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-11',
     name: 'Digital Marketing Agency BV',
-    type: 'Corporation',
+    type: 'BV/NV',
     address: 'Leidseplein 12, 1017 PT Amsterdam',
     description: 'Digital marketing and brand strategy services',
     chamberOfCommerce: '90123456',
@@ -101,7 +101,7 @@ export const mockOrganizations: Organization[] = [
   {
     id: 'org-12',
     name: 'Youth Sports Foundation',
-    type: 'Non-profit',
+    type: 'Stichting',
     address: 'Javastraat 45, 1094 HC Amsterdam',
     description: 'Youth development through sports programs',
     chamberOfCommerce: '01234567',

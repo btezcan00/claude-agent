@@ -179,10 +179,10 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
   // File validation
   const validateFile = (file: File): string | null => {
     if (!CASE_ALLOWED_FILE_TYPES.includes(file.type as typeof CASE_ALLOWED_FILE_TYPES[number])) {
-      return `File type "${file.type || 'unknown'}" is not supported.`;
+      return `Bestandstype "${file.type || 'onbekend'}" wordt niet ondersteund.`;
     }
     if (file.size > CASE_MAX_FILE_SIZE) {
-      return `File "${file.name}" (${formatFileSize(file.size)}) exceeds maximum of ${formatFileSize(CASE_MAX_FILE_SIZE)}.`;
+      return `Bestand "${file.name}" (${formatFileSize(file.size)}) overschrijdt maximum van ${formatFileSize(CASE_MAX_FILE_SIZE)}.`;
     }
     return null;
   };
@@ -219,7 +219,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
         const pageText = textContent.items
           .map((item) => ('str' in item ? item.str : ''))
           .join(' ');
-        fullText += `[Page ${i}]\n${pageText}\n\n`;
+        fullText += `[Pagina ${i}]\n${pageText}\n\n`;
       }
 
       return fullText.substring(0, 50000);
@@ -275,7 +275,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
           textContent,
         });
       } catch {
-        setUploadError(`Failed to upload "${file.name}". Please try again.`);
+        setUploadError(`Uploaden van "${file.name}" mislukt. Probeer het opnieuw.`);
       }
     }
 
@@ -370,7 +370,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
             className="w-full mt-1"
             onClick={() => onChange('')}
           >
-            Clear
+            Wissen
           </Button>
         )}
       </PopoverContent>
@@ -391,7 +391,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
               <ChevronDown className="w-4 h-4" />
             )}
             <Paperclip className="w-4 h-4" />
-            Attachments
+            Bijlagen
             {attachments.length > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {attachments.length}
@@ -417,7 +417,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
             >
               <FileIcon className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
               <p className="text-sm text-primary font-medium hover:underline">
-                Add file(s).
+                Bestand(en) toevoegen.
               </p>
               <input
                 ref={fileInputRef}
@@ -451,36 +451,36 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
                     <TableRow>
                       <TableHead className="w-[200px]">
                         <div className="flex items-center">
-                          Name
+                          Naam
                           <FilterPopover
                             value={nameFilter}
                             onChange={setNameFilter}
-                            placeholder="Filter by name..."
+                            placeholder="Filteren op naam..."
                           />
                         </div>
                       </TableHead>
                       <TableHead className="w-[150px]">
                         <div className="flex items-center">
-                          Owner
+                          Eigenaar
                           <FilterPopover
                             value={ownerFilter}
                             onChange={setOwnerFilter}
-                            placeholder="Filter by owner..."
+                            placeholder="Filteren op eigenaar..."
                           />
                         </div>
                       </TableHead>
-                      <TableHead>Description</TableHead>
+                      <TableHead>Beschrijving</TableHead>
                       <TableHead className="w-[150px]">
                         <div className="flex items-center">
-                          Tags
+                          Labels
                           <FilterPopover
                             value={tagsFilter}
                             onChange={setTagsFilter}
-                            placeholder="Filter by tag..."
+                            placeholder="Filteren op label..."
                           />
                         </div>
                       </TableHead>
-                      <TableHead className="w-[120px]">Last updated</TableHead>
+                      <TableHead className="w-[120px]">Laatst bijgewerkt</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -488,7 +488,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
                     {paginatedAttachments.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                          No attachments match your filters
+                          Geen bijlagen voldoen aan uw filters
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -540,7 +540,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
                               >
                                 {attachment.description || (
                                   <span className="text-muted-foreground italic">
-                                    Enter description
+                                    Beschrijving invoeren
                                   </span>
                                 )}
                               </span>
@@ -572,18 +572,18 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => setPreviewAttachment(attachment)}>
                                   <Eye className="h-4 w-4 mr-2" />
-                                  View
+                                  Bekijken
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleDownload(attachment)}>
                                   <Download className="h-4 w-4 mr-2" />
-                                  Download
+                                  Downloaden
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => handleDelete(attachment.id)}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
+                                  Verwijderen
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -649,7 +649,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
                     <ChevronDown className="w-4 h-4" />
                   )}
                   <FileText className="w-4 h-4" />
-                  <span className="font-medium">Signal</span>
+                  <span className="font-medium">Melding</span>
                   <Badge variant="secondary" className="ml-2">
                     {signalAttachments.length}
                   </Badge>
@@ -662,21 +662,21 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
                         <TableRow>
                           <TableHead className="w-[250px]">
                             <div className="flex items-center">
-                              Name
+                              Naam
                               <FilterPopover
                                 value={signalNameFilter}
                                 onChange={setSignalNameFilter}
-                                placeholder="Filter by name..."
+                                placeholder="Filteren op naam..."
                               />
                             </div>
                           </TableHead>
                           <TableHead>
                             <div className="flex items-center">
-                              Source
+                              Bron
                               <FilterPopover
                                 value={signalSourceFilter}
                                 onChange={setSignalSourceFilter}
-                                placeholder="Filter by source..."
+                                placeholder="Filteren op bron..."
                               />
                             </div>
                           </TableHead>
@@ -687,7 +687,7 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
                         {paginatedSignalAttachments.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                              No signal attachments match your filters
+                              Geen meldingsbijlagen voldoen aan uw filters
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -714,11 +714,11 @@ export function CaseAttachments({ caseItem }: CaseAttachmentsProps) {
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => setPreviewAttachment(attachment)}>
                                       <Eye className="h-4 w-4 mr-2" />
-                                      View
+                                      Bekijken
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleDownload(attachment)}>
                                       <Download className="h-4 w-4 mr-2" />
-                                      Download
+                                      Downloaden
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>

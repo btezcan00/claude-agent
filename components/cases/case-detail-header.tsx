@@ -119,11 +119,11 @@ export function CaseDetailHeader({
     <div className="space-y-4">
       {/* Back Navigation */}
       <Link
-        href="/cases"
+        href="/dossiers"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Cases
+        Terug naar Dossiers
       </Link>
 
       {/* Header */}
@@ -170,7 +170,7 @@ export function CaseDetailHeader({
                 )}
               >
                 <div className="w-4 h-4 rounded-full border-2 border-dashed border-muted-foreground" />
-                No color
+                Geen kleur
               </button>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -205,19 +205,19 @@ export function CaseDetailHeader({
                 onKeyDown={handleDescriptionKeyDown}
                 rows={2}
                 className="text-sm text-muted-foreground resize-none px-2 py-1 -mx-2 -my-1"
-                placeholder="Add a description..."
+                placeholder="Voeg een omschrijving toe..."
               />
             ) : (
               <p
                 onClick={() => setEditingDescription(true)}
                 className="text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors min-h-[1.5rem]"
               >
-                {caseItem.description || 'Add a description...'}
+                {caseItem.description || 'Voeg een omschrijving toe...'}
               </p>
             )}
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-              <span>{signalCount} {signalCount === 1 ? 'signal' : 'signals'}</span>
+              <span>{signalCount} {signalCount === 1 ? 'melding' : 'meldingen'}</span>
 
               {/* Owner Dropdown */}
               <DropdownMenu>
@@ -233,12 +233,12 @@ export function CaseDetailHeader({
                               .join('')}
                           </AvatarFallback>
                         </Avatar>
-                        <span>Owned by {caseItem.ownerName}</span>
+                        <span>Eigenaar: {caseItem.ownerName}</span>
                       </>
                     ) : (
                       <>
                         <User className="w-4 h-4" />
-                        <span>No owner</span>
+                        <span>Geen eigenaar</span>
                       </>
                     )}
                   </button>
@@ -249,7 +249,7 @@ export function CaseDetailHeader({
                     className={cn(!caseItem.ownerId && 'bg-muted')}
                   >
                     <User className="w-4 h-4 mr-2" />
-                    No owner
+                    Geen eigenaar
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {users.map((user) => (
