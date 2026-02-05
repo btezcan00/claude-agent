@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { store } from '@/lib/store';
 import { Organization } from '@/types/organization';
+import { getServerUserId } from '@/lib/auth-server';
 import { generateId } from '@/lib/utils';
 
 // GET /api/organizations - Get all organizations or search
 export async function GET(request: NextRequest) {
+  const userId = await getServerUserId();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
 
@@ -19,6 +25,11 @@ export async function GET(request: NextRequest) {
 
 // POST /api/organizations - Create a new organization
 export async function POST(request: NextRequest) {
+  const userId = await getServerUserId();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const data: Omit<Organization, 'id' | 'createdAt'> = await request.json();
     const now = new Date().toISOString();

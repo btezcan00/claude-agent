@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { store } from '@/lib/store';
 import { ApplicationData } from '@/types/case';
-import { currentUser } from '@/data/mock-users';
+import { requireAuth } from '@/lib/auth-server';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -12,6 +12,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
   try {
+    const user = await requireAuth();
     const data: {
       applicationData?: Partial<ApplicationData>;
       complete?: boolean;
@@ -45,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         ...(updateData.applicationData || caseItem.applicationData),
         isCompleted: true,
         completedAt: now,
-        completedBy: `${currentUser.firstName} ${currentUser.lastName}`,
+        completedBy: `${user.firstName} ${user.lastName}`,
       };
       updateData.status = 'research';
       updateData.statusDates = {
@@ -63,6 +64,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const updated = store.updateCase(id, updateData);
     return NextResponse.json(updated);
   } catch (error) {
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'User not found')) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to update application' },
       { status: 400 }

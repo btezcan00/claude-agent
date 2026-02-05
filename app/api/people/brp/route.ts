@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { store } from '@/lib/store';
+import { getServerUserId } from '@/lib/auth-server';
 
 // POST /api/people/brp - Search BRP (Dutch civil registry)
 export async function POST(request: NextRequest) {
+  const userId = await getServerUserId();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const params = await request.json();
 

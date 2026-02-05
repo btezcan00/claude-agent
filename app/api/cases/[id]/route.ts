@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { store } from '@/lib/store';
 import { UpdateCaseInput, Case } from '@/types/case';
+import { getServerUserId } from '@/lib/auth-server';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -8,6 +9,11 @@ interface RouteParams {
 
 // GET /api/cases/:id - Get a single case
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const userId = await getServerUserId();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   const caseItem = store.getCaseById(id);
 
@@ -23,6 +29,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PUT /api/cases/:id - Update a case
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const userId = await getServerUserId();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
 
   try {
@@ -54,6 +65,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/cases/:id - Delete a case
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const userId = await getServerUserId();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
 
   const success = store.deleteCase(id);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { store } from '@/lib/store';
 import { ActivityEntry } from '@/types/signal';
-import { currentUser } from '@/data/mock-users';
+import { requireAuth } from '@/lib/auth-server';
 import { generateId } from '@/lib/utils';
 
 interface RouteParams {
@@ -13,6 +13,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
   try {
+    const user = await requireAuth();
     const { caseId, relation } = await request.json();
 
     const signal = store.getSignalById(id);
@@ -45,8 +46,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const activity: ActivityEntry = {
       id: generateId(),
       signalId: id,
-      userId: currentUser.id,
-      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      userId: user.id,
+      userName: `${user.firstName} ${user.lastName}`,
       action: 'case-added',
       details: 'Added to case',
       timestamp: now,
@@ -60,6 +61,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(updated, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'User not found')) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to link signal to case' },
       { status: 400 }

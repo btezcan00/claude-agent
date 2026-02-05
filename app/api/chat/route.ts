@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerCurrentUser } from '@/lib/auth-server';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -1291,12 +1292,25 @@ function validatePlanProposal(plan: {
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, signals, cases, teamMembers, currentUser, lastCreatedSignalId, organizations, addresses, people, stream: enableStreaming, approvedPlan }: {
+    const serverUser = await getServerCurrentUser();
+    if (!serverUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const currentUser = {
+      id: serverUser.id,
+      firstName: serverUser.firstName,
+      lastName: serverUser.lastName,
+      fullName: `${serverUser.firstName} ${serverUser.lastName}`,
+      title: serverUser.title || '',
+      role: serverUser.role,
+    };
+
+    const { messages, signals, cases, teamMembers, lastCreatedSignalId, organizations, addresses, people, stream: enableStreaming, approvedPlan }: {
       messages: Message[];
       signals: SignalData[];
       cases: CaseData[];
       teamMembers: TeamMember[];
-      currentUser?: { id: string; firstName: string; lastName: string; fullName: string; title: string; role: string } | null;
       lastCreatedSignalId?: string | null;
       organizations?: OrganizationData[];
       addresses?: AddressData[];

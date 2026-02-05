@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { store } from '@/lib/store';
 import { Case, CreateCaseInput, APPLICATION_CRITERIA } from '@/types/case';
-import { currentUser } from '@/data/mock-users';
+import { requireAuth, getServerUserId } from '@/lib/auth-server';
 import { generateCaseId } from '@/lib/utils';
 
 // GET /api/cases - Get all cases
 export async function GET() {
+  const userId = await getServerUserId();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const cases = store.getCases();
   return NextResponse.json(cases);
 }
@@ -13,6 +18,7 @@ export async function GET() {
 // POST /api/cases - Create a new case
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth();
     const data: CreateCaseInput = await request.json();
     const now = new Date().toISOString();
 
@@ -20,8 +26,8 @@ export async function POST(request: NextRequest) {
       id: generateCaseId(),
       name: data.name,
       description: data.description,
-      createdById: currentUser.id,
-      createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
+      createdById: user.id,
+      createdByName: `${user.firstName} ${user.lastName}`,
       createdAt: now,
       updatedAt: now,
       ownerId: data.ownerId || null,
@@ -81,6 +87,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'User not found')) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to create case' },
       { status: 400 }
