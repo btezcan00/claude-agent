@@ -1,10 +1,11 @@
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
+import AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerCurrentUser } from '@/lib/auth-server';
 import { tools, TOOL_NAMES } from './anthropic-tools';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const anthropic = new AnthropicBedrock({
+  awsRegion: 'eu-central-1',
 });
 
 interface Message {
@@ -310,7 +311,7 @@ async function summarizeAttachmentsForSignal(
   try {
     // Make vision-capable API call
     const summaryResponse = await anthropic.messages.create({
-      model: 'claude-opus-4-5-20251101',
+      model: 'eu.anthropic.claude-opus-4-6-v1',
       max_tokens: 2048,
       messages: [{ role: 'user', content }],
       temperature: 0
@@ -427,13 +428,6 @@ export async function POST(request: NextRequest) {
         actions: Array<{ step: number; action: string; tool: string; details?: Record<string, unknown> }>;
       } | null;
     } = await request.json();
-
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json(
-        { error: 'ANTHROPIC_API_KEY is not configured' },
-        { status: 500 }
-      );
-    }
 
     const signalSummary = (signals || [])
       .map(
@@ -1145,7 +1139,7 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
             // No forced tool_choice - Claude will follow system prompt instructions
 
             const response = await anthropic.messages.create({
-              model: 'claude-opus-4-5-20251101',
+              model: 'eu.anthropic.claude-opus-4-6-v1',
               max_tokens: 2048,
               system: systemPrompt,
               tools,
@@ -1303,7 +1297,7 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
                 if (!validation.isValid) {
                   // Plan has missing/placeholder values - force clarification
                   const retryResponse = await anthropic.messages.create({
-                    model: 'claude-opus-4-5-20251101',
+                    model: 'eu.anthropic.claude-opus-4-6-v1',
                     max_tokens: 2048,
                     system: systemPrompt + `\n\nIMPORTANT: The user's request is missing required information: ${validation.missingFields.join(', ')}. You MUST use ask_clarification to request this information before proceeding.`,
                     tools,
@@ -1495,7 +1489,7 @@ When creating a signal, ALWAYS check for case matching and include it in the pla
     // Non-streaming mode (legacy support)
     // Let Claude decide between ask_clarification and plan_proposal based on whether required fields are present
     const response = await anthropic.messages.create({
-      model: 'claude-opus-4-5-20251101',
+      model: 'eu.anthropic.claude-opus-4-6-v1',
       max_tokens: 2048,
       system: systemPrompt,
       tools,
